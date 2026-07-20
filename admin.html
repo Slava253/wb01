@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Админ панель</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -26,9 +26,7 @@
         <button class="tab-btn" data-tab="orders">📋 Заказы</button>
     </div>
 
-    <div class="tab-content active" id="tab-dashboard">
-        <div class="dashboard-stats" id="dashboardStats"></div>
-    </div>
+    <div class="tab-content active" id="tab-dashboard"><div class="dashboard-stats" id="dashboardStats"></div></div>
 
     <div class="tab-content" id="tab-pvz">
         <div style="background:#f8fafc;padding:16px;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:16px;">
@@ -43,13 +41,8 @@
         <div id="pvzList"></div>
     </div>
 
-    <div class="tab-content" id="tab-products">
-        <div id="productsList"></div>
-    </div>
-
-    <div class="tab-content" id="tab-orders">
-        <div id="ordersList"></div>
-    </div>
+    <div class="tab-content" id="tab-products"><div id="productsList"></div></div>
+    <div class="tab-content" id="tab-orders"><div id="ordersList"></div></div>
 </div>
 
 <script type="importmap">
@@ -64,73 +57,22 @@
 
 <script type="module">
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
+import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
 import { getDatabase, ref, set, get, push, onValue, remove } from "firebase/database";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyBfoIEyhvlUfIgAvXJwOthT6uzfB4gV0Uo",
-    authDomain: "electronic-journal-5dff1.firebaseapp.com",
-    databaseURL: "https://electronic-journal-5dff1-default-rtdb.firebaseio.com",
-    projectId: "electronic-journal-5dff1",
-    storageBucket: "electronic-journal-5dff1.firebasestorage.app",
-    messagingSenderId: "293962922085",
-    appId: "1:293962922085:web:391c3e453bb2725e392e8c"
-};
+import { firebaseConfig } from "./js/firebase-config.js";
+import { showNotif } from "./js/auth.js";
+import { getProducts, deleteProduct } from "./js/products.js";
+import { getOrders } from "./js/orders.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
 
-let allProducts = [], allPvz = [], allOrders = [];
+let allProducts = [];
+let allPvz = [];
+let allOrders = [];
 
-function showNotif(text, isError = false) {
-    const el = document.getElementById('notif') || (() => {
-        const d = document.createElement('div');
-        d.id = 'notif';
-        d.className = 'notification';
-        document.body.appendChild(d);
-        return d;
-    })();
-    el.textContent = text;
-    el.className = 'notification show ' + (isError ? 'error' : 'success');
-    clearTimeout(el._t);
-    el._t = setTimeout(() => el.classList.remove('show'), 3000);
-}
-
-function showAdminLogin() {
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <h3>🔐 Вход администратора</h3>
-            <label>Логин</label>
-            <input type="text" id="adminLogin" value="2347">
-            <label>Пароль</label>
-            <input type="password" id="adminPassword" value="2203">
-            <button class="btn btn-primary" id="adminLoginBtn">Войти</button>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    document.getElementById('adminLoginBtn').onclick = async () => {
-        const login = document.getElementById('adminLogin').value;
-        const pass = document.getElementById('adminPassword').value;
-        if (login === '2347' && pass === '2203') {
-            try {
-                await signInWithEmailAndPassword(auth, 'admin@market.com', 'admin123');
-                modal.remove();
-                showNotif('✅ Вход выполнен!');
-            } catch(e) {
-                const cred = await createUserWithEmailAndPassword(auth, 'admin@market.com', 'admin123');
-                await set(ref(db, 'users/' + cred.user.uid), { role: 'admin', name: 'Администратор' });
-                modal.remove();
-                showNotif('✅ Вход выполнен!');
-            }
-        } else {
-            showNotif('❌ Неверный логин или пароль!', true);
-        }
-    };
-}
-
+// ===== РЕНДЕР =====
 function renderDashboard() {
     document.getElementById('dashboardStats').innerHTML = `
         <div class="stat-card"><div class="number">${allProducts.length}</div><div class="label">Товаров</div></div>
@@ -153,11 +95,11 @@ function renderPvz() {
         card.innerHTML = `
             <div class="address">🏢 ${p.address}</div>
             <div class="login">🔑 Логин: ${p.login}</div>
-            <button class="btn btn-danger" data-id="${p.id}">🗑 Удалить</button>
+            <button class="btn btn-danger" data-id="${p.id}" style="margin-top:4px;">🗑 Удалить</button>
         `;
-        card.querySelector('.btn').onclick = () => {
+        card.querySelector('.btn').onclick = async () => {
             if (confirm('Удалить ПВЗ?')) {
-                remove(ref(db, 'pvz/' + p.id));
+                await remove(ref(db, 'pvz/' + p.id));
                 showNotif('✅ ПВЗ удалён');
             }
         };
@@ -179,12 +121,12 @@ function renderProducts() {
             <div class="name">${p.name}</div>
             <div class="price">${p.price} ₽</div>
             <div class="seller">👤 ${p.sellerName || 'Продавец'}</div>
-            <button class="btn btn-danger" data-id="${p.id}">🗑 Удалить</button>
+            <button class="btn btn-danger" data-id="${p.id}" style="margin-top:4px;">🗑 Удалить</button>
         `;
-        card.querySelector('.btn').onclick = () => {
+        card.querySelector('.btn').onclick = async () => {
             if (confirm('Удалить товар?')) {
-                remove(ref(db, 'products/' + p.id));
-                showNotif('✅ Товар удалён');
+                const result = await deleteProduct(p.id);
+                if (result.success) { showNotif('✅ Товар удалён'); } else { showNotif('❌ ' + result.error, true); }
             }
         };
         container.appendChild(card);
@@ -216,6 +158,7 @@ function renderOrders() {
     });
 }
 
+// ===== СОЗДАНИЕ ПВЗ =====
 document.getElementById('createPvzBtn').onclick = () => {
     const address = document.getElementById('pvzAddress').value.trim();
     const login = document.getElementById('pvzLogin').value.trim();
@@ -224,7 +167,8 @@ document.getElementById('createPvzBtn').onclick = () => {
         showNotif('❌ Заполните все поля!', true);
         return;
     }
-    push(ref(db, 'pvz'), { address, login, password }).then(() => {
+    const newRef = push(ref(db, 'pvz'));
+    set(newRef, { address, login, password }).then(() => {
         showNotif('✅ ПВЗ создан!');
         document.getElementById('pvzAddress').value = '';
         document.getElementById('pvzLogin').value = '';
@@ -232,25 +176,38 @@ document.getElementById('createPvzBtn').onclick = () => {
     });
 };
 
-document.getElementById('logoutBtn').onclick = () => {
-    signOut(auth);
-    showNotif('✅ Выход выполнен');
+// ===== ВЫХОД =====
+document.getElementById('logoutBtn').onclick = async () => {
+    await signOut(auth);
+    window.location.href = 'vxod.html';
 };
 
+// ===== ПРОВЕРКА АВТОРИЗАЦИИ =====
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         const snap = await get(ref(db, 'users/' + user.uid));
         if (snap.exists() && snap.val().role === 'admin') {
             document.getElementById('userBadge').textContent = '👑 Админ';
         } else {
-            signOut(auth);
-            showAdminLogin();
+            window.location.href = 'vxod.html';
         }
     } else {
-        showAdminLogin();
+        window.location.href = 'vxod.html';
     }
 });
 
+// ===== ЗАГРУЗКА =====
+getProducts((products) => { allProducts = products; renderDashboard(); renderProducts(); });
+getOrders((orders) => { allOrders = orders; renderDashboard(); renderOrders(); });
+
+// ПВЗ
+onValue(ref(db, 'pvz'), (snap) => {
+    allPvz = [];
+    if (snap.exists()) { const data = snap.val(); for (const key in data) allPvz.push({ id: key, ...data[key] }); }
+    renderDashboard(); renderPvz();
+});
+
+// ===== ВКЛАДКИ =====
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.onclick = function() {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -258,22 +215,6 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.getElementById('tab-' + this.dataset.tab).classList.add('active');
     };
-});
-
-onValue(ref(db, 'products'), (snap) => {
-    allProducts = [];
-    if (snap.exists()) { const data = snap.val(); for (const key in data) allProducts.push({ id: key, ...data[key] }); }
-    renderDashboard(); renderProducts();
-});
-onValue(ref(db, 'pvz'), (snap) => {
-    allPvz = [];
-    if (snap.exists()) { const data = snap.val(); for (const key in data) allPvz.push({ id: key, ...data[key] }); }
-    renderDashboard(); renderPvz();
-});
-onValue(ref(db, 'orders'), (snap) => {
-    allOrders = [];
-    if (snap.exists()) { const data = snap.val(); for (const key in data) allOrders.push({ id: key, ...data[key] }); }
-    renderDashboard(); renderOrders();
 });
 </script>
 </body>
