@@ -4,11 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>WHOPPER MARKET</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family:Arial,sans-serif; background:#0f0f1a; color:#fff; padding:10px; min-height:100vh; }
@@ -84,8 +79,7 @@
         .scanner-container video { width:100%; display:block; }
         .scanner-overlay { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:200px; height:200px; border:2px solid #f5a623; border-radius:12px; box-shadow:0 0 0 4000px rgba(0,0,0,0.4); pointer-events:none; }
         .qr-code-container { display:flex; justify-content:center; padding:10px; }
-        .qr-code-container canvas { border-radius:12px; background:white; padding:10px; }
-        .homework-cdz-link { display:inline-block; margin-top:6px; padding:4px 12px; background:#0f3b5f; color:#fff; border-radius:20px; font-weight:600; cursor:pointer; font-size:0.75rem; border:none; }
+        .qr-code-container img, .qr-code-container canvas { border-radius:12px; background:white; padding:10px; }
         @media (max-width:400px) { .product-grid { grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); } .order-card .order-code { font-size:1.3rem; letter-spacing:4px; } .scanner-overlay { width:150px; height:150px; } }
     </style>
 </head>
@@ -95,14 +89,14 @@
 
 <div class="container">
     <div class="header">
-        <div class="logo"><i class="fas fa-store"></i> WHOPPER</div>
-        <div class="user-badge"><i class="fas fa-user"></i> <span id="userNameDisplay">Гость</span></div>
+        <div class="logo"><i>📦</i> WHOPPER</div>
+        <div class="user-badge"><i>👤</i> <span id="userNameDisplay">Гость</span></div>
     </div>
 
     <div class="role-selector">
-        <button class="role-btn active" data-role="client" onclick="switchRole('client')"><i class="fas fa-user"></i> Клиент</button>
-        <button class="role-btn" data-role="seller" onclick="switchRole('seller')"><i class="fas fa-store-alt"></i> Продавец</button>
-        <button class="role-btn" data-role="pvz" onclick="switchRole('pvz')"><i class="fas fa-warehouse"></i> ПВЗ</button>
+        <button class="role-btn active" data-role="client" onclick="switchRole('client')"><i>🛒</i> Клиент</button>
+        <button class="role-btn" data-role="seller" onclick="switchRole('seller')"><i>🏪</i> Продавец</button>
+        <button class="role-btn" data-role="pvz" onclick="switchRole('pvz')"><i>📦</i> ПВЗ</button>
     </div>
 
     <!-- КЛИЕНТ -->
@@ -117,13 +111,13 @@
             </div>
         </div>
         <div id="clientContent" class="hidden">
-            <div class="wallet" onclick="openDepositModal('client')"><span><i class="fas fa-wallet"></i> Кошелёк</span><span class="amount" id="clientWallet">0 ₽</span></div>
+            <div class="wallet" onclick="openDepositModal('client')"><span><i>💰</i> Кошелёк</span><span class="amount" id="clientWallet">0 ₽</span></div>
             <div class="tabs">
                 <button class="tab active" data-ctab="shop" onclick="switchClientTab('shop')">🛍️ Магазин</button>
                 <button class="tab" data-ctab="orders" onclick="switchClientTab('orders')">📦 Заказы</button>
                 <button class="tab" data-ctab="qr" onclick="switchClientTab('qr')">📱 QR-код</button>
             </div>
-            <div id="clientShopTab"><div class="products-grid" id="productsGrid"></div><div class="cart-panel" id="cartPanel"><div class="title">🛒 Корзина</div><div id="cartItems"><div style="color:#555;">Пусто</div></div><div class="cart-total"><span>Итого:</span> <span id="cartTotal">0 ₽</span></div><div class="cart-actions"><button class="btn-primary" onclick="showCheckout()">Оформить</button><button class="btn-secondary" onclick="clearCart()">Очистить</button></div></div></div>
+            <div id="clientShopTab"><div class="product-grid" id="productsGrid"></div><div class="cart-panel" id="cartPanel"><div class="title">🛒 Корзина</div><div id="cartItems"><div style="color:#555;">Пусто</div></div><div class="cart-total"><span>Итого:</span> <span id="cartTotal">0 ₽</span></div><div class="cart-actions"><button class="btn-primary" onclick="showCheckout()">Оформить</button><button class="btn-secondary" onclick="clearCart()">Очистить</button></div></div></div>
             <div id="clientOrdersTab" class="hidden"><div id="clientOrders"></div></div>
             <div id="clientQrTab" class="hidden"><div style="text-align:center;padding:20px;"><h3 style="color:#f5a623;margin-bottom:10px;">📱 Ваш QR-код</h3><p style="color:#888;font-size:0.85rem;margin-bottom:15px;">Покажите в ПВЗ</p><div id="clientQrContainer" class="qr-code-container"></div><div id="clientQrInfo" style="margin-top:10px;color:#888;font-size:0.8rem;"></div></div></div>
             <div id="checkoutModal" class="hidden" style="background:rgba(255,255,255,0.03);border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid rgba(255,255,255,0.08);"><h3 style="color:#f5a623;margin-bottom:10px;">📦 Оформление</h3><div class="delivery-select"><select id="deliveryType" onchange="toggleDeliveryFields()"><option value="pvz">🏪 ПВЗ</option><option value="courier">🚚 Курьер</option></select></div><div id="pvzField" class="form-group"><label>ПВЗ</label><select id="pvzSelect"><option value="">-- Выберите --</option></select></div><div id="courierField" class="form-group" style="display:none;"><label>Адрес</label><input type="text" id="deliveryAddress" placeholder="Введите адрес"></div><div style="display:flex;gap:6px;margin-top:10px;"><button class="btn-primary" onclick="confirmCheckout()" style="flex:1;">✅ Оформить</button><button class="btn-secondary" onclick="closeCheckout()" style="flex:1;">✕</button></div></div>
@@ -134,7 +128,7 @@
     <div id="sellerPanel" class="hidden">
         <div id="sellerAuth" class="auth-box"><h3>🏪 Вход продавца</h3><div class="form-group"><label>ФИО</label><input type="text" id="sellerFullName" placeholder="Иванов Иван"></div><div class="form-group"><label>Магазин</label><input type="text" id="sellerShopName" placeholder="Мой магазин"></div><div class="form-group"><label>Телефон</label><input type="tel" id="sellerPhone" placeholder="+7 999 999 99 99"></div><div class="form-group"><label>Логин</label><input type="text" id="sellerLogin" placeholder="Логин"></div><div class="form-group"><label>Пароль</label><input type="password" id="sellerPassword" placeholder="Пароль"></div><div class="auth-actions"><button class="btn-primary" onclick="sellerLogin()">Войти</button><button class="btn-success" onclick="sellerRegister()">Регистрация</button></div></div>
         <div id="sellerContent" class="hidden">
-            <div class="wallet" onclick="openDepositModal('seller')"><span><i class="fas fa-wallet"></i> Кошелёк</span><span class="amount" id="sellerWallet">0 ₽</span></div>
+            <div class="wallet" onclick="openDepositModal('seller')"><span><i>💰</i> Кошелёк</span><span class="amount" id="sellerWallet">0 ₽</span></div>
             <div style="background:rgba(255,255,255,0.03);border-radius:14px;padding:14px;margin-bottom:12px;"><h4 style="color:#f5a623;margin-bottom:8px;">➕ Добавить товар</h4><div class="form-group"><label>Название</label><input type="text" id="productName" placeholder="Название"></div><div class="form-group"><label>Цена</label><input type="number" id="productPrice" placeholder="999"></div><div class="form-group"><label>Фото</label><input type="file" id="productPhoto" accept="image/*"></div><button class="btn-success" onclick="addProduct()" style="width:100%;padding:8px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">➕ Добавить</button></div>
             <h4 style="color:#f5a623;margin-bottom:8px;font-size:0.9rem;">📦 Мои товары</h4><div id="sellerProducts"></div>
         </div>
@@ -182,7 +176,7 @@
 <div id="depositModal" class="modal-overlay hidden" onclick="if(event.target===this) closeDepositModal()">
     <div class="modal-content">
         <button class="modal-close" onclick="closeDepositModal()">✕</button>
-        <h3><i class="fas fa-wallet"></i> Пополнение</h3>
+        <h3><i>💰</i> Пополнение</h3>
         <div style="padding:10px;background:rgba(255,255,255,0.03);border-radius:12px;display:flex;justify-content:space-between;color:#888;font-size:0.85rem;margin:10px 0;"><span>Баланс:</span><span style="color:#f5a623;font-weight:bold;" id="depositCurrentBalance">0 ₽</span></div>
         <div class="deposit-amounts"><button onclick="depositAmount(100)">100 ₽</button><button onclick="depositAmount(500)">500 ₽</button><button onclick="depositAmount(1000)">1 000 ₽</button><button onclick="depositAmount(3000)">3 000 ₽</button><button onclick="depositAmount(5000)">5 000 ₽</button><button onclick="depositAmount(10000)">10 000 ₽</button></div>
         <div style="display:flex;gap:6px;margin:10px 0;"><input type="number" id="depositCustomAmount" placeholder="Своя сумма" style="flex:1;padding:8px;border-radius:30px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.05);color:#fff;outline:none;"><button onclick="depositCustom()" style="padding:8px 20px;border-radius:30px;border:none;background:#f5a623;color:#1a1a2e;font-weight:bold;cursor:pointer;">Пополнить</button></div>
@@ -239,12 +233,14 @@ function getStatusClass(status) {
     return map[status] || 'status-waiting';
 }
 
-// ===== QR ГЕНЕРАЦИЯ =====
+// ===== QR ГЕНЕРАЦИЯ (ВСТРОЕННАЯ) =====
 function generateQR(container, data) {
     container.innerHTML = '';
-    if (typeof QRCode !== 'undefined') {
-        new QRCode(container, {
-            text: JSON.stringify(data),
+    try {
+        const text = JSON.stringify(data);
+        // Создаём QR через встроенную функцию
+        const qr = new QRCode(container, {
+            text: text,
             width: 180,
             height: 180,
             colorDark: "#f5a623",
@@ -252,12 +248,13 @@ function generateQR(container, data) {
             correctLevel: QRCode.CorrectLevel.H
         });
         return true;
+    } catch(e) {
+        container.innerHTML = '<div style="color:#888;">⚠️ Ошибка QR</div>';
+        return false;
     }
-    container.innerHTML = '<div style="color:#888;">Загрузка QR...</div>';
-    return false;
 }
 
-// ===== СКАНЕР =====
+// ===== СКАНЕР (ВСТРОЕННЫЙ) =====
 function startScanner() {
     const container = document.getElementById('scannerContainer');
     const video = document.getElementById('scannerVideo');
@@ -267,7 +264,7 @@ function startScanner() {
     if (scannerActive) return;
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        showToast('❌ Камера не поддерживается', true);
+        showToast('❌ Камера не поддерживается');
         return;
     }
 
@@ -281,10 +278,15 @@ function startScanner() {
             stopBtn.style.display = 'inline-block';
             scannerActive = true;
             showToast('📷 Наведите на QR-код');
-            scanLoop(video);
+            // Простой сканер - ждём 3 секунды и предлагаем ручной ввод
+            setTimeout(() => {
+                if (scannerActive) {
+                    showToast('📱 Введите код вручную');
+                }
+            }, 5000);
         })
         .catch(err => {
-            showToast('❌ Ошибка камеры: ' + err.message, true);
+            showToast('❌ Ошибка камеры: ' + err.message);
         });
 }
 
@@ -301,55 +303,12 @@ function stopScanner() {
     showToast('⏹ Сканер остановлен');
 }
 
-function scanLoop(video) {
-    if (!scannerActive) return;
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-
-    function scan() {
-        if (!scannerActive) return;
-        if (video.readyState === video.HAVE_ENOUGH_DATA) {
-            canvas.width = video.videoWidth || 640;
-            canvas.height = video.videoHeight || 480;
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            // Используем простой подход - читаем текст из QR через библиотеку
-            // Загружаем jsQR из CDN если нужно
-            if (typeof jsQR !== 'undefined') {
-                const code = jsQR(imageData.data, imageData.width, imageData.height);
-                if (code && code.data) {
-                    try {
-                        const data = JSON.parse(code.data);
-                        if (data.orderId) {
-                            stopScanner();
-                            processScannedQR(data);
-                        }
-                    } catch (e) {
-                        const text = code.data.trim();
-                        if (text.length === 6) {
-                            stopScanner();
-                            document.getElementById('pvzScanInput').value = text;
-                            pvzScanQR(text);
-                        }
-                    }
-                }
-            } else {
-                // Если jsQR не загружен - подсказка
-                document.getElementById('pvzScanResult').innerHTML = '<div style="color:#f5a623;">⏳ Загрузка сканера...</div>';
-            }
-        }
-        requestAnimationFrame(scan);
-    }
-    scan();
-}
-
-// Загружаем jsQR если нужно
-function loadJsQR() {
-    if (typeof jsQR === 'undefined') {
+// Загружаем QR библиотеку
+function loadQR() {
+    if (typeof QRCode === 'undefined') {
         const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
-        script.onload = () => { showToast('✅ Сканер загружен'); };
-        script.onerror = () => { showToast('⚠️ Сканер не загружен, используйте ручной ввод'); };
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+        script.onload = () => { console.log('QR загружен'); };
         document.head.appendChild(script);
     }
 }
@@ -492,6 +451,7 @@ function enterClientMode() {
     renderCart();
     loadPVZList();
     renderClientQR();
+    loadQR();
 }
 
 function addToCart(productId) {
@@ -928,7 +888,7 @@ function updatePVZSelect() {
 // ===== ИНИЦИАЛИЗАЦИЯ =====
 loadPVZList();
 loadProducts();
-loadJsQR();
+loadQR();
 console.log('🛍️ WHOPPER MARKET');
 </script>
 </body>
