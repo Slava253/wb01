@@ -2,324 +2,1420 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Маркетплейс</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/style.css">
-    <script src="libs/qrcode.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🛍️ WHOPPER MARKET</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    <!-- QRCode.js для генерации QR -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- jsQR для сканирования QR -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <style>
-        .guest-message { text-align:center; padding:60px 20px; color:#94a3b8; }
-        .guest-message i { font-size:4rem; display:block; margin-bottom:16px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; }
+        body { background: #0f0f1a; min-height: 100vh; padding: 10px; color: white; }
+        .container { max-width: 500px; margin: 0 auto; }
+        .hidden { display: none !important; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(255,255,255,0.05); border-radius: 16px; margin-bottom: 12px; }
+        .header .logo { font-size: 1.2rem; font-weight: bold; color: #f5a623; }
+        .header .logo i { margin-right: 6px; }
+        .header .user-badge { font-size: 0.7rem; color: #888; background: rgba(255,255,255,0.05); padding: 4px 12px; border-radius: 30px; }
+        .role-selector { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+        .role-btn { flex: 1; padding: 8px 4px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); color: #888; cursor: pointer; font-weight: bold; font-size: 0.55rem; text-align: center; min-width: 45px; }
+        .role-btn.active { border-color: #f5a623; color: #f5a623; background: rgba(245,166,35,0.1); }
+        .role-btn i { display: block; font-size: 0.9rem; margin-bottom: 2px; }
+        .auth-box { background: rgba(255,255,255,0.03); border-radius: 16px; padding: 16px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05); }
+        .auth-box h3 { margin-bottom: 10px; color: #f5a623; font-size: 0.95rem; }
+        .auth-box .form-group { margin-bottom: 8px; }
+        .auth-box .form-group label { display: block; font-size: 0.7rem; color: #888; margin-bottom: 3px; }
+        .auth-box .form-group input, .auth-box .form-group textarea { width: 100%; padding: 8px 12px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.05); color: white; font-size: 0.85rem; outline: none; font-family: inherit; }
+        .auth-box .form-group textarea { border-radius: 14px; min-height: 60px; resize: vertical; }
+        .auth-box .form-group input:focus, .auth-box .form-group textarea:focus { border-color: #f5a623; }
+        .auth-box .auth-actions { display: flex; gap: 6px; margin-top: 10px; }
+        .auth-box .auth-actions button { flex: 1; padding: 8px; border-radius: 30px; border: none; font-weight: bold; cursor: pointer; font-size: 0.75rem; }
+        .btn-primary { background: #f5a623; color: #1a1a2e; }
+        .btn-success { background: #4CAF50; color: white; }
+        .btn-danger { background: #ff4444; color: white; }
+        .btn-info { background: #2196F3; color: white; }
+        .btn-secondary { background: rgba(255,255,255,0.08); color: white; }
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-bottom: 12px; }
+        .product-card { background: rgba(255,255,255,0.05); border-radius: 14px; padding: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; position: relative; }
+        .product-card:active { transform: scale(0.97); }
+        .product-card .product-photo { width: 100%; height: 70px; object-fit: cover; border-radius: 8px; margin-bottom: 4px; background: rgba(255,255,255,0.05); }
+        .product-card .name { font-weight: 600; font-size: 0.8rem; margin-bottom: 3px; }
+        .product-card .price { color: #f5a623; font-weight: bold; font-size: 0.9rem; }
+        .product-card .add-btn { margin-top: 6px; background: #f5a623; color: #1a1a2e; border: none; padding: 4px 12px; border-radius: 30px; font-weight: bold; cursor: pointer; font-size: 0.65rem; }
+        .product-card .rating { font-size: 0.7rem; color: #f5a623; margin-top: 4px; }
+        .cart-panel { background: rgba(255,255,255,0.03); border-radius: 14px; padding: 12px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05); }
+        .cart-panel .title { font-weight: bold; margin-bottom: 8px; color: #f5a623; font-size: 0.9rem; }
+        .cart-item { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.8rem; }
+        .cart-total { font-weight: bold; font-size: 1rem; margin-top: 8px; padding-top: 8px; border-top: 2px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; }
+        .cart-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+        .cart-actions button { flex: 1; padding: 8px; border-radius: 30px; border: none; font-weight: bold; cursor: pointer; min-width: 70px; font-size: 0.75rem; }
+        .order-card { background: rgba(255,255,255,0.04); border-radius: 14px; padding: 12px; margin-bottom: 8px; border-left: 4px solid #f5a623; }
+        .order-card .order-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 4px; font-size: 0.8rem; }
+        .order-card .order-number { color: #f5a623; font-size: 0.8rem; word-break: break-all; }
+        .order-card .order-status { font-size: 0.6rem; padding: 2px 10px; border-radius: 30px; }
+        .status-waiting { background: #ff9800; color: white; }
+        .status-ready { background: #4CAF50; color: white; }
+        .status-delivered { background: #999; color: white; }
+        .order-card .order-items-list { font-size: 0.75rem; color: #aaa; margin: 4px 0; padding: 4px 0; border-top: 1px solid rgba(255,255,255,0.05); }
+        .order-card .order-items-list .item-row { display: flex; align-items: center; gap: 6px; padding: 3px 0; }
+        .order-card .order-items-list .item-photo { width: 30px; height: 30px; border-radius: 6px; object-fit: cover; background: rgba(255,255,255,0.05); flex-shrink: 0; }
+        .order-card .order-items-list .item-name { flex: 1; font-size: 0.75rem; }
+        .order-card .order-total { font-weight: bold; font-size: 0.85rem; margin-top: 4px; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); }
+        .order-card .order-code { font-size: 1.8rem; font-weight: bold; color: #f5a623; font-family: monospace; letter-spacing: 8px; background: rgba(255,255,255,0.08); padding: 10px; border-radius: 12px; margin: 6px 0; text-align: center; border: 2px solid rgba(245,166,35,0.25); }
+        .tabs { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+        .tab { padding: 6px 14px; border-radius: 30px; background: rgba(255,255,255,0.05); cursor: pointer; font-size: 0.7rem; color: #888; border: 1px solid transparent; }
+        .tab.active { background: rgba(245,166,35,0.15); color: #f5a623; border-color: #f5a623; }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 20px; border-radius: 40px; z-index: 999; opacity: 0; transition: 0.3s; pointer-events: none; font-weight: 600; max-width: 90%; text-align: center; font-size: 0.8rem; }
+        .toast.show { opacity: 1; }
+        .wallet { background: rgba(255,255,255,0.03); border-radius: 14px; padding: 10px 14px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .wallet .amount { font-size: 1.1rem; font-weight: bold; color: #f5a623; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: #1a1a2e; border-radius: 20px; padding: 20px; max-width: 420px; width: 100%; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.08); }
+        .modal-content h3 { color: #f5a623; margin-bottom: 10px; font-size: 1.1rem; }
+        .modal-content .close-modal { float: right; background: none; border: none; color: #888; font-size: 1.2rem; cursor: pointer; }
+        .modal-content .rating-stars { font-size: 1.8rem; color: #555; cursor: pointer; display: flex; gap: 4px; justify-content: center; margin: 8px 0; }
+        .modal-content .rating-stars .star.active { color: #f5a623; }
+        .modal-content .review-text { width: 100%; padding: 10px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.05); color: white; font-size: 0.85rem; outline: none; font-family: inherit; min-height: 60px; resize: vertical; margin: 8px 0; }
+        .modal-content .review-text:focus { border-color: #f5a623; }
+        .modal-content .file-input-wrapper input[type="file"] { display: none; }
+        .modal-content .file-input-wrapper .file-label { background: rgba(255,255,255,0.05); padding: 6px 14px; border-radius: 30px; cursor: pointer; border: 1px dashed #555; font-size: 0.75rem; color: #aaa; display: inline-block; }
+        .modal-content .preview-photo { max-width: 80px; max-height: 80px; border-radius: 10px; object-fit: cover; margin: 6px 0; }
+        .reviews-list { margin-top: 8px; max-height: 200px; overflow-y: auto; }
+        .reviews-list .review-item { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 8px; margin-bottom: 6px; }
+        .reviews-list .review-item .review-user { font-weight: bold; color: #f5a623; font-size: 0.75rem; }
+        .reviews-list .review-item .review-rating { color: #f5a623; font-size: 0.75rem; }
+        .reviews-list .review-item .review-text { color: #aaa; font-size: 0.8rem; margin-top: 3px; }
+        .reviews-list .review-item .review-photo { max-width: 80px; max-height: 80px; border-radius: 6px; margin-top: 4px; object-fit: cover; }
+        .reviews-list .review-item .review-date { color: #555; font-size: 0.6rem; }
+        .delivery-select { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 10px; margin: 8px 0; }
+        .delivery-select select { width: 100%; padding: 8px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.05); color: white; font-size: 0.85rem; outline: none; }
+        .delivery-address { margin-top: 6px; padding: 6px 10px; background: rgba(255,255,255,0.03); border-radius: 10px; font-size: 0.75rem; color: #aaa; display: none; }
+        .delivery-address.show { display: block; }
+        .deposit-amounts { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin: 10px 0; }
+        .deposit-amounts button { padding: 8px; border-radius: 30px; border: 2px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); color: white; font-weight: bold; cursor: pointer; }
+        .deposit-amounts button:hover { border-color: #f5a623; }
+        /* Сканер QR */
+        .scanner-container { background: #000; border-radius: 16px; overflow: hidden; position: relative; min-height: 250px; display: flex; align-items: center; justify-content: center; margin: 10px 0; }
+        .scanner-container video { width: 100%; display: block; }
+        .scanner-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 200px; height: 200px; border: 2px solid #f5a623; border-radius: 12px; box-shadow: 0 0 0 4000px rgba(0,0,0,0.4); pointer-events: none; }
+        .scan-btn { padding: 8px 20px; border-radius: 30px; border: none; font-weight: bold; cursor: pointer; background: #f5a623; color: #1a1a2e; font-size: 0.85rem; margin: 6px; }
+        .scan-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .qr-code-container { display: flex; justify-content: center; padding: 10px; }
+        .qr-code-container img, .qr-code-container canvas { border-radius: 12px; background: white; padding: 10px; }
+        @media (max-width: 400px) {
+            .products-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+            .role-btn { font-size: 0.5rem; padding: 6px 3px; }
+            .role-btn i { font-size: 0.8rem; }
+            .order-card .order-code { font-size: 1.3rem; letter-spacing: 4px; padding: 8px; }
+            .scanner-overlay { width: 150px; height: 150px; }
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <h1><i class="fas fa-store"></i> Маркетплейс</h1>
-        <div class="header-right">
-            <span class="user-badge" id="userBadge">👤 Гость</span>
-            <button class="btn btn-outline" id="logoutBtn">Выйти</button>
+    <div id="toast" class="toast"></div>
+
+    <div class="container" id="app">
+        <div class="header">
+            <div class="logo"><i class="fas fa-store"></i> WHOPPER</div>
+            <div class="user-badge"><i class="fas fa-user"></i> <span id="userNameDisplay">Гость</span></div>
         </div>
-    </div>
 
-    <div class="tabs">
-        <button class="tab-btn active" data-tab="catalog">📦 Каталог</button>
-        <button class="tab-btn" data-tab="cart">🛒 Корзина <span id="cartCount" class="badge">0</span></button>
-        <button class="tab-btn" data-tab="orders">📋 Мои заказы</button>
-        <button class="tab-btn" data-tab="qr">📱 QR-код</button>
-    </div>
-
-    <div class="tab-content active" id="tab-catalog"><div id="catalogGrid" class="product-grid"></div></div>
-    <div class="tab-content" id="tab-cart"><div id="cartContent"></div></div>
-    <div class="tab-content" id="tab-orders"><div id="ordersList"></div></div>
-    <div class="tab-content" id="tab-qr">
-        <div style="text-align:center;padding:30px;">
-            <h2>📱 Ваш QR-код для получения заказа</h2>
-            <p style="color:#64748b;margin-bottom:20px;">Покажите этот QR-код в ПВЗ для получения заказа</p>
-            <div id="qrCodeContainer"></div>
-            <div id="qrOrderInfo" style="margin-top:20px;"></div>
-        </div>
-    </div>
-</div>
-
-<script type="importmap">
-{
-    "imports": {
-        "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
-        "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js",
-        "firebase/database": "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"
-    }
-}
-</script>
-
-<script type="module">
-import { initializeApp } from "firebase/app";
-import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
-import { getDatabase, ref, get, set, push, onValue } from "firebase/database";
-import { firebaseConfig } from "./js/firebase-config.js";
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
-
-let currentUser = null;
-let currentUserData = null;
-let allProducts = [];
-let allOrders = [];
-let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-
-function showNotif(text, isError = false) {
-    const el = document.getElementById('notif') || (() => {
-        const d = document.createElement('div');
-        d.id = 'notif';
-        d.className = 'notification';
-        document.body.appendChild(d);
-        return d;
-    })();
-    el.textContent = text;
-    el.className = 'notification show ' + (isError ? 'error' : 'success');
-    clearTimeout(el._t);
-    el._t = setTimeout(() => el.classList.remove('show'), 3000);
-}
-
-// ===== ВЫХОД =====
-document.getElementById('logoutBtn').addEventListener('click', async () => {
-    try {
-        await signOut(auth);
-        localStorage.removeItem('userRole');
-        window.location.href = 'vxod.html';
-    } catch(e) {
-        window.location.href = 'vxod.html';
-    }
-});
-
-// ===== QR =====
-function generateQR(container, data) {
-    container.innerHTML = '';
-    if (typeof QRCode !== 'undefined') {
-        new QRCode(container, {
-            text: JSON.stringify(data),
-            width: 200,
-            height: 200,
-            colorDark: "#0f3b5f",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.H
-        });
-    } else {
-        container.innerHTML = '<p style="color:#94a3b8;">Загрузка QR...</p>';
-    }
-}
-
-// ===== КОРЗИНА =====
-function updateCartUI() { document.getElementById('cartCount').textContent = cart.length; }
-function saveCart() { localStorage.setItem('cart', JSON.stringify(cart)); }
-
-function addToCart(product) {
-    const existing = cart.findIndex(item => item.id === product.id);
-    if (existing > -1) { cart.splice(existing, 1); } else { cart.push({ id: product.id, name: product.name, price: product.price, sellerId: product.sellerId }); }
-    saveCart(); updateCartUI(); return cart;
-}
-function removeFromCart(productId) {
-    const idx = cart.findIndex(item => item.id === productId);
-    if (idx > -1) { cart.splice(idx, 1); saveCart(); updateCartUI(); }
-    return cart;
-}
-function clearCart() { cart = []; saveCart(); updateCartUI(); return cart; }
-
-// ===== РЕНДЕР КАТАЛОГА =====
-function renderCatalog() {
-    const grid = document.getElementById('catalogGrid');
-    grid.innerHTML = '';
-    if (allProducts.length === 0) {
-        grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#94a3b8;padding:40px;">Нет товаров</p>';
-        return;
-    }
-    allProducts.forEach(p => {
-        const inCart = cart.some(item => item.id === p.id);
-        const card = document.createElement('div');
-        card.className = 'product-card';
-        card.innerHTML = `
-            <div class="name">${p.name}</div>
-            <div class="price">${p.price} ₽</div>
-            <div class="seller">👤 ${p.sellerName || 'Продавец'}</div>
-            <div style="font-size:0.85rem;color:#475569;">${p.desc || ''}</div>
-            <button class="btn ${inCart ? 'btn-danger' : 'btn-success'}" style="width:100%;margin-top:8px;" data-id="${p.id}">
-                ${inCart ? '🗑 Убрать' : '🛒 В корзину'}
+        <div class="role-selector" id="roleSelector">
+            <button class="role-btn active" data-role="client" onclick="switchRole('client')">
+                <i class="fas fa-user"></i> Клиент
             </button>
-        `;
-        const btn = card.querySelector('button');
-        btn.onclick = () => {
-            if (!currentUser) {
-                showNotif('❌ Войдите в аккаунт!', true);
-                setTimeout(() => { window.location.href = 'vxod.html'; }, 1500);
+            <button class="role-btn" data-role="seller" onclick="switchRole('seller')">
+                <i class="fas fa-store-alt"></i> Продавец
+            </button>
+            <button class="role-btn" data-role="pvz" onclick="switchRole('pvz')">
+                <i class="fas fa-warehouse"></i> ПВЗ
+            </button>
+        </div>
+
+        <!-- КЛИЕНТ -->
+        <div id="clientPanel">
+            <div id="clientAuth" class="auth-box">
+                <h3>👤 Вход</h3>
+                <div class="form-group"><label>Телефон</label><input type="tel" id="clientPhone" placeholder="+7 999 999 99 99"></div>
+                <div class="form-group"><label>Имя</label><input type="text" id="clientName" placeholder="Ваше имя"></div>
+                <div class="auth-actions">
+                    <button class="btn-primary" onclick="clientLogin()">Войти</button>
+                    <button class="btn-success" onclick="clientRegister()">Регистрация</button>
+                </div>
+            </div>
+            <div id="clientContent" class="hidden">
+                <div class="wallet" onclick="openDepositModal('client')">
+                    <span><i class="fas fa-wallet"></i> Кошелёк</span>
+                    <span class="amount" id="clientWallet">0 ₽</span>
+                </div>
+                <div class="tabs">
+                    <button class="tab active" data-ctab="shop" onclick="switchClientTab2('shop')">🛍️ Магазин</button>
+                    <button class="tab" data-ctab="orders" onclick="switchClientTab2('orders')">📦 Заказы</button>
+                    <button class="tab" data-ctab="qr" onclick="switchClientTab2('qr')">📱 QR-код</button>
+                </div>
+                <div id="clientShopTab">
+                    <div class="products-grid" id="productsGrid"></div>
+                    <div class="cart-panel" id="cartPanel">
+                        <div class="title">🛒 Корзина</div>
+                        <div id="cartItems"><div style="color:#555;">Пусто</div></div>
+                        <div class="cart-total"><span>Итого:</span> <span id="cartTotal">0 ₽</span></div>
+                        <div class="cart-actions">
+                            <button class="btn-primary" onclick="showCheckout()">Оформить</button>
+                            <button class="btn-secondary" onclick="clearCart()">Очистить</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="clientOrdersTab" class="hidden">
+                    <div class="tabs">
+                        <button class="tab active" data-tab="active" onclick="switchClientTab('active')">Активные</button>
+                        <button class="tab" data-tab="history" onclick="switchClientTab('history')">История</button>
+                    </div>
+                    <div id="clientOrders"></div>
+                </div>
+                <div id="clientQrTab" class="hidden">
+                    <div style="text-align:center;padding:20px;">
+                        <h3 style="color:#f5a623;margin-bottom:10px;">📱 Ваш QR-код для получения заказа</h3>
+                        <p style="color:#888;font-size:0.85rem;margin-bottom:15px;">Покажите этот QR-код в ПВЗ</p>
+                        <div id="clientQrContainer" class="qr-code-container"></div>
+                        <div id="clientQrInfo" style="margin-top:10px;color:#888;font-size:0.8rem;"></div>
+                    </div>
+                </div>
+                <div id="checkoutModal" class="hidden" style="background:rgba(255,255,255,0.03);border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid rgba(255,255,255,0.08);">
+                    <h3 style="color:#f5a623;margin-bottom:10px;">📦 Оформление</h3>
+                    <div class="delivery-select">
+                        <select id="deliveryType" onchange="toggleDeliveryFields()">
+                            <option value="pvz">🏪 ПВЗ</option>
+                            <option value="courier">🚚 Курьер</option>
+                        </select>
+                    </div>
+                    <div id="pvzField" class="form-group">
+                        <label>ПВЗ</label>
+                        <select id="pvzSelect"><option value="">-- Выберите --</option></select>
+                        <div id="pvzAddressDisplay" class="delivery-address"></div>
+                    </div>
+                    <div id="courierField" class="form-group" style="display:none;">
+                        <label>Адрес</label>
+                        <input type="text" id="deliveryAddress" placeholder="Введите адрес">
+                    </div>
+                    <div style="display:flex;gap:6px;margin-top:10px;">
+                        <button class="btn-primary" onclick="confirmCheckout()" style="flex:1;">✅ Оформить</button>
+                        <button class="btn-secondary" onclick="closeCheckout()" style="flex:1;">✕</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ПРОДАВЕЦ -->
+        <div id="sellerPanel" class="hidden">
+            <div id="sellerAuth" class="auth-box">
+                <h3>🏪 Вход продавца</h3>
+                <div class="form-group"><label>ФИО</label><input type="text" id="sellerFullName" placeholder="Иванов Иван"></div>
+                <div class="form-group"><label>Магазин</label><input type="text" id="sellerShopName" placeholder="Мой магазин"></div>
+                <div class="form-group"><label>Телефон</label><input type="tel" id="sellerPhone" placeholder="+7 999 999 99 99"></div>
+                <div class="form-group"><label>Логин</label><input type="text" id="sellerLogin" placeholder="Логин"></div>
+                <div class="form-group"><label>Пароль</label><input type="password" id="sellerPassword" placeholder="Пароль"></div>
+                <div class="auth-actions">
+                    <button class="btn-primary" onclick="sellerLogin()">Войти</button>
+                    <button class="btn-success" onclick="sellerRegister()">Регистрация</button>
+                </div>
+            </div>
+            <div id="sellerContent" class="hidden">
+                <div class="wallet" onclick="openDepositModal('seller')">
+                    <span><i class="fas fa-wallet"></i> Кошелёк</span>
+                    <span class="amount" id="sellerWallet">0 ₽</span>
+                </div>
+                <div style="background:rgba(255,255,255,0.03);border-radius:14px;padding:14px;margin-bottom:12px;">
+                    <h4 style="color:#f5a623;margin-bottom:8px;">➕ Добавить товар</h4>
+                    <div class="form-group"><label>Название</label><input type="text" id="productName" placeholder="Название"></div>
+                    <div class="form-group"><label>Цена</label><input type="number" id="productPrice" placeholder="999"></div>
+                    <div class="form-group"><label>Фото</label><input type="file" id="productPhoto" accept="image/*"></div>
+                    <button class="btn-success" onclick="addProduct()" style="width:100%;padding:8px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">➕ Добавить</button>
+                </div>
+                <h4 style="color:#f5a623;margin-bottom:8px;font-size:0.9rem;">📦 Мои товары</h4>
+                <div id="sellerProducts"></div>
+            </div>
+        </div>
+
+        <!-- ПВЗ -->
+        <div id="pvzPanel" class="hidden">
+            <div id="pvzAuth" class="auth-box">
+                <h3>🏪 Вход ПВЗ</h3>
+                <div class="form-group"><label>Номер</label><input type="number" id="pvzLogin" placeholder="17"></div>
+                <div class="form-group"><label>Пароль</label><input type="password" id="pvzPassword" placeholder="Пароль"></div>
+                <div class="auth-actions">
+                    <button class="btn-primary" onclick="pvzLogin()">Войти</button>
+                </div>
+            </div>
+            <div id="pvzContent" class="hidden">
+                <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
+                    <button class="btn-primary" onclick="pvzAction('receive')">📥 Приём</button>
+                    <button class="btn-success" onclick="pvzAction('issue')">📤 Выдача</button>
+                    <button class="btn-info" onclick="startScanner()" id="scanBtn">📷 Сканер</button>
+                    <button class="btn-secondary" onclick="stopScanner()" id="stopScanBtn" style="display:none;">⏹ Остановить</button>
+                </div>
+                <div class="scanner-container" id="scannerContainer" style="display:none;">
+                    <video id="scannerVideo" autoplay playsinline></video>
+                    <div class="scanner-overlay"></div>
+                </div>
+                <div class="scan-area">
+                    <h4 style="color:#f5a623;margin-bottom:6px;font-size:0.85rem;">🔑 Ручной ввод кода</h4>
+                    <input type="text" id="pvzScanInput" placeholder="6-значный код" maxlength="6" oninput="pvzScanQR(this.value)">
+                    <div id="pvzScanResult" style="margin-top:6px;"></div>
+                </div>
+                <div id="pvzOrders"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛКА ТОВАРА -->
+    <div id="productModal" class="modal-overlay hidden" onclick="if(event.target===this) closeProductModal()">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeProductModal()">✕</button>
+            <h3 id="modalProductName">Товар</h3>
+            <div id="modalProductSeller" style="color:#888;font-size:0.75rem;">Продавец</div>
+            <div id="modalProductPrice" style="color:#f5a623;font-size:1.3rem;font-weight:bold;margin:6px 0;">0 ₽</div>
+            <div id="modalProductPhoto" style="margin:6px 0;"></div>
+            <div id="modalProductDesc" style="color:#aaa;font-size:0.85rem;margin:6px 0;"></div>
+            <div id="modalProductRating" style="margin:8px 0;">
+                <span style="color:#888;font-size:0.8rem;">Рейтинг: </span>
+                <span style="color:#f5a623;" id="modalRatingStars"></span>
+                <span style="color:#666;" id="modalRatingCount">(0)</span>
+            </div>
+            <div style="margin:10px 0;">
+                <div class="rating-stars" id="modalStars">
+                    <span class="star" data-star="1" onclick="setRating(1)">★</span>
+                    <span class="star" data-star="2" onclick="setRating(2)">★</span>
+                    <span class="star" data-star="3" onclick="setRating(3)">★</span>
+                    <span class="star" data-star="4" onclick="setRating(4)">★</span>
+                    <span class="star" data-star="5" onclick="setRating(5)">★</span>
+                </div>
+                <textarea class="review-text" id="modalReviewText" placeholder="Напишите отзыв..."></textarea>
+                <div class="file-input-wrapper">
+                    <input type="file" id="reviewPhoto" accept="image/*">
+                    <label for="reviewPhoto" class="file-label">📷 Добавить фото</label>
+                    <div id="reviewPhotoPreview" style="display:inline-block;vertical-align:middle;"></div>
+                </div>
+                <button class="btn-primary" onclick="submitReview()" style="width:100%;padding:8px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;margin-top:6px;">✍️ Отправить</button>
+            </div>
+            <div>
+                <h4 style="color:#f5a623;font-size:0.85rem;">📝 Отзывы</h4>
+                <div class="reviews-list" id="modalReviews"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛКА ПОПОЛНЕНИЯ -->
+    <div id="depositModal" class="modal-overlay hidden" onclick="if(event.target===this) closeDepositModal()">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeDepositModal()">✕</button>
+            <h3><i class="fas fa-wallet"></i> Пополнение</h3>
+            <div style="padding:10px;background:rgba(255,255,255,0.03);border-radius:12px;display:flex;justify-content:space-between;color:#888;font-size:0.85rem;margin:10px 0;">
+                <span>Баланс:</span>
+                <span style="color:#f5a623;font-weight:bold;" id="depositCurrentBalance">0 ₽</span>
+            </div>
+            <div class="deposit-amounts">
+                <button onclick="depositAmount(100)">100 ₽</button>
+                <button onclick="depositAmount(500)">500 ₽</button>
+                <button onclick="depositAmount(1000)">1 000 ₽</button>
+                <button onclick="depositAmount(3000)">3 000 ₽</button>
+                <button onclick="depositAmount(5000)">5 000 ₽</button>
+                <button onclick="depositAmount(10000)">10 000 ₽</button>
+            </div>
+            <div style="display:flex;gap:6px;margin:10px 0;">
+                <input type="number" id="depositCustomAmount" placeholder="Своя сумма" style="flex:1;padding:8px;border-radius:30px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.05);color:white;outline:none;">
+                <button onclick="depositCustom()" style="padding:8px 20px;border-radius:30px;border:none;background:#f5a623;color:#1a1a2e;font-weight:bold;cursor:pointer;">Пополнить</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== FIREBASE ==========
+        const firebaseConfig = {
+            apiKey: "AIzaSyBoj5xaDZRyLkf7r0Ui6Xku3-f6jnCdFvU",
+            authDomain: "school-a90e4.firebaseapp.com",
+            projectId: "school-a90e4",
+            storageBucket: "school-a90e4.firebasestorage.app",
+            messagingSenderId: "106891336718",
+            appId: "1:106891336718:web:19a3425219138192aa305f"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const storage = firebase.storage();
+
+        let currentUser = { id: null, name: null, type: 'client', phone: null, pvzNumber: null, shopName: null, wallet: 0 };
+        let cart = [];
+        let clientTab = 'active';
+        let allPVZ = [];
+        let currentProductId = null;
+        let selectedRating = 0;
+        let depositTarget = 'client';
+        let clientTab2 = 'shop';
+        let currentRole = 'client';
+        let scannerStream = null;
+        let scannerActive = false;
+
+        // ========== УТИЛИТЫ ==========
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            clearTimeout(t._timeout);
+            t._timeout = setTimeout(() => t.classList.remove('show'), 2000);
+        }
+
+        function uploadPhoto(file, path) {
+            return new Promise((resolve, reject) => {
+                if (!file) { resolve(null); return; }
+                const ref = storage.ref('photos/' + path + '/' + Date.now() + '.jpg');
+                ref.put(file).then((snapshot) => snapshot.ref.getDownloadURL()).then(resolve).catch(reject);
+            });
+        }
+
+        function getStatusText(status) {
+            const map = { 'to_pvz': '🚚 Едет на ПВЗ', 'ready': '✅ Готов к выдаче', 'delivered': '📦 Выдан',
+                'to_courier': '⏳ Ожидает курьера', 'return': '🔄 Возврат' };
+            return map[status] || status;
+        }
+
+        function getStatusClass(status) {
+            const map = { 'to_pvz': 'status-waiting', 'ready': 'status-ready', 'delivered': 'status-delivered',
+                'to_courier': 'status-waiting', 'return': 'status-waiting' };
+            return map[status] || 'status-waiting';
+        }
+
+        // ========== ГЕНЕРАЦИЯ QR ==========
+        function generateQR(container, data) {
+            container.innerHTML = '';
+            if (typeof QRCode !== 'undefined') {
+                new QRCode(container, {
+                    text: JSON.stringify(data),
+                    width: 200,
+                    height: 200,
+                    colorDark: "#f5a623",
+                    colorLight: "#1a1a2e",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+                return true;
+            } else {
+                container.innerHTML = '<div style="color:#888;">Загрузка QR...</div>';
+                return false;
+            }
+        }
+
+        // ========== СКАНЕР QR (ПВЗ) ==========
+        async function startScanner() {
+            const container = document.getElementById('scannerContainer');
+            const video = document.getElementById('scannerVideo');
+            const scanBtn = document.getElementById('scanBtn');
+            const stopBtn = document.getElementById('stopScanBtn');
+
+            if (scannerActive) return;
+
+            try {
+                scannerStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
+                });
+                video.srcObject = scannerStream;
+                await video.play();
+
+                container.style.display = 'block';
+                scanBtn.style.display = 'none';
+                stopBtn.style.display = 'inline-block';
+                scannerActive = true;
+
+                scanQRCode(video);
+                showToast('📷 Сканер запущен, наведите на QR-код');
+            } catch (err) {
+                showToast('❌ Нет доступа к камере: ' + err.message, true);
+            }
+        }
+
+        function stopScanner() {
+            if (scannerStream) {
+                scannerStream.getTracks().forEach(t => t.stop());
+                scannerStream = null;
+            }
+            scannerActive = false;
+            document.getElementById('scannerContainer').style.display = 'none';
+            document.getElementById('scanBtn').style.display = 'inline-block';
+            document.getElementById('stopScanBtn').style.display = 'none';
+            document.getElementById('scannerVideo').srcObject = null;
+            showToast('⏹ Сканер остановлен');
+        }
+
+        async function scanQRCode(video) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            async function scanFrame() {
+                if (!scannerActive) return;
+
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    canvas.width = video.videoWidth || 640;
+                    canvas.height = video.videoHeight || 480;
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+                    if (code && code.data) {
+                        try {
+                            const data = JSON.parse(code.data);
+                            if (data.orderId) {
+                                stopScanner();
+                                processScannedQR(data);
+                            }
+                        } catch (e) {
+                            // Если не JSON, пробуем как простой код
+                            const text = code.data.trim();
+                            if (text.length === 6) {
+                                stopScanner();
+                                document.getElementById('pvzScanInput').value = text;
+                                pvzScanQR(text);
+                            }
+                        }
+                    }
+                }
+                requestAnimationFrame(scanFrame);
+            }
+            scanFrame();
+        }
+
+        function processScannedQR(data) {
+            const orderId = data.orderId;
+            db.ref('orders/' + orderId).once('value', (sn) => {
+                const order = sn.val();
+                if (!order) {
+                    showToast('❌ Заказ не найден!');
+                    return;
+                }
+                if (order.pvzNumber != currentUser.pvzNumber) {
+                    showToast('❌ Заказ не для этого ПВЗ!');
+                    return;
+                }
+                if (order.status === 'delivered') {
+                    showToast('ℹ️ Заказ уже выдан');
+                    return;
+                }
+
+                const resultDiv = document.getElementById('pvzScanResult');
+                resultDiv.innerHTML = `
+                    <div style="background:rgba(76,175,80,0.15);padding:12px;border-radius:12px;border:1px solid #4CAF50;">
+                        <div style="color:#4CAF50;font-weight:bold;">✅ Заказ найден!</div>
+                        <div>👤 ${order.userName}</div>
+                        <div>📦 ${order.items.map(i => `${i.name} x${i.qty}`).join(', ')}</div>
+                        <div style="font-weight:bold;">${order.total} ₽</div>
+                        <div style="font-size:0.8rem;color:#888;">Код: ${order.code}</div>
+                        ${order.status === 'ready' ? 
+                            `<button onclick="verifyAndIssue('${orderId}', '${order.code}')" style="margin-top:8px;padding:8px 20px;border-radius:30px;border:none;background:#4CAF50;color:white;font-weight:bold;cursor:pointer;">📤 Выдать</button>` : 
+                            `<div style="color:#ff9800;font-size:0.8rem;">Статус: ${getStatusText(order.status)}</div>`
+                        }
+                    </div>
+                `;
+                showToast('✅ QR-код распознан!');
+            });
+        }
+
+        // ========== ПЕРЕКЛЮЧЕНИЕ РОЛЕЙ ==========
+        window.switchRole = function(role) {
+            currentRole = role;
+            document.querySelectorAll('.role-btn').forEach(b => b.classList.toggle('active', b.dataset.role === role));
+            document.querySelectorAll('#clientPanel, #sellerPanel, #pvzPanel').forEach(el => el.classList.add('hidden'));
+
+            if (role === 'client') {
+                document.getElementById('clientPanel').classList.remove('hidden');
+                document.getElementById('clientContent').classList.add('hidden');
+                document.getElementById('clientAuth').classList.remove('hidden');
+                loadPVZList();
+                loadProducts();
+            } else if (role === 'seller') {
+                document.getElementById('sellerPanel').classList.remove('hidden');
+                document.getElementById('sellerContent').classList.add('hidden');
+                document.getElementById('sellerAuth').classList.remove('hidden');
+            } else if (role === 'pvz') {
+                document.getElementById('pvzPanel').classList.remove('hidden');
+                document.getElementById('pvzContent').classList.add('hidden');
+                document.getElementById('pvzAuth').classList.remove('hidden');
+                loadPVZList();
+                stopScanner();
+            }
+        };
+
+        // ========== ЗАГРУЗКА ТОВАРОВ ==========
+        const defaultProducts = [
+            { id: 'default_1', name: 'Смартфон X Pro', price: 49990, sellerName: 'WHOPPER Shop' },
+            { id: 'default_2', name: 'Наушники Pro Max', price: 8990, sellerName: 'WHOPPER Shop' },
+            { id: 'default_3', name: 'Фитнес-браслет 5', price: 3990, sellerName: 'WHOPPER Shop' },
+            { id: 'default_4', name: 'Игровая мышь RGB', price: 2590, sellerName: 'WHOPPER Shop' },
+            { id: 'default_5', name: 'Электронная сигарета', price: 3490, sellerName: 'WHOPPER Shop' },
+            { id: 'default_6', name: 'Коллекционный алкоголь', price: 15990, sellerName: 'WHOPPER Shop' },
+        ];
+
+        function loadProducts() {
+            defaultProducts.forEach(p => {
+                db.ref('products/' + p.id).once('value', (sn) => {
+                    if (!sn.exists()) {
+                        db.ref('products/' + p.id).set({
+                            id: p.id,
+                            name: p.name,
+                            price: p.price,
+                            sellerName: p.sellerName,
+                            sellerId: 'default_seller',
+                            isDefault: true,
+                            photo: null,
+                            createdAt: Date.now()
+                        });
+                    }
+                });
+            });
+
+            db.ref('products').on('value', (sn) => {
+                const products = [];
+                sn.forEach(child => {
+                    const data = child.val();
+                    products.push({
+                        id: child.key,
+                        name: data.name,
+                        price: data.price,
+                        sellerId: data.sellerId,
+                        sellerName: data.sellerName || 'Продавец',
+                        isDefault: data.isDefault || false,
+                        photo: data.photo || null
+                    });
+                });
+                products.sort((a, b) => {
+                    if (a.isDefault && !b.isDefault) return -1;
+                    if (!a.isDefault && b.isDefault) return 1;
+                    return a.name.localeCompare(b.name);
+                });
+                window.allProducts = products;
+                if (currentRole === 'client') renderProducts(products);
+                if (currentRole === 'seller') renderSellerProducts();
+            });
+        }
+
+        function renderProducts(products) {
+            const grid = document.getElementById('productsGrid');
+            if (!products || products.length === 0) {
+                grid.innerHTML = '<div style="text-align:center;color:#555;padding:15px;font-size:0.85rem;">Товаров нет</div>';
                 return;
             }
-            if (inCart) { removeFromCart(p.id); } else { addToCart(p); }
-            renderCatalog(); renderCart();
-        };
-        grid.appendChild(card);
-    });
-}
-
-// ===== РЕНДЕР КОРЗИНЫ =====
-function renderCart() {
-    const container = document.getElementById('cartContent');
-    if (cart.length === 0) {
-        container.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:40px;">Корзина пуста</p>';
-        return;
-    }
-    let html = '<div class="cart-list">';
-    let total = 0;
-    cart.forEach((item, idx) => {
-        total += parseInt(item.price);
-        html += `<div class="cart-item"><span><strong>${item.name}</strong> - ${item.price} ₽</span><button class="btn btn-danger" data-idx="${idx}">✕</button></div>`;
-    });
-    html += `</div><div style="margin-top:16px;font-weight:700;font-size:1.2rem;">Итого: ${total} ₽</div>`;
-    html += `<button class="btn btn-primary" id="createOrderBtn" style="margin-top:12px;">📦 Оформить заказ</button>`;
-    container.innerHTML = html;
-    
-    container.querySelectorAll('.cart-item button').forEach(btn => {
-        btn.onclick = () => {
-            const idx = parseInt(btn.dataset.idx);
-            const item = cart[idx];
-            if (item) { removeFromCart(item.id); renderCart(); renderCatalog(); }
-        };
-    });
-    
-    const orderBtn = document.getElementById('createOrderBtn');
-    if (orderBtn) {
-        orderBtn.onclick = async () => {
-            if (!currentUser) { showNotif('❌ Войдите в аккаунт!', true); setTimeout(() => { window.location.href = 'vxod.html'; }, 1500); return; }
-            if (cart.length === 0) { showNotif('❌ Корзина пуста!', true); return; }
-            try {
-                const order = {
-                    userId: currentUser.uid,
-                    userName: currentUserData?.name || 'Клиент',
-                    items: cart.map(item => ({ id: item.id, name: item.name, price: item.price })),
-                    total: cart.reduce((sum, i) => sum + parseInt(i.price), 0),
-                    status: 'pending',
-                    createdAt: Date.now(),
-                    qrData: { userId: currentUser.uid, items: cart.map(item => ({ name: item.name, price: item.price })) }
-                };
-                const newRef = push(ref(db, 'orders'));
-                await set(newRef, order);
-                clearCart();
-                showNotif('✅ Заказ оформлен!');
-                renderCart(); renderCatalog(); renderOrders(); renderQR();
-            } catch(e) { showNotif('❌ ' + e.message, true); }
-        };
-    }
-}
-
-// ===== РЕНДЕР ЗАКАЗОВ =====
-function renderOrders() {
-    const container = document.getElementById('ordersList');
-    if (!currentUser) {
-        container.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:40px;">Войдите чтобы видеть заказы</p>';
-        return;
-    }
-    const userOrders = allOrders.filter(o => o.userId === currentUser.uid);
-    if (userOrders.length === 0) {
-        container.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:40px;">У вас нет заказов</p>';
-        return;
-    }
-    let html = '';
-    userOrders.forEach(o => {
-        const statusText = o.status === 'received' ? '✅ Получено' : '⏳ Ожидает выдачи';
-        html += `
-            <div class="order-card">
-                <div class="order-header">
-                    <span>Заказ #${o.id?.slice(0,6) || '...'}</span>
-                    <span class="status ${o.status}">${statusText}</span>
+            grid.innerHTML = products.map(p => `
+                <div class="product-card" onclick="openProductModal('${p.id}')">
+                    ${p.photo ? `<img src="${p.photo}" class="product-photo" loading="lazy" onerror="this.style.display='none'">` : ''}
+                    <div class="name">${p.name}</div>
+                    <div class="price">${p.price.toLocaleString()} ₽</div>
+                    <div class="rating" id="rating_${p.id}">⭐ 0.0</div>
+                    <button class="add-btn" onclick="event.stopPropagation();addToCart('${p.id}')">➕</button>
                 </div>
-                <div>${o.items ? o.items.map(i => `${i.name} (${i.price} ₽)`).join(', ') : ''}</div>
-                <div style="font-weight:700;margin-top:4px;">Итого: ${o.total} ₽</div>
-                <div style="font-size:0.75rem;color:#94a3b8;">${new Date(o.createdAt).toLocaleString()}</div>
-            </div>
-        `;
-    });
-    container.innerHTML = html;
-}
+            `).join('');
 
-// ===== РЕНДЕР QR =====
-function renderQR() {
-    const container = document.getElementById('qrCodeContainer');
-    const info = document.getElementById('qrOrderInfo');
-    if (!currentUser) {
-        container.innerHTML = '<p style="color:#94a3b8;">Войдите чтобы увидеть QR-код</p>';
-        info.innerHTML = '';
-        return;
-    }
-    const userOrders = allOrders.filter(o => o.userId === currentUser.uid && o.status === 'pending');
-    if (userOrders.length === 0) {
-        container.innerHTML = '<p style="color:#94a3b8;">Нет активных заказов для QR-кода</p>';
-        info.innerHTML = '';
-        return;
-    }
-    const order = userOrders[0];
-    const qrData = { orderId: order.id, userId: currentUser.uid, items: order.items.map(i => ({ name: i.name, price: i.price })), total: order.total };
-    generateQR(container, qrData);
-    info.innerHTML = `
-        <div style="background:#f8fafc;padding:16px;border-radius:12px;border:1px solid #e2e8f0;max-width:400px;margin:0 auto;">
-            <p><strong>Заказ:</strong> ${order.items.length} товаров</p>
-            <p><strong>Итого:</strong> ${order.total} ₽</p>
-            <p style="font-size:0.85rem;color:#94a3b8;">Покажите QR-код в ПВЗ</p>
-        </div>
-    `;
-}
+            products.forEach(p => { loadProductRating(p.id); });
+        }
 
-// ===== АВТОРИЗАЦИЯ =====
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        currentUser = user;
-        try {
-            const snap = await get(ref(db, 'users/' + user.uid));
-            if (snap.exists()) {
-                currentUserData = snap.val();
-                document.getElementById('userBadge').textContent = '👤 ' + (currentUserData.name || 'Пользователь');
-                document.getElementById('logoutBtn').style.display = 'inline-block';
+        function loadProductRating(productId) {
+            db.ref('reviews/' + productId).on('value', (sn) => {
+                let total = 0,
+                    count = 0;
+                sn.forEach(child => {
+                    const review = child.val();
+                    total += review.rating || 0;
+                    count++;
+                });
+                const avg = count > 0 ? (total / count) : 0;
+                const el = document.getElementById('rating_' + productId);
+                if (el) { el.textContent = '⭐ ' + avg.toFixed(1) + ' (' + count + ')'; }
+            });
+        }
+
+        // ========== QR ДЛЯ КЛИЕНТА ==========
+        function renderClientQR() {
+            const container = document.getElementById('clientQrContainer');
+            const info = document.getElementById('clientQrInfo');
+
+            if (!currentUser.id) {
+                container.innerHTML = '<div style="color:#888;">Войдите в аккаунт</div>';
+                info.textContent = '';
+                return;
             }
-        } catch(e) { console.error('Ошибка:', e); }
-    } else {
-        currentUser = null;
-        currentUserData = null;
-        document.getElementById('userBadge').textContent = '👤 Гость';
-        document.getElementById('logoutBtn').style.display = 'inline-block';
-    }
-    renderOrders(); renderQR();
-});
 
-// ===== ЗАГРУЗКА =====
-function loadData() {
-    onValue(ref(db, 'products'), (snap) => {
-        allProducts = [];
-        if (snap.exists()) { const data = snap.val(); for (const key in data) allProducts.push({ id: key, ...data[key] }); }
-        renderCatalog();
-    });
-    onValue(ref(db, 'orders'), (snap) => {
-        allOrders = [];
-        if (snap.exists()) { const data = snap.val(); for (const key in data) allOrders.push({ id: key, ...data[key] }); }
-        renderOrders(); renderQR();
-    });
-}
+            db.ref('orders').orderByChild('userId').equalTo(currentUser.id).once('value', (sn) => {
+                const orders = [];
+                sn.forEach(child => {
+                    const order = child.val();
+                    if (order.status === 'to_pvz' || order.status === 'ready') {
+                        orders.push({ id: child.key, ...order });
+                    }
+                });
 
-// ===== ВКЛАДКИ =====
-document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.onclick = function() {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        this.classList.add('active');
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.getElementById('tab-' + this.dataset.tab).classList.add('active');
-        if (this.dataset.tab === 'cart') renderCart();
-        if (this.dataset.tab === 'orders') renderOrders();
-        if (this.dataset.tab === 'qr') renderQR();
-    };
-});
+                if (orders.length === 0) {
+                    container.innerHTML = '<div style="color:#888;">Нет активных заказов</div>';
+                    info.textContent = 'Оформите заказ для получения QR-кода';
+                    return;
+                }
 
-updateCartUI();
-loadData();
-</script>
+                const order = orders[0];
+                const qrData = {
+                    orderId: order.id,
+                    userId: currentUser.id,
+                    items: order.items.map(i => ({ name: i.name, price: i.price })),
+                    total: order.total
+                };
+
+                generateQR(container, qrData);
+                info.innerHTML = `
+                    <div style="background:rgba(255,255,255,0.05);padding:10px;border-radius:10px;margin-top:8px;">
+                        <div>📦 Заказ #${order.id.slice(0,8)}</div>
+                        <div>💰 ${order.total} ₽</div>
+                        <div style="font-size:0.75rem;color:#888;">Код: ${order.code}</div>
+                    </div>
+                `;
+            });
+        }
+
+        // ========== КЛИЕНТ ==========
+        window.clientLogin = function() {
+            const phone = document.getElementById('clientPhone').value.trim();
+            if (!phone) { showToast('❌ Введите телефон'); return; }
+
+            db.ref('users').orderByChild('phone').equalTo(phone).once('value', (sn) => {
+                if (sn.exists()) {
+                    sn.forEach(child => {
+                        currentUser.id = child.key;
+                        currentUser.name = child.val().name;
+                        currentUser.phone = child.val().phone;
+                        currentUser.type = 'client';
+                        currentUser.wallet = child.val().wallet || 0;
+                    });
+                    showToast('👋 Добро пожаловать!');
+                    enterClientMode();
+                } else {
+                    showToast('❌ Пользователь не найден');
+                }
+            });
+        };
+
+        window.clientRegister = function() {
+            const phone = document.getElementById('clientPhone').value.trim();
+            const name = document.getElementById('clientName').value.trim();
+            if (!phone || !name) { showToast('❌ Заполните все поля'); return; }
+
+            const userId = 'user_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
+            db.ref('users/' + userId).set({
+                id: userId,
+                name: name,
+                phone: phone,
+                type: 'client',
+                wallet: 1000,
+                createdAt: Date.now()
+            }).then(() => {
+                currentUser = { id: userId, name: name, phone: phone, type: 'client', wallet: 1000 };
+                showToast('✅ Регистрация успешна! +1000 ₽');
+                enterClientMode();
+            });
+        };
+
+        function enterClientMode() {
+            document.getElementById('clientAuth').classList.add('hidden');
+            document.getElementById('clientContent').classList.remove('hidden');
+            document.getElementById('userNameDisplay').textContent = currentUser.name + ' 📱';
+            document.getElementById('clientWallet').textContent = (currentUser.wallet || 0).toLocaleString() + ' ₽';
+            renderClientOrders();
+            renderCart();
+            loadPVZList();
+            loadProducts();
+            switchClientTab2('shop');
+            renderClientQR();
+        }
+
+        window.addToCart = function(productId) {
+            const product = window.allProducts.find(p => p.id === productId);
+            if (!product) return;
+            const existing = cart.find(i => i.id === productId);
+            if (existing) existing.qty++;
+            else cart.push({ ...product, qty: 1 });
+            renderCart();
+            showToast(`✅ ${product.name} добавлен`);
+        };
+
+        function renderCart() {
+            const container = document.getElementById('cartItems');
+            const totalSpan = document.getElementById('cartTotal');
+            if (cart.length === 0) {
+                container.innerHTML = '<div style="color:#555;font-size:0.8rem;">Пусто</div>';
+                totalSpan.textContent = '0 ₽';
+                return;
+            }
+            let total = 0;
+            container.innerHTML = cart.map(item => {
+                total += item.price * item.qty;
+                return `
+                    <div class="cart-item">
+                        <span>${item.name} x${item.qty}</span>
+                        <span>${(item.price * item.qty).toLocaleString()} ₽
+                            <button onclick="removeFromCart('${item.id}')" style="background:none;border:none;color:#ff4444;cursor:pointer;">✕</button>
+                        </span>
+                    </div>
+                `;
+            }).join('');
+            totalSpan.textContent = total.toLocaleString() + ' ₽';
+        }
+
+        window.removeFromCart = function(id) {
+            cart = cart.filter(i => i.id !== id);
+            renderCart();
+        };
+
+        window.clearCart = function() {
+            cart = [];
+            renderCart();
+            showToast('🗑️ Очищено');
+        };
+
+        window.switchClientTab2 = function(tab) {
+            clientTab2 = tab;
+            document.querySelectorAll('#clientContent .tab[data-ctab]').forEach(t => t.classList.toggle('active', t.dataset
+                .ctab === tab));
+            document.getElementById('clientShopTab').classList.toggle('hidden', tab !== 'shop');
+            document.getElementById('clientOrdersTab').classList.toggle('hidden', tab !== 'orders');
+            document.getElementById('clientQrTab').classList.toggle('hidden', tab !== 'qr');
+            if (tab === 'orders') renderClientOrders();
+            if (tab === 'qr') renderClientQR();
+        };
+
+        // ========== ЗАКАЗЫ КЛИЕНТА ==========
+        function renderClientOrders() {
+            const container = document.getElementById('clientOrders');
+            db.ref('orders').orderByChild('userId').equalTo(currentUser.id).on('value', (sn) => {
+                const orders = [];
+                sn.forEach(child => orders.push({ id: child.key, ...child.val() }));
+                orders.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+                const filtered = clientTab === 'active' ?
+                    orders.filter(o => o.status !== 'delivered' && o.status !== 'return') :
+                    orders;
+
+                if (filtered.length === 0) {
+                    container.innerHTML = '<div style="text-align:center;color:#555;padding:20px;font-size:0.85rem;">📭 Нет заказов</div>';
+                    return;
+                }
+
+                container.innerHTML = filtered.map(o => `
+                    <div class="order-card">
+                        <div class="order-header">
+                            <span class="order-number">🆔 ${o.id}</span>
+                            <span class="order-status ${getStatusClass(o.status)}">${getStatusText(o.status)}</span>
+                        </div>
+                        <div class="order-items-list">
+                            ${o.items.map(i => `
+                                <div class="item-row">
+                                    ${i.photo ? `<img src="${i.photo}" class="item-photo" loading="lazy" onerror="this.style.display='none'">` : ''}
+                                    <span class="item-name">${i.name}</span>
+                                    <span class="item-qty">x${i.qty}</span>
+                                    <span style="color:#f5a623;">${(i.price * i.qty).toLocaleString()} ₽</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="order-total">💰 ${o.total.toLocaleString()} ₽ ${o.type === 'pvz' ? `🏪 ПВЗ №${o.pvzNumber}` : `📍 ${o.address}`}</div>
+                        <div class="order-code">🔑 ${o.code}</div>
+                        ${o.status === 'ready' ? `<div style="color:#4CAF50;font-size:0.7rem;">✅ Готов к выдаче</div>` : ''}
+                    </div>
+                `).join('');
+            });
+        }
+
+        window.switchClientTab = function(tab) {
+            clientTab = tab;
+            document.querySelectorAll('#clientOrdersTab .tab').forEach(t => t.classList.toggle('active', t.dataset.tab ===
+                tab));
+            renderClientOrders();
+        };
+
+        // ========== ОФОРМЛЕНИЕ ==========
+        window.showCheckout = function() {
+            if (cart.length === 0) { showToast('❌ Корзина пуста'); return; }
+            document.getElementById('checkoutModal').classList.remove('hidden');
+            updatePVZSelect();
+            document.getElementById('deliveryType').value = 'pvz';
+            toggleDeliveryFields();
+        };
+
+        window.closeCheckout = function() {
+            document.getElementById('checkoutModal').classList.add('hidden');
+        };
+
+        window.toggleDeliveryFields = function() {
+            const type = document.getElementById('deliveryType').value;
+            document.getElementById('pvzField').style.display = type === 'pvz' ? 'block' : 'none';
+            document.getElementById('courierField').style.display = type === 'courier' ? 'block' : 'none';
+
+            if (type === 'pvz') {
+                const select = document.getElementById('pvzSelect');
+                const selected = select.value;
+                const pvz = allPVZ.find(p => p.number === selected);
+                const display = document.getElementById('pvzAddressDisplay');
+                if (pvz) {
+                    display.textContent = '📍 ' + pvz.address;
+                    display.classList.add('show');
+                } else {
+                    display.classList.remove('show');
+                }
+            }
+        };
+
+        document.getElementById('pvzSelect').addEventListener('change', function() {
+            const selected = this.value;
+            const pvz = allPVZ.find(p => p.number === selected);
+            const display = document.getElementById('pvzAddressDisplay');
+            if (pvz) {
+                display.textContent = '📍 ' + pvz.address;
+                display.classList.add('show');
+            } else {
+                display.classList.remove('show');
+            }
+        });
+
+        window.confirmCheckout = function() {
+            const type = document.getElementById('deliveryType').value;
+            const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+
+            if ((currentUser.wallet || 0) < total) {
+                showToast('❌ Недостаточно средств');
+                return;
+            }
+
+            if (type === 'pvz') {
+                const pvzNumber = document.getElementById('pvzSelect').value;
+                if (!pvzNumber) { showToast('❌ Выберите ПВЗ'); return; }
+                const pvz = allPVZ.find(p => p.number === pvzNumber);
+                createOrder('pvz', pvzNumber, pvz ? pvz.address : '');
+            } else {
+                const address = document.getElementById('deliveryAddress').value.trim();
+                if (!address) { showToast('❌ Введите адрес'); return; }
+                createOrder('courier', address);
+            }
+        };
+
+        function createOrder(type, address, pvzAddress) {
+            const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+            const orderId = 'ORD' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substr(2, 4)
+            .toUpperCase();
+            const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+            const order = {
+                id: orderId,
+                userId: currentUser.id,
+                userName: currentUser.name,
+                phone: currentUser.phone,
+                items: cart.map(i => ({ id: i.id, name: i.name, price: i.price, qty: i.qty, photo: i.photo || null })),
+                total: total,
+                type: type,
+                address: type === 'courier' ? address : pvzAddress,
+                pvzNumber: type === 'pvz' ? address : null,
+                code: code,
+                status: type === 'pvz' ? 'to_pvz' : 'to_courier',
+                createdAt: Date.now()
+            };
+
+            const newWallet = (currentUser.wallet || 0) - total;
+            db.ref('users/' + currentUser.id + '/wallet').set(newWallet);
+            currentUser.wallet = newWallet;
+            document.getElementById('clientWallet').textContent = newWallet.toLocaleString() + ' ₽';
+
+            db.ref('orders/' + orderId).set(order).then(() => {
+                showToast(`✅ Заказ #${orderId} оформлен! Код: ${code}`);
+                cart = [];
+                renderCart();
+                renderClientOrders();
+                renderClientQR();
+                closeCheckout();
+            });
+        }
+
+        // ========== ПРОДАВЕЦ ==========
+        window.sellerRegister = function() {
+            const fullName = document.getElementById('sellerFullName').value.trim();
+            const shopName = document.getElementById('sellerShopName').value.trim();
+            const phone = document.getElementById('sellerPhone').value.trim();
+            const login = document.getElementById('sellerLogin').value.trim();
+            const password = document.getElementById('sellerPassword').value.trim();
+
+            if (!fullName || !shopName || !phone || !login || !password) {
+                showToast('❌ Заполните все поля');
+                return;
+            }
+
+            const sellerId = 'seller_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
+            db.ref('sellers/' + sellerId).set({
+                id: sellerId,
+                fullName: fullName,
+                shopName: shopName,
+                phone: phone,
+                login: login,
+                password: password,
+                wallet: 0,
+                createdAt: Date.now()
+            }).then(() => {
+                showToast('✅ Регистрация продавца успешна!');
+                currentUser = { id: sellerId, name: fullName, shopName: shopName, type: 'seller', wallet: 0 };
+                document.getElementById('sellerAuth').classList.add('hidden');
+                document.getElementById('sellerContent').classList.remove('hidden');
+                document.getElementById('userNameDisplay').textContent = currentUser.shopName + ' 🏪';
+                document.getElementById('sellerWallet').textContent = (currentUser.wallet || 0).toLocaleString() + ' ₽';
+                renderSellerProducts();
+                loadProducts();
+            });
+        };
+
+        window.sellerLogin = function() {
+            const login = document.getElementById('sellerLogin').value.trim();
+            const password = document.getElementById('sellerPassword').value.trim();
+
+            if (!login || !password) { showToast('❌ Заполните поля'); return; }
+
+            db.ref('sellers').orderByChild('login').equalTo(login).once('value', (sn) => {
+                if (sn.exists()) {
+                    let found = false;
+                    sn.forEach(child => {
+                        const data = child.val();
+                        if (data.password === password) {
+                            currentUser = {
+                                id: child.key,
+                                name: data.fullName,
+                                shopName: data.shopName,
+                                type: 'seller',
+                                wallet: data.wallet || 0
+                            };
+                            found = true;
+                            showToast('👋 Добро пожаловать!');
+                            document.getElementById('sellerAuth').classList.add('hidden');
+                            document.getElementById('sellerContent').classList.remove('hidden');
+                            document.getElementById('userNameDisplay').textContent = currentUser.shopName + ' 🏪';
+                            document.getElementById('sellerWallet').textContent = (currentUser.wallet || 0)
+                            .toLocaleString() + ' ₽';
+                            renderSellerProducts();
+                            loadProducts();
+                        }
+                    });
+                    if (!found) showToast('❌ Неверный пароль');
+                } else {
+                    showToast('❌ Продавец не найден');
+                }
+            });
+        };
+
+        window.addProduct = function() {
+            const name = document.getElementById('productName').value.trim();
+            const price = parseInt(document.getElementById('productPrice').value);
+            if (!name || !price || price <= 0) {
+                showToast('❌ Заполните название и цену');
+                return;
+            }
+
+            const productId = 'prod_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
+            const photoFile = document.getElementById('productPhoto').files[0];
+
+            const saveProduct = (photoUrl) => {
+                db.ref('products/' + productId).set({
+                    id: productId,
+                    name: name,
+                    price: price,
+                    sellerId: currentUser.id,
+                    sellerName: currentUser.shopName,
+                    isDefault: false,
+                    photo: photoUrl || null,
+                    createdAt: Date.now()
+                }).then(() => {
+                    showToast('✅ Товар добавлен!');
+                    document.getElementById('productName').value = '';
+                    document.getElementById('productPrice').value = '';
+                    document.getElementById('productPhoto').value = '';
+                    loadProducts();
+                });
+            };
+
+            if (photoFile) {
+                uploadPhoto(photoFile, 'products/' + productId).then(saveProduct).catch(() => saveProduct(null));
+            } else {
+                saveProduct(null);
+            }
+        };
+
+        function renderSellerProducts() {
+            const container = document.getElementById('sellerProducts');
+            db.ref('products').orderByChild('sellerId').equalTo(currentUser.id).on('value', (sn) => {
+                const items = [];
+                sn.forEach(child => items.push({ id: child.key, ...child.val() }));
+                if (items.length === 0) {
+                    container.innerHTML = '<div style="color:#555;padding:8px;font-size:0.8rem;">Нет товаров</div>';
+                    return;
+                }
+                container.innerHTML = items.map(p => `
+                    <div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:8px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+                        <div>
+                            ${p.photo ? `<img src="${p.photo}" style="width:30px;height:30px;border-radius:6px;object-fit:cover;vertical-align:middle;margin-right:6px;">` : ''}
+                            <span style="font-weight:bold;font-size:0.8rem;">${p.name}</span>
+                            <span style="color:#f5a623;font-size:0.8rem;">${p.price} ₽</span>
+                        </div>
+                        <button class="btn-danger" onclick="deleteProduct('${p.id}')" style="padding:4px 10px;border:none;border-radius:30px;cursor:pointer;font-size:0.7rem;">✕</button>
+                    </div>
+                `).join('');
+            });
+        }
+
+        window.deleteProduct = function(productId) {
+            if (!confirm('Удалить товар?')) return;
+            db.ref('products/' + productId).remove();
+            showToast('🗑️ Удалено');
+        };
+
+        // ========== ПВЗ ==========
+        window.pvzLogin = function() {
+            const login = document.getElementById('pvzLogin').value.trim();
+            const password = document.getElementById('pvzPassword').value.trim();
+
+            if (!login || !password) { showToast('❌ Заполните поля'); return; }
+
+            db.ref('pvz').orderByChild('number').equalTo(login).once('value', (sn) => {
+                if (sn.exists()) {
+                    let found = false;
+                    sn.forEach(child => {
+                        const data = child.val();
+                        if (data.password === password) {
+                            currentUser = {
+                                id: child.key,
+                                name: 'ПВЗ №' + data.number,
+                                type: 'pvz',
+                                pvzNumber: data.number
+                            };
+                            found = true;
+                            showToast('👋 Добро пожаловать, ПВЗ №' + data.number + '!');
+                            document.getElementById('pvzAuth').classList.add('hidden');
+                            document.getElementById('pvzContent').classList.remove('hidden');
+                            document.getElementById('userNameDisplay').textContent = currentUser.name + ' 🏪';
+                            pvzAction('receive');
+                            loadPVZList();
+                        }
+                    });
+                    if (!found) showToast('❌ Неверный пароль');
+                } else {
+                    showToast('❌ ПВЗ не найден');
+                }
+            });
+        };
+
+        window.pvzAction = function(action) {
+            const container = document.getElementById('pvzOrders');
+            const ordersRef = db.ref('orders');
+
+            if (action === 'receive') {
+                ordersRef.orderByChild('status').equalTo('to_pvz').on('value', renderPVZOrders);
+            } else if (action === 'issue') {
+                ordersRef.orderByChild('status').equalTo('ready').on('value', renderPVZOrders);
+            }
+        };
+
+        function renderPVZOrders(sn) {
+            const container = document.getElementById('pvzOrders');
+            const orders = [];
+            sn.forEach(child => orders.push({ id: child.key, ...child.val() }));
+
+            const filtered = orders.filter(o => o.pvzNumber === currentUser.pvzNumber);
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div style="text-align:center;color:#555;padding:20px;font-size:0.85rem;">📭 Нет заказов</div>';
+                return;
+            }
+
+            container.innerHTML = filtered.map(o => `
+                <div class="order-card">
+                    <div class="order-header">
+                        <span class="order-number">🆔 ${o.id}</span>
+                        <span class="order-status ${getStatusClass(o.status)}">${getStatusText(o.status)}</span>
+                    </div>
+                    <div class="order-items-list">
+                        ${o.items.map(i => `
+                            <div class="item-row">
+                                ${i.photo ? `<img src="${i.photo}" class="item-photo" loading="lazy" onerror="this.style.display='none'">` : ''}
+                                <span class="item-name">${i.name}</span>
+                                <span class="item-qty">x${i.qty}</span>
+                                <span style="color:#f5a623;">${(i.price * i.qty).toLocaleString()} ₽</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="order-total">💰 ${o.total.toLocaleString()} ₽</div>
+                    <div style="font-size:0.75rem;color:#888;">👤 ${o.userName}</div>
+                    <div class="order-code">🔑 ${o.code}</div>
+                    <div class="order-actions">
+                        ${o.status === 'to_pvz' ? `<button class="btn-success" onclick="pvzReady('${o.id}')">✅ Готов к выдаче</button>` : ''}
+                        ${o.status === 'ready' ? `<button class="btn-primary" onclick="pvzIssue('${o.id}')">📤 Выдать</button>` : ''}
+                        ${o.status === 'ready' ? `<button class="btn-danger" onclick="pvzReturn('${o.id}')">🔄 Возврат</button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.pvzReady = function(orderId) {
+            db.ref('orders/' + orderId).update({ status: 'ready' });
+            showToast('✅ Заказ готов к выдаче');
+            pvzAction('receive');
+        };
+
+        window.pvzIssue = function(orderId) {
+            const code = document.getElementById('pvzScanInput').value.trim();
+            if (!code) {
+                const manualCode = prompt('Введите код клиента:');
+                if (!manualCode) return;
+                verifyAndIssue(orderId, manualCode);
+            } else {
+                verifyAndIssue(orderId, code);
+                document.getElementById('pvzScanInput').value = '';
+            }
+        };
+
+        function verifyAndIssue(orderId, code) {
+            db.ref('orders/' + orderId).once('value', (sn) => {
+                const order = sn.val();
+                if (!order) { showToast('❌ Заказ не найден'); return; }
+
+                if (order.code === code) {
+                    db.ref('orders/' + orderId).update({ status: 'delivered' });
+                    showToast('✅ Заказ выдан!');
+                    document.getElementById('pvzScanResult').innerHTML = '';
+                    pvzAction('issue');
+                } else {
+                    showToast('❌ Неверный код!');
+                    document.getElementById('pvzScanResult').innerHTML = '<div style="color:#ff4444;">❌ Неверный код</div>';
+                }
+            });
+        }
+
+        window.pvzScanQR = function(input) {
+            const result = document.getElementById('pvzScanResult');
+            if (!input || input.length < 6) {
+                result.innerHTML = '';
+                return;
+            }
+
+            db.ref('orders').orderByChild('code').equalTo(input).once('value', (sn) => {
+                let found = false;
+                sn.forEach(child => {
+                    const order = child.val();
+                    if (order.pvzNumber === currentUser.pvzNumber) {
+                        found = true;
+                        result.innerHTML = `
+                            <div style="background:rgba(76,175,80,0.15);padding:12px;border-radius:12px;border:1px solid #4CAF50;">
+                                <div style="color:#4CAF50;font-weight:bold;">✅ Заказ найден!</div>
+                                <div>👤 ${order.userName}</div>
+                                <div>📦 ${order.items.map(i => `${i.name} x${i.qty}`).join(', ')}</div>
+                                <div style="font-weight:bold;">${order.total} ₽</div>
+                                <div style="font-size:0.8rem;color:#888;">Код: ${order.code}</div>
+                                ${order.status === 'ready' ? 
+                                    `<button onclick="verifyAndIssue('${order.id}', '${order.code}')" style="margin-top:8px;padding:8px 20px;border-radius:30px;border:none;background:#4CAF50;color:white;font-weight:bold;cursor:pointer;">📤 Выдать</button>` : 
+                                    `<div style="color:#ff9800;font-size:0.8rem;">Статус: ${getStatusText(order.status)}</div>`
+                                }
+                            </div>
+                        `;
+                    }
+                });
+                if (!found) {
+                    result.innerHTML = '<div style="color:#ff4444;">❌ Заказ не найден или не для этого ПВЗ</div>';
+                }
+            });
+        };
+
+        window.pvzReturn = function(orderId) {
+            if (!confirm('Оформить возврат?')) return;
+            db.ref('orders/' + orderId).update({ status: 'return' });
+            showToast('🔄 Возврат оформлен');
+            pvzAction('issue');
+        };
+
+        // ========== МОДАЛКА ТОВАРА ==========
+        window.openProductModal = function(productId) {
+            currentProductId = productId;
+            selectedRating = 0;
+            document.getElementById('reviewPhotoPreview').innerHTML = '';
+            document.getElementById('reviewPhoto').value = '';
+
+            const product = window.allProducts.find(p => p.id === productId);
+            if (!product) return;
+
+            document.getElementById('modalProductName').textContent = product.name;
+            document.getElementById('modalProductSeller').textContent = '🏪 ' + (product.sellerName || 'Продавец');
+            document.getElementById('modalProductPrice').textContent = product.price.toLocaleString() + ' ₽';
+
+            const photoContainer = document.getElementById('modalProductPhoto');
+            photoContainer.innerHTML = product.photo ?
+                `<img src="${product.photo}" style="max-width:100%;max-height:150px;border-radius:10px;object-fit:cover;">` :
+                '';
+
+            document.getElementById('modalProductDesc').textContent = '';
+
+            document.querySelectorAll('#modalStars .star').forEach(s => s.classList.remove('active'));
+            document.getElementById('modalReviewText').value = '';
+
+            loadReviews(productId);
+            document.getElementById('productModal').classList.remove('hidden');
+        };
+
+        window.closeProductModal = function() {
+            document.getElementById('productModal').classList.add('hidden');
+        };
+
+        window.setRating = function(rating) {
+            selectedRating = rating;
+            document.querySelectorAll('#modalStars .star').forEach(s => {
+                s.classList.toggle('active', parseInt(s.dataset.star) <= rating);
+            });
+        };
+
+        window.submitReview = function() {
+            if (!currentUser.id || currentUser.type !== 'client') {
+                showToast('❌ Войдите как клиент');
+                return;
+            }
+            if (selectedRating === 0) { showToast('❌ Поставьте оценку'); return; }
+            const text = document.getElementById('modalReviewText').value.trim();
+            if (!text) { showToast('❌ Напишите отзыв'); return; }
+
+            const reviewId = 'rev_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
+            const photoFile = document.getElementById('reviewPhoto').files[0];
+
+            const saveReview = (photoUrl) => {
+                db.ref('reviews/' + currentProductId + '/' + reviewId).set({
+                    id: reviewId,
+                    userId: currentUser.id,
+                    userName: currentUser.name,
+                    rating: selectedRating,
+                    text: text,
+                    photo: photoUrl || null,
+                    createdAt: Date.now()
+                }).then(() => {
+                    showToast('✅ Отзыв добавлен!');
+                    loadReviews(currentProductId);
+                    document.getElementById('modalReviewText').value = '';
+                    document.querySelectorAll('#modalStars .star').forEach(s => s.classList.remove('active'));
+                    selectedRating = 0;
+                    document.getElementById('reviewPhotoPreview').innerHTML = '';
+                    document.getElementById('reviewPhoto').value = '';
+                });
+            };
+
+            if (photoFile) {
+                uploadPhoto(photoFile, 'reviews/' + currentProductId + '/' + reviewId).then(saveReview).catch(() => saveReview(
+                    null));
+            } else {
+                saveReview(null);
+            }
+        };
+
+        function loadReviews(productId) {
+            const container = document.getElementById('modalReviews');
+            db.ref('reviews/' + productId).orderByChild('createdAt').limitToLast(20).on('value', (sn) => {
+                const reviews = [];
+                sn.forEach(child => reviews.push({ id: child.key, ...child.val() }));
+                reviews.reverse();
+
+                if (reviews.length === 0) {
+                    container.innerHTML = '<div style="color:#555;padding:8px;font-size:0.8rem;">Нет отзывов</div>';
+                    return;
+                }
+
+                container.innerHTML = reviews.map(r => `
+                    <div class="review-item">
+                        <div class="review-user">👤 ${r.userName || 'Кто-то'}</div>
+                        <div class="review-rating">${'⭐'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</div>
+                        <div class="review-text">${r.text || ''}</div>
+                        ${r.photo ? `<img src="${r.photo}" class="review-photo" loading="lazy" onerror="this.style.display='none'">` : ''}
+                        <div class="review-date">${new Date(r.createdAt).toLocaleDateString()}</div>
+                    </div>
+                `).join('');
+            });
+        }
+
+        // ========== ПОПОЛНЕНИЕ ==========
+        window.depositAmount = function(amount) {
+            if (!currentUser.id) { showToast('❌ Войдите'); return; }
+            const newBalance = (currentUser.wallet || 0) + amount;
+            let path = '';
+            if (currentRole === 'client') { path = 'users/' + currentUser.id + '/wallet'; } else if (currentRole ===
+                'seller') { path = 'sellers/' + currentUser.id + '/wallet'; }
+
+            db.ref(path).set(newBalance).then(() => {
+                currentUser.wallet = newBalance;
+                updateWalletDisplay();
+                showToast(`✅ +${amount} ₽`);
+                document.getElementById('depositCurrentBalance').textContent = newBalance.toLocaleString() + ' ₽';
+                setTimeout(() => closeDepositModal(), 500);
+            });
+        };
+
+        window.depositCustom = function() {
+            const amount = parseInt(document.getElementById('depositCustomAmount').value);
+            if (!amount || amount <= 0) { showToast('❌ Введите сумму'); return; }
+            window.depositAmount(amount);
+        };
+
+        window.openDepositModal = function(target) {
+            if (!currentUser.id) { showToast('❌ Войдите'); return; }
+            depositTarget = target;
+            document.getElementById('depositCurrentBalance').textContent = (currentUser.wallet || 0).toLocaleString() + ' ₽';
+            document.getElementById('depositCustomAmount').value = '';
+            document.querySelectorAll('.deposit-amounts button').forEach(b => b.style.borderColor = 'rgba(255,255,255,0.08)');
+            document.getElementById('depositModal').classList.remove('hidden');
+        };
+
+        window.closeDepositModal = function() {
+            document.getElementById('depositModal').classList.add('hidden');
+        };
+
+        function updateWalletDisplay() {
+            if (currentRole === 'client') {
+                document.getElementById('clientWallet').textContent = (currentUser.wallet || 0).toLocaleString() + ' ₽';
+            } else if (currentRole === 'seller') {
+                document.getElementById('sellerWallet').textContent = (currentUser.wallet || 0).toLocaleString() + ' ₽';
+            }
+        }
+
+        // ========== ЗАГРУЗКА ПВЗ ==========
+        function loadPVZList() {
+            db.ref('pvz').on('value', (sn) => {
+                allPVZ = [];
+                sn.forEach(child => {
+                    const data = child.val();
+                    allPVZ.push({
+                        id: child.key,
+                        number: data.number,
+                        address: data.address || 'Адрес не указан'
+                    });
+                });
+                updatePVZSelect();
+            });
+        }
+
+        function updatePVZSelect() {
+            const select = document.getElementById('pvzSelect');
+            if (!select) return;
+            select.innerHTML = '<option value="">-- Выберите ПВЗ --</option>';
+            allPVZ.forEach(p => {
+                const option = document.createElement('option');
+                option.value = p.number;
+                option.textContent = 'ПВЗ №' + p.number;
+                select.appendChild(option);
+            });
+        }
+
+        // ========== ИНИЦИАЛИЗАЦИЯ ==========
+        console.log('🛍️ WHOPPER MARKET');
+        loadPVZList();
+        loadProducts();
+    </script>
 </body>
 </html>
