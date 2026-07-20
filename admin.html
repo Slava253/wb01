@@ -58,11 +58,8 @@
 <script type="module">
 import { initializeApp } from "firebase/app";
 import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
-import { getDatabase, ref, set, get, push, onValue, remove } from "firebase/database";
+import { getDatabase, ref, set, push, onValue, remove } from "firebase/database";
 import { firebaseConfig } from "./js/firebase-config.js";
-import { showNotif } from "./js/auth.js";
-import { getProducts, deleteProduct } from "./js/products.js";
-import { getOrders } from "./js/orders.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -71,6 +68,26 @@ const db = getDatabase(app);
 let allProducts = [];
 let allPvz = [];
 let allOrders = [];
+
+function showNotif(text, isError = false) {
+    const el = document.getElementById('notif') || (() => {
+        const d = document.createElement('div');
+        d.id = 'notif';
+        d.className = 'notification';
+        document.body.appendChild(d);
+        return d;
+    })();
+    el.textContent = text;
+    el.className = 'notification show ' + (isError ? 'error' : 'success');
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ===== ВЫХОД =====
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await signOut(auth);
+    window.location.href = 'vxod.html';
+});
 
 // ===== РЕНДЕР =====
 function renderDashboard() {
@@ -125,8 +142,8 @@ function renderProducts() {
         `;
         card.querySelector('.btn').onclick = async () => {
             if (confirm('Удалить товар?')) {
-                const result = await deleteProduct(p.id);
-                if (result.success) { showNotif('✅ Товар удалён'); } else { showNotif('❌ ' + result.error, true); }
+                await remove(ref(db, 'products/' + p.id));
+                showNotif('✅ Товар удалён');
             }
         };
         container.appendChild(card);
@@ -176,13 +193,7 @@ document.getElementById('createPvzBtn').onclick = () => {
     });
 };
 
-// ===== ВЫХОД =====
-document.getElementById('logoutBtn').onclick = async () => {
-    await signOut(auth);
-    window.location.href = 'vxod.html';
-};
-
-// ===== ПРОВЕРКА АВТОРИЗАЦИИ =====
+// ===== АВТОРИЗАЦИЯ =====
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         const snap = await get(ref(db, 'users/' + user.uid));
@@ -197,10 +208,16 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 // ===== ЗАГРУЗКА =====
-getProducts((products) => { allProducts = products; renderDashboard(); renderProducts(); });
-getOrders((orders) => { allOrders = orders; renderDashboard(); renderOrders(); });
-
-// ПВЗ
+onValue(ref(db, 'products'), (snap) => {
+    allProducts = [];
+    if (snap.exists()) { const data = snap.val(); for (const key in data) allProducts.push({ id: key, ...data[key] }); }
+    renderDashboard(); renderProducts();
+});
+onValue(ref(db, 'orders'), (snap) => {
+    allOrders = [];
+    if (snap.exists()) { const data = snap.val(); for (const key in data) allOrders.push({ id: key, ...data[key] }); }
+    renderDashboard(); renderOrders();
+});
 onValue(ref(db, 'pvz'), (snap) => {
     allPvz = [];
     if (snap.exists()) { const data = snap.val(); for (const key in data) allPvz.push({ id: key, ...data[key] }); }
