@@ -57,17 +57,34 @@
 <script type="module">
 import { initializeApp } from "firebase/app";
 import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
-import { getDatabase, ref, get, update } from "firebase/database";
+import { getDatabase, ref, get, update, onValue } from "firebase/database";
 import { firebaseConfig } from "./js/firebase-config.js";
-import { showNotif } from "./js/auth.js";
-import { getOrders, receiveOrder } from "./js/orders.js";
-import { parseQRData } from "./js/qr.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
 
 let allOrders = [];
+
+function showNotif(text, isError = false) {
+    const el = document.getElementById('notif') || (() => {
+        const d = document.createElement('div');
+        d.id = 'notif';
+        d.className = 'notification';
+        document.body.appendChild(d);
+        return d;
+    })();
+    el.textContent = text;
+    el.className = 'notification show ' + (isError ? 'error' : 'success');
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ===== ВЫХОД =====
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await signOut(auth);
+    window.location.href = 'vxod.html';
+});
 
 // ===== РЕНДЕР ЗАКАЗОВ =====
 function renderOrders() {
@@ -96,55 +113,49 @@ function renderOrders() {
     container.innerHTML = html;
     container.querySelectorAll('[data-id]').forEach(btn => {
         btn.onclick = async () => {
-            const result = await receiveOrder(btn.dataset.id);
-            if (result.success) { showNotif('✅ Заказ выдан!'); } else { showNotif('❌ ' + result.error, true); }
+            await update(ref(db, 'orders/' + btn.dataset.id), { status: 'received' });
+            showNotif('✅ Заказ выдан!');
         };
     });
 }
 
 // ===== ОБРАБОТКА QR =====
 function processQR(qrText) {
-    const data = parseQRData(qrText);
-    if (!data) { showNotif('❌ Неверный QR-код!', true); return; }
-    const order = allOrders.find(o => o.id === data.orderId);
-    if (!order) { showNotif('❌ Заказ не найден!', true); return; }
-    if (order.status === 'received') { showNotif('ℹ️ Заказ уже получен!'); return; }
-    
-    const resultDiv = document.getElementById('scanResult');
-    resultDiv.innerHTML = `
-        <div style="background:#f8fafc;padding:20px;border-radius:16px;border:2px solid #22c55e;text-align:left;">
-            <h3>✅ Заказ найден!</h3>
-            <p><strong>Клиент:</strong> ${order.userName || 'Клиент'}</p>
-            <p><strong>Товаров:</strong> ${order.items ? order.items.length : 0}</p>
-            <p><strong>Итого:</strong> ${order.total || 0} ₽</p>
-            <div style="margin-top:8px;">${order.items ? order.items.map(i => `<div>• ${i.name} - ${i.price} ₽</div>`).join('') : ''}</div>
-            <button class="btn btn-success" id="confirmReceiveBtn">✅ Выдать заказ</button>
-        </div>
-    `;
-    document.getElementById('confirmReceiveBtn').onclick = async () => {
-        const result = await receiveOrder(order.id);
-        if (result.success) {
+    try {
+        const data = JSON.parse(qrText);
+        const order = allOrders.find(o => o.id === data.orderId);
+        if (!order) { showNotif('❌ Заказ не найден!', true); return; }
+        if (order.status === 'received') { showNotif('ℹ️ Заказ уже получен!'); return; }
+        
+        const resultDiv = document.getElementById('scanResult');
+        resultDiv.innerHTML = `
+            <div style="background:#f8fafc;padding:20px;border-radius:16px;border:2px solid #22c55e;text-align:left;">
+                <h3>✅ Заказ найден!</h3>
+                <p><strong>Клиент:</strong> ${order.userName || 'Клиент'}</p>
+                <p><strong>Товаров:</strong> ${order.items ? order.items.length : 0}</p>
+                <p><strong>Итого:</strong> ${order.total || 0} ₽</p>
+                <div style="margin-top:8px;">${order.items ? order.items.map(i => `<div>• ${i.name} - ${i.price} ₽</div>`).join('') : ''}</div>
+                <button class="btn btn-success" id="confirmReceiveBtn">✅ Выдать заказ</button>
+            </div>
+        `;
+        document.getElementById('confirmReceiveBtn').onclick = async () => {
+            await update(ref(db, 'orders/' + order.id), { status: 'received' });
             showNotif('✅ Заказ выдан клиенту!');
             resultDiv.innerHTML = '<div style="padding:20px;background:#dcfce7;border-radius:16px;color:#166534;font-weight:600;">✅ Заказ выдан!</div>';
-        } else {
-            showNotif('❌ ' + result.error, true);
-        }
-    };
-    showNotif('✅ QR-код распознан!');
+        };
+        showNotif('✅ QR-код распознан!');
+    } catch(e) {
+        showNotif('❌ Неверный QR-код!', true);
+    }
 }
 
-// ===== ОБРАБОТЧИКИ QR =====
+// ===== QR ОБРАБОТЧИКИ =====
 document.getElementById('qrFileInput').onchange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = function(event) {
-        try {
-            const text = event.target.result;
-            processQR(text);
-        } catch(e) {
-            showNotif('❌ Ошибка чтения файла!', true);
-        }
+        try { processQR(event.target.result); } catch(e) { showNotif('❌ Ошибка чтения файла!', true); }
     };
     reader.readAsText(file);
 };
@@ -155,13 +166,7 @@ document.getElementById('qrManualBtn').onclick = () => {
     processQR(text);
 };
 
-// ===== ВЫХОД =====
-document.getElementById('logoutBtn').onclick = async () => {
-    await signOut(auth);
-    window.location.href = 'vxod.html';
-};
-
-// ===== ПРОВЕРКА АВТОРИЗАЦИИ =====
+// ===== АВТОРИЗАЦИЯ =====
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         const snap = await get(ref(db, 'users/' + user.uid));
@@ -176,7 +181,11 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 // ===== ЗАГРУЗКА =====
-getOrders((orders) => { allOrders = orders; renderOrders(); });
+onValue(ref(db, 'orders'), (snap) => {
+    allOrders = [];
+    if (snap.exists()) { const data = snap.val(); for (const key in data) allOrders.push({ id: key, ...data[key] }); }
+    renderOrders();
+});
 
 // ===== ВКЛАДКИ =====
 document.querySelectorAll('.tab-btn').forEach(btn => {
