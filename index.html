@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>WHOPPER MARKET</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family:Arial,sans-serif; background:#0f0f1a; color:#fff; padding:10px; min-height:100vh; }
@@ -11,7 +15,6 @@
         .hidden { display:none !important; }
         .header { display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:10px 14px; border-radius:16px; margin-bottom:12px; }
         .logo { font-size:1.2rem; font-weight:bold; color:#f5a623; }
-        .logo i { margin-right:6px; }
         .user-badge { font-size:0.7rem; color:#888; background:rgba(255,255,255,0.05); padding:4px 12px; border-radius:30px; }
         .role-selector { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
         .role-btn { flex:1; padding:8px 4px; border-radius:12px; border:2px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); color:#888; cursor:pointer; font-weight:bold; font-size:0.55rem; text-align:center; min-width:45px; }
@@ -25,21 +28,18 @@
         .btn-info { background:#2196F3; color:#fff; }
         .form-group { margin-bottom:8px; }
         .form-group label { display:block; font-size:0.7rem; color:#888; margin-bottom:3px; }
-        .form-group input, .form-group textarea, .form-group select { width:100%; padding:8px 12px; border-radius:30px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.05); color:#fff; font-size:0.85rem; outline:none; font-family:inherit; }
+        .form-group input, .form-group textarea { width:100%; padding:8px 12px; border-radius:30px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.05); color:#fff; font-size:0.85rem; outline:none; font-family:inherit; }
         .form-group textarea { border-radius:14px; min-height:60px; resize:vertical; }
-        .form-group input:focus, .form-group textarea:focus { border-color:#f5a623; }
         .auth-box { background:rgba(255,255,255,0.03); border-radius:16px; padding:16px; margin-bottom:12px; border:1px solid rgba(255,255,255,0.05); }
         .auth-box h3 { margin-bottom:10px; color:#f5a623; font-size:0.95rem; }
         .auth-actions { display:flex; gap:6px; margin-top:10px; }
         .auth-actions button { flex:1; padding:8px; border-radius:30px; border:none; font-weight:bold; cursor:pointer; font-size:0.75rem; }
         .product-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:8px; margin-bottom:12px; }
-        .product-card { background:rgba(255,255,255,0.05); border-radius:14px; padding:10px; text-align:center; border:1px solid rgba(255,255,255,0.05); cursor:pointer; position:relative; }
-        .product-card:active { transform:scale(0.97); }
-        .product-card .product-photo { width:100%; height:70px; object-fit:cover; border-radius:8px; margin-bottom:4px; background:rgba(255,255,255,0.05); }
+        .product-card { background:rgba(255,255,255,0.05); border-radius:14px; padding:10px; text-align:center; border:1px solid rgba(255,255,255,0.05); cursor:pointer; transition:0.2s; }
+        .product-card:hover { background:rgba(255,255,255,0.08); }
         .product-card .name { font-weight:600; font-size:0.8rem; margin-bottom:3px; }
         .product-card .price { color:#f5a623; font-weight:bold; font-size:0.9rem; }
         .product-card .add-btn { margin-top:6px; background:#f5a623; color:#1a1a2e; border:none; padding:4px 12px; border-radius:30px; font-weight:bold; cursor:pointer; font-size:0.65rem; }
-        .product-card .rating { font-size:0.7rem; color:#f5a623; margin-top:4px; }
         .cart-panel { background:rgba(255,255,255,0.03); border-radius:14px; padding:12px; margin-bottom:12px; border:1px solid rgba(255,255,255,0.05); }
         .cart-panel .title { font-weight:bold; margin-bottom:8px; color:#f5a623; font-size:0.9rem; }
         .cart-item { display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:0.8rem; }
@@ -50,13 +50,11 @@
         .wallet .amount { font-size:1.1rem; font-weight:bold; color:#f5a623; }
         .order-card { background:rgba(255,255,255,0.04); border-radius:14px; padding:12px; margin-bottom:8px; border-left:4px solid #f5a623; }
         .order-card .order-header { display:flex; justify-content:space-between; font-weight:bold; margin-bottom:4px; font-size:0.8rem; }
-        .order-card .order-number { color:#f5a623; font-size:0.8rem; word-break:break-all; }
+        .order-card .order-number { color:#f5a623; font-size:0.8rem; }
         .order-card .order-status { font-size:0.6rem; padding:2px 10px; border-radius:30px; }
         .status-waiting { background:#ff9800; color:#fff; }
         .status-ready { background:#4CAF50; color:#fff; }
         .status-delivered { background:#999; color:#fff; }
-        .order-card .order-items-list { font-size:0.75rem; color:#aaa; margin:4px 0; padding:4px 0; border-top:1px solid rgba(255,255,255,0.05); }
-        .order-card .order-items-list .item-row { display:flex; align-items:center; gap:6px; padding:3px 0; }
         .order-card .order-code { font-size:1.8rem; font-weight:bold; color:#f5a623; font-family:monospace; letter-spacing:8px; background:rgba(255,255,255,0.08); padding:10px; border-radius:12px; margin:6px 0; text-align:center; border:2px solid rgba(245,166,35,0.25); }
         .tabs { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
         .tab { padding:6px 14px; border-radius:30px; background:rgba(255,255,255,0.05); cursor:pointer; font-size:0.7rem; color:#888; border:1px solid transparent; }
@@ -67,20 +65,20 @@
         .modal-content { background:#1a1a2e; border-radius:20px; padding:20px; max-width:450px; width:100%; max-height:90vh; overflow-y:auto; border:1px solid rgba(255,255,255,0.08); }
         .modal-content h3 { color:#f5a623; margin-bottom:10px; font-size:1.1rem; }
         .modal-close { float:right; background:none; border:none; color:#888; font-size:1.2rem; cursor:pointer; }
-        .modal-content .rating-stars { font-size:1.8rem; color:#555; cursor:pointer; display:flex; gap:4px; justify-content:center; margin:8px 0; }
-        .modal-content .rating-stars .star.active { color:#f5a623; }
-        .modal-content .review-text { width:100%; padding:10px; border-radius:14px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.05); color:#fff; font-size:0.85rem; outline:none; font-family:inherit; min-height:60px; resize:vertical; margin:8px 0; }
-        .modal-content .file-input-wrapper input[type="file"] { display:none; }
-        .modal-content .file-input-wrapper .file-label { background:rgba(255,255,255,0.05); padding:6px 14px; border-radius:30px; cursor:pointer; border:1px dashed #555; font-size:0.75rem; color:#aaa; display:inline-block; }
-        .deposit-amounts { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin:10px 0; }
-        .deposit-amounts button { padding:8px; border-radius:30px; border:2px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); color:#fff; font-weight:bold; cursor:pointer; }
-        .deposit-amounts button:hover { border-color:#f5a623; }
-        .scanner-container { background:#000; border-radius:16px; overflow:hidden; position:relative; min-height:250px; display:flex; align-items:center; justify-content:center; margin:10px 0; }
+        .qr-code-container { display:flex; justify-content:center; padding:10px; }
+        .qr-code-container canvas { border-radius:12px; background:white; padding:10px; }
+        .scanner-container { background:#000; border-radius:16px; overflow:hidden; position:relative; min-height:300px; display:flex; align-items:center; justify-content:center; margin:10px 0; }
         .scanner-container video { width:100%; display:block; }
         .scanner-overlay { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:200px; height:200px; border:2px solid #f5a623; border-radius:12px; box-shadow:0 0 0 4000px rgba(0,0,0,0.4); pointer-events:none; }
-        .qr-code-container { display:flex; justify-content:center; padding:10px; }
-        .qr-code-container img, .qr-code-container canvas { border-radius:12px; background:white; padding:10px; }
-        @media (max-width:400px) { .product-grid { grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); } .order-card .order-code { font-size:1.3rem; letter-spacing:4px; } .scanner-overlay { width:150px; height:150px; } }
+        .scan-btn-group { display:flex; gap:6px; flex-wrap:wrap; margin:10px 0; }
+        .scan-btn-group button { flex:1; padding:8px; border-radius:30px; border:none; font-weight:bold; cursor:pointer; font-size:0.75rem; }
+        .scanned-order { background:rgba(76,175,80,0.1); border:1px solid #4CAF50; border-radius:12px; padding:12px; margin-top:10px; }
+        .scanned-order .label { color:#888; font-size:0.7rem; }
+        @media (max-width:400px) { 
+            .product-grid { grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); } 
+            .order-card .order-code { font-size:1.3rem; letter-spacing:4px; } 
+            .scanner-overlay { width:150px; height:150px; }
+        }
     </style>
 </head>
 <body>
@@ -89,8 +87,8 @@
 
 <div class="container">
     <div class="header">
-        <div class="logo"><i>📦</i> WHOPPER</div>
-        <div class="user-badge"><i>👤</i> <span id="userNameDisplay">Гость</span></div>
+        <div class="logo">📦 WHOPPER</div>
+        <div class="user-badge">👤 <span id="userNameDisplay">Гость</span></div>
     </div>
 
     <div class="role-selector">
@@ -102,253 +100,322 @@
     <!-- КЛИЕНТ -->
     <div id="clientPanel">
         <div id="clientAuth" class="auth-box">
-            <h3>👤 Вход</h3>
-            <div class="form-group"><label>Телефон</label><input type="tel" id="clientPhone" placeholder="+7 999 999 99 99"></div>
-            <div class="form-group"><label>Имя</label><input type="text" id="clientName" placeholder="Ваше имя"></div>
+            <h3>👤 Вход / Регистрация</h3>
+            <div class="form-group"><label>Логин</label><input type="text" id="loginInput" placeholder="Введите логин"></div>
+            <div class="form-group"><label>Имя</label><input type="text" id="nameInput" placeholder="Ваше имя"></div>
             <div class="auth-actions">
                 <button class="btn-primary" onclick="clientLogin()">Войти</button>
                 <button class="btn-success" onclick="clientRegister()">Регистрация</button>
             </div>
         </div>
         <div id="clientContent" class="hidden">
-            <div class="wallet" onclick="openDepositModal('client')"><span><i>💰</i> Кошелёк</span><span class="amount" id="clientWallet">0 ₽</span></div>
+            <div class="wallet" onclick="addMoney()"><span>💰 Кошелёк</span><span class="amount" id="clientWallet">0 ₽</span></div>
             <div class="tabs">
                 <button class="tab active" data-ctab="shop" onclick="switchClientTab('shop')">🛍️ Магазин</button>
                 <button class="tab" data-ctab="orders" onclick="switchClientTab('orders')">📦 Заказы</button>
                 <button class="tab" data-ctab="qr" onclick="switchClientTab('qr')">📱 QR-код</button>
             </div>
-            <div id="clientShopTab"><div class="product-grid" id="productsGrid"></div><div class="cart-panel" id="cartPanel"><div class="title">🛒 Корзина</div><div id="cartItems"><div style="color:#555;">Пусто</div></div><div class="cart-total"><span>Итого:</span> <span id="cartTotal">0 ₽</span></div><div class="cart-actions"><button class="btn-primary" onclick="showCheckout()">Оформить</button><button class="btn-secondary" onclick="clearCart()">Очистить</button></div></div></div>
-            <div id="clientOrdersTab" class="hidden"><div id="clientOrders"></div></div>
-            <div id="clientQrTab" class="hidden"><div style="text-align:center;padding:20px;"><h3 style="color:#f5a623;margin-bottom:10px;">📱 Ваш QR-код</h3><p style="color:#888;font-size:0.85rem;margin-bottom:15px;">Покажите в ПВЗ</p><div id="clientQrContainer" class="qr-code-container"></div><div id="clientQrInfo" style="margin-top:10px;color:#888;font-size:0.8rem;"></div></div></div>
-            <div id="checkoutModal" class="hidden" style="background:rgba(255,255,255,0.03);border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid rgba(255,255,255,0.08);"><h3 style="color:#f5a623;margin-bottom:10px;">📦 Оформление</h3><div class="delivery-select"><select id="deliveryType" onchange="toggleDeliveryFields()"><option value="pvz">🏪 ПВЗ</option><option value="courier">🚚 Курьер</option></select></div><div id="pvzField" class="form-group"><label>ПВЗ</label><select id="pvzSelect"><option value="">-- Выберите --</option></select></div><div id="courierField" class="form-group" style="display:none;"><label>Адрес</label><input type="text" id="deliveryAddress" placeholder="Введите адрес"></div><div style="display:flex;gap:6px;margin-top:10px;"><button class="btn-primary" onclick="confirmCheckout()" style="flex:1;">✅ Оформить</button><button class="btn-secondary" onclick="closeCheckout()" style="flex:1;">✕</button></div></div>
+            <div id="clientShopTab">
+                <div class="product-grid" id="productsGrid"></div>
+                <div class="cart-panel">
+                    <div class="title">🛒 Корзина</div>
+                    <div id="cartItems"><div style="color:#555;">Пусто</div></div>
+                    <div class="cart-total"><span>Итого:</span> <span id="cartTotal">0 ₽</span></div>
+                    <div class="cart-actions">
+                        <button class="btn-primary" onclick="createOrder()">Оформить</button>
+                        <button class="btn-secondary" onclick="clearCart()">Очистить</button>
+                    </div>
+                </div>
+            </div>
+            <div id="clientOrdersTab" class="hidden"><div id="ordersList"></div></div>
+            <div id="clientQrTab" class="hidden">
+                <div style="text-align:center;padding:20px;">
+                    <h3 style="color:#f5a623;">📱 Ваш QR-код</h3>
+                    <p style="color:#888;font-size:0.85rem;margin-bottom:15px;">Покажите в ПВЗ</p>
+                    <div id="qrContainer" class="qr-code-container"></div>
+                    <div id="qrInfo" style="margin-top:10px;color:#888;font-size:0.8rem;"></div>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- ПРОДАВЕЦ -->
     <div id="sellerPanel" class="hidden">
-        <div id="sellerAuth" class="auth-box"><h3>🏪 Вход продавца</h3><div class="form-group"><label>ФИО</label><input type="text" id="sellerFullName" placeholder="Иванов Иван"></div><div class="form-group"><label>Магазин</label><input type="text" id="sellerShopName" placeholder="Мой магазин"></div><div class="form-group"><label>Телефон</label><input type="tel" id="sellerPhone" placeholder="+7 999 999 99 99"></div><div class="form-group"><label>Логин</label><input type="text" id="sellerLogin" placeholder="Логин"></div><div class="form-group"><label>Пароль</label><input type="password" id="sellerPassword" placeholder="Пароль"></div><div class="auth-actions"><button class="btn-primary" onclick="sellerLogin()">Войти</button><button class="btn-success" onclick="sellerRegister()">Регистрация</button></div></div>
+        <div id="sellerAuth" class="auth-box">
+            <h3>🏪 Вход продавца</h3>
+            <div class="form-group"><label>Логин</label><input type="text" id="sellerLoginInput" placeholder="Логин"></div>
+            <div class="form-group"><label>Пароль</label><input type="password" id="sellerPassInput" placeholder="Пароль"></div>
+            <div class="auth-actions">
+                <button class="btn-primary" onclick="sellerLogin()">Войти</button>
+                <button class="btn-success" onclick="sellerRegister()">Регистрация</button>
+            </div>
+        </div>
         <div id="sellerContent" class="hidden">
-            <div class="wallet" onclick="openDepositModal('seller')"><span><i>💰</i> Кошелёк</span><span class="amount" id="sellerWallet">0 ₽</span></div>
-            <div style="background:rgba(255,255,255,0.03);border-radius:14px;padding:14px;margin-bottom:12px;"><h4 style="color:#f5a623;margin-bottom:8px;">➕ Добавить товар</h4><div class="form-group"><label>Название</label><input type="text" id="productName" placeholder="Название"></div><div class="form-group"><label>Цена</label><input type="number" id="productPrice" placeholder="999"></div><div class="form-group"><label>Фото</label><input type="file" id="productPhoto" accept="image/*"></div><button class="btn-success" onclick="addProduct()" style="width:100%;padding:8px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">➕ Добавить</button></div>
-            <h4 style="color:#f5a623;margin-bottom:8px;font-size:0.9rem;">📦 Мои товары</h4><div id="sellerProducts"></div>
+            <div class="wallet" onclick="addMoney()"><span>💰 Кошелёк</span><span class="amount" id="sellerWallet">0 ₽</span></div>
+            <div style="background:rgba(255,255,255,0.03);border-radius:14px;padding:14px;margin-bottom:12px;">
+                <h4 style="color:#f5a623;">➕ Добавить товар</h4>
+                <div class="form-group"><label>Название</label><input type="text" id="productName" placeholder="Название"></div>
+                <div class="form-group"><label>Цена</label><input type="number" id="productPrice" placeholder="999"></div>
+                <button class="btn-success" onclick="addProduct()" style="width:100%;padding:8px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">➕ Добавить</button>
+            </div>
+            <h4 style="color:#f5a623;font-size:0.9rem;">📦 Мои товары</h4>
+            <div id="sellerProducts"></div>
         </div>
     </div>
 
     <!-- ПВЗ -->
     <div id="pvzPanel" class="hidden">
-        <div id="pvzAuth" class="auth-box"><h3>🏪 Вход ПВЗ</h3><div class="form-group"><label>Номер</label><input type="number" id="pvzLogin" placeholder="17"></div><div class="form-group"><label>Пароль</label><input type="password" id="pvzPassword" placeholder="Пароль"></div><div class="auth-actions"><button class="btn-primary" onclick="pvzLogin()">Войти</button></div></div>
+        <div id="pvzAuth" class="auth-box">
+            <h3>🏪 Вход ПВЗ</h3>
+            <div class="form-group"><label>Код ПВЗ (по умолчанию: 12345)</label><input type="text" id="pvzCode" placeholder="Введите код ПВЗ"></div>
+            <div class="auth-actions"><button class="btn-primary" onclick="pvzLogin()">Войти</button></div>
+        </div>
         <div id="pvzContent" class="hidden">
             <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
-                <button class="btn-primary" onclick="pvzAction('receive')">📥 Приём</button>
-                <button class="btn-success" onclick="pvzAction('issue')">📤 Выдача</button>
-                <button class="btn-info" onclick="startScanner()" id="scanBtn">📷 Сканер</button>
-                <button class="btn-secondary" onclick="stopScanner()" id="stopScanBtn" style="display:none;">⏹ Остановить</button>
+                <button class="btn-primary" onclick="pvzView('pending')">📥 Заказы</button>
+                <button class="btn-success" onclick="pvzView('ready')">📤 Выдача</button>
             </div>
-            <div class="scanner-container" id="scannerContainer" style="display:none;">
-                <video id="scannerVideo" autoplay playsinline></video>
-                <div class="scanner-overlay"></div>
+            
+            <!-- СКАНИРОВАНИЕ QR -->
+            <div style="background:rgba(255,255,255,0.03);border-radius:14px;padding:14px;margin-bottom:12px;">
+                <h4 style="color:#f5a623;font-size:0.85rem;margin-bottom:8px;">📷 Сканировать QR-код</h4>
+                <div class="scan-btn-group">
+                    <button class="btn-info" onclick="startScanner()">📷 Запустить камеру</button>
+                    <button class="btn-danger" onclick="stopScanner()">⏹ Остановить</button>
+                </div>
+                <div id="scannerContainer" class="scanner-container hidden">
+                    <div class="scanner-overlay"></div>
+                </div>
+                <div id="scannedResult"></div>
             </div>
-            <div class="scan-area"><h4 style="color:#f5a623;margin-bottom:6px;font-size:0.85rem;">🔑 Ручной ввод кода</h4><input type="text" id="pvzScanInput" placeholder="6-значный код" maxlength="6" oninput="pvzScanQR(this.value)"><div id="pvzScanResult" style="margin-top:6px;"></div></div>
-            <div id="pvzOrders"></div>
+            
+            <!-- Ручной поиск -->
+            <div class="scan-area">
+                <h4 style="color:#f5a623;font-size:0.85rem;">🔑 Поиск по коду</h4>
+                <input type="text" id="pvzSearch" placeholder="6-значный код" maxlength="6" oninput="pvzFindOrder(this.value)">
+                <div id="pvzResult" style="margin-top:6px;"></div>
+            </div>
+            <div id="pvzOrdersList"></div>
         </div>
     </div>
 </div>
 
 <!-- МОДАЛКА ТОВАРА -->
-<div id="productModal" class="modal-overlay hidden" onclick="if(event.target===this) closeProductModal()">
+<div id="productModal" class="modal-overlay hidden" onclick="if(event.target===this) closeModal()">
     <div class="modal-content">
-        <button class="modal-close" onclick="closeProductModal()">✕</button>
-        <h3 id="modalProductName">Товар</h3>
-        <div id="modalProductSeller" style="color:#888;font-size:0.75rem;">Продавец</div>
-        <div id="modalProductPrice" style="color:#f5a623;font-size:1.3rem;font-weight:bold;margin:6px 0;">0 ₽</div>
-        <div id="modalProductPhoto" style="margin:6px 0;"></div>
-        <div id="modalProductRating" style="margin:8px 0;"><span style="color:#888;font-size:0.8rem;">Рейтинг: </span><span style="color:#f5a623;" id="modalRatingStars"></span><span style="color:#666;" id="modalRatingCount">(0)</span></div>
-        <div class="rating-stars" id="modalStars"><span class="star" data-star="1" onclick="setRating(1)">★</span><span class="star" data-star="2" onclick="setRating(2)">★</span><span class="star" data-star="3" onclick="setRating(3)">★</span><span class="star" data-star="4" onclick="setRating(4)">★</span><span class="star" data-star="5" onclick="setRating(5)">★</span></div>
-        <textarea class="review-text" id="modalReviewText" placeholder="Напишите отзыв..."></textarea>
-        <div class="file-input-wrapper"><input type="file" id="reviewPhoto" accept="image/*"><label for="reviewPhoto" class="file-label">📷 Добавить фото</label></div>
-        <button class="btn-primary" onclick="submitReview()" style="width:100%;padding:8px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;margin-top:6px;">✍️ Отправить</button>
-        <h4 style="color:#f5a623;font-size:0.85rem;margin-top:12px;">📝 Отзывы</h4>
-        <div class="reviews-list" id="modalReviews"></div>
-    </div>
-</div>
-
-<!-- МОДАЛКА ПОПОЛНЕНИЯ -->
-<div id="depositModal" class="modal-overlay hidden" onclick="if(event.target===this) closeDepositModal()">
-    <div class="modal-content">
-        <button class="modal-close" onclick="closeDepositModal()">✕</button>
-        <h3><i>💰</i> Пополнение</h3>
-        <div style="padding:10px;background:rgba(255,255,255,0.03);border-radius:12px;display:flex;justify-content:space-between;color:#888;font-size:0.85rem;margin:10px 0;"><span>Баланс:</span><span style="color:#f5a623;font-weight:bold;" id="depositCurrentBalance">0 ₽</span></div>
-        <div class="deposit-amounts"><button onclick="depositAmount(100)">100 ₽</button><button onclick="depositAmount(500)">500 ₽</button><button onclick="depositAmount(1000)">1 000 ₽</button><button onclick="depositAmount(3000)">3 000 ₽</button><button onclick="depositAmount(5000)">5 000 ₽</button><button onclick="depositAmount(10000)">10 000 ₽</button></div>
-        <div style="display:flex;gap:6px;margin:10px 0;"><input type="number" id="depositCustomAmount" placeholder="Своя сумма" style="flex:1;padding:8px;border-radius:30px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.05);color:#fff;outline:none;"><button onclick="depositCustom()" style="padding:8px 20px;border-radius:30px;border:none;background:#f5a623;color:#1a1a2e;font-weight:bold;cursor:pointer;">Пополнить</button></div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        <h3 id="modalName">Товар</h3>
+        <div id="modalPrice" style="color:#f5a623;font-size:1.3rem;font-weight:bold;">0 ₽</div>
+        <div id="modalSeller" style="color:#888;font-size:0.75rem;">Продавец</div>
+        <button class="btn btn-primary" onclick="addToCartFromModal()" style="width:100%;margin-top:10px;">🛒 В корзину</button>
     </div>
 </div>
 
 <script>
-// ===== FIREBASE =====
+// ========== FIREBASE ==========
 const firebaseConfig = {
-    apiKey: "AIzaSyBoj5xaDZRyLkf7r0Ui6Xku3-f6jnCdFvU",
-    authDomain: "school-a90e4.firebaseapp.com",
-    projectId: "school-a90e4",
-    storageBucket: "school-a90e4.firebasestorage.app",
-    messagingSenderId: "106891336718",
-    appId: "1:106891336718:web:19a3425219138192aa305f"
+    apiKey: "AIzaSyBlZ5ZtyTXgtXxSJAx1jOxwhTrzlHRJmo",
+    authDomain: "bk-cashier.firebaseapp.com",
+    databaseURL: "https://bk-cashier-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "bk-cashier",
+    storageBucket: "bk-cashier.firebasestorage.app",
+    messagingSenderId: "385000840969",
+    appId: "1:385000840969:web:1ec8d09176b6551dc0fdd8"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-const storage = firebase.storage();
 
-let currentUser = { id: null, name: null, type: 'client', phone: null, pvzNumber: null, shopName: null, wallet: 0 };
+// ========== ПЕРЕМЕННЫЕ ==========
+let currentUser = null;
+let currentRole = 'client';
 let cart = [];
-let allProducts = [];
-let allPVZ = [];
-let allOrders = [];
-let currentProductId = null;
-let selectedRating = 0;
-let scannerStream = null;
-let scannerActive = false;
+let selectedProduct = null;
+let html5QrCode = null;
+let isScanning = false;
 
+// ========== ТОСТ ==========
 function showToast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg;
     t.classList.add('show');
     clearTimeout(t._timeout);
-    t._timeout = setTimeout(() => t.classList.remove('show'), 2000);
+    t._timeout = setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-function uploadPhoto(file, path) {
-    return new Promise((resolve, reject) => {
-        if (!file) { resolve(null); return; }
-        const ref = storage.ref('photos/' + path + '/' + Date.now() + '.jpg');
-        ref.put(file).then(s => s.ref.getDownloadURL()).then(resolve).catch(reject);
-    });
-}
-
-function getStatusText(status) {
-    const map = { 'to_pvz': '🚚 Едет на ПВЗ', 'ready': '✅ Готов к выдаче', 'delivered': '📦 Выдан', 'to_courier': '⏳ Ожидает курьера', 'return': '🔄 Возврат' };
-    return map[status] || status;
-}
-
-function getStatusClass(status) {
-    const map = { 'to_pvz': 'status-waiting', 'ready': 'status-ready', 'delivered': 'status-delivered', 'to_courier': 'status-waiting', 'return': 'status-waiting' };
-    return map[status] || 'status-waiting';
-}
-
-// ===== QR ГЕНЕРАЦИЯ (ВСТРОЕННАЯ) =====
+// ========== ГЕНЕРАЦИЯ QR ==========
 function generateQR(container, data) {
     container.innerHTML = '';
-    try {
-        const text = JSON.stringify(data);
-        // Создаём QR через встроенную функцию
-        const qr = new QRCode(container, {
-            text: text,
-            width: 180,
-            height: 180,
-            colorDark: "#f5a623",
-            colorLight: "#1a1a2e",
-            correctLevel: QRCode.CorrectLevel.H
-        });
-        return true;
-    } catch(e) {
-        container.innerHTML = '<div style="color:#888;">⚠️ Ошибка QR</div>';
-        return false;
+    if (typeof QRCode !== 'undefined') {
+        try {
+            new QRCode(container, {
+                text: JSON.stringify(data),
+                width: 180,
+                height: 180,
+                colorDark: "#f5a623",
+                colorLight: "#1a1a2e",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            return true;
+        } catch(e) {
+            container.innerHTML = '<div style="color:#888;">⚠️ Ошибка QR</div>';
+            return false;
+        }
     }
+    container.innerHTML = '<div style="color:#888;">⏳ Загрузка QR...</div>';
+    return false;
 }
 
-// ===== СКАНЕР (ВСТРОЕННЫЙ) =====
+// ========== QR-СКАНЕР ==========
 function startScanner() {
     const container = document.getElementById('scannerContainer');
-    const video = document.getElementById('scannerVideo');
-    const scanBtn = document.getElementById('scanBtn');
-    const stopBtn = document.getElementById('stopScanBtn');
-
-    if (scannerActive) return;
-
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        showToast('❌ Камера не поддерживается');
-        return;
+    const resultDiv = document.getElementById('scannedResult');
+    resultDiv.innerHTML = '';
+    container.classList.remove('hidden');
+    
+    if (html5QrCode) {
+        html5QrCode.stop();
+        html5QrCode.clear();
     }
-
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } } })
-        .then(stream => {
-            scannerStream = stream;
-            video.srcObject = stream;
-            video.play();
-            container.style.display = 'block';
-            scanBtn.style.display = 'none';
-            stopBtn.style.display = 'inline-block';
-            scannerActive = true;
-            showToast('📷 Наведите на QR-код');
-            // Простой сканер - ждём 3 секунды и предлагаем ручной ввод
-            setTimeout(() => {
-                if (scannerActive) {
-                    showToast('📱 Введите код вручную');
-                }
-            }, 5000);
-        })
-        .catch(err => {
-            showToast('❌ Ошибка камеры: ' + err.message);
-        });
+    
+    html5QrCode = new Html5Qrcode("scannerContainer");
+    
+    const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0
+    };
+    
+    html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        onScanSuccess,
+        onScanError
+    ).then(() => {
+        isScanning = true;
+        showToast('📷 Камера запущена');
+    }).catch(err => {
+        showToast('❌ Ошибка камеры: ' + err);
+        container.classList.add('hidden');
+    });
 }
 
 function stopScanner() {
-    if (scannerStream) {
-        scannerStream.getTracks().forEach(t => t.stop());
-        scannerStream = null;
-    }
-    scannerActive = false;
-    document.getElementById('scannerContainer').style.display = 'none';
-    document.getElementById('scanBtn').style.display = 'inline-block';
-    document.getElementById('stopScanBtn').style.display = 'none';
-    document.getElementById('scannerVideo').srcObject = null;
-    showToast('⏹ Сканер остановлен');
-}
-
-// Загружаем QR библиотеку
-function loadQR() {
-    if (typeof QRCode === 'undefined') {
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-        script.onload = () => { console.log('QR загружен'); };
-        document.head.appendChild(script);
+    if (html5QrCode) {
+        html5QrCode.stop();
+        html5QrCode.clear();
+        isScanning = false;
+        document.getElementById('scannerContainer').classList.add('hidden');
+        showToast('⏹ Сканирование остановлено');
     }
 }
 
-function processScannedQR(data) {
-    const orderId = data.orderId;
-    db.ref('orders/' + orderId).once('value', (sn) => {
-        const order = sn.val();
-        if (!order) { showToast('❌ Заказ не найден!'); return; }
-        if (order.pvzNumber != currentUser.pvzNumber) { showToast('❌ Заказ не для этого ПВЗ!'); return; }
-        if (order.status === 'delivered') { showToast('ℹ️ Заказ уже выдан'); return; }
+function onScanSuccess(decodedText, decodedResult) {
+    console.log('Сканировано:', decodedText);
+    document.getElementById('scannerContainer').classList.add('hidden');
+    stopScanner();
+    
+    try {
+        const data = JSON.parse(decodedText);
+        showToast('✅ Найден заказ: ' + data.orderId);
+        processScannedOrder(data);
+    } catch(e) {
+        // Если не JSON, пробуем найти по тексту
+        showToast('📱 Сканировано: ' + decodedText);
+        findOrderByText(decodedText);
+    }
+}
 
-        const resultDiv = document.getElementById('pvzScanResult');
-        resultDiv.innerHTML = `
-            <div style="background:rgba(76,175,80,0.15);padding:12px;border-radius:12px;border:1px solid #4CAF50;">
-                <div style="color:#4CAF50;font-weight:bold;">✅ Заказ найден!</div>
-                <div>👤 ${order.userName}</div>
-                <div>📦 ${order.items.map(i => `${i.name} x${i.qty}`).join(', ')}</div>
-                <div style="font-weight:bold;">${order.total} ₽</div>
-                <div style="font-size:0.8rem;color:#888;">Код: ${order.code}</div>
-                ${order.status === 'ready' ? 
-                    `<button onclick="verifyAndIssue('${orderId}', '${order.code}')" style="margin-top:8px;padding:8px 20px;border-radius:30px;border:none;background:#4CAF50;color:white;font-weight:bold;cursor:pointer;">📤 Выдать</button>` : 
-                    `<div style="color:#ff9800;font-size:0.8rem;">Статус: ${getStatusText(order.status)}</div>`
-                }
-            </div>
-        `;
-        showToast('✅ QR-код распознан!');
+function onScanError(error) {
+    // Игнорируем ошибки
+}
+
+function processScannedOrder(data) {
+    const resultDiv = document.getElementById('scannedResult');
+    db.ref('orders').orderByChild('id').equalTo(data.orderId).once('value', (sn) => {
+        if (sn.exists()) {
+            sn.forEach(child => {
+                const order = child.val();
+                resultDiv.innerHTML = `
+                    <div class="scanned-order">
+                        <div style="color:#4CAF50;font-weight:bold;">✅ Заказ найден!</div>
+                        <div><span class="label">🆔</span> ${order.id}</div>
+                        <div><span class="label">👤</span> ${order.user}</div>
+                        <div><span class="label">📦</span> ${order.items.map(i => `${i.name} x${i.qty}`).join(', ')}</div>
+                        <div><span class="label">💰</span> ${order.total} ₽</div>
+                        <div><span class="label">🔑</span> ${order.code}</div>
+                        <div><span class="label">📌 Статус:</span> ${order.status === 'pending' ? '⏳ Ожидает' : order.status === 'ready' ? '✅ Готов' : '📦 Выдан'}</div>
+                        ${order.status === 'pending' ? `<button class="btn-success" onclick="pvzReadyFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">✅ Готов к выдаче</button>` : ''}
+                        ${order.status === 'ready' ? `<button class="btn-primary" onclick="pvzDeliverFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📤 Выдать</button>` : ''}
+                    </div>
+                `;
+            });
+        } else {
+            resultDiv.innerHTML = '<div style="color:#ff4444;padding:12px;border:1px solid #ff4444;border-radius:12px;">❌ Заказ не найден</div>';
+        }
     });
 }
 
-// ===== ПЕРЕКЛЮЧЕНИЕ РОЛЕЙ =====
+function findOrderByText(text) {
+    const resultDiv = document.getElementById('scannedResult');
+    // Ищем по ID или коду
+    db.ref('orders').once('value', (sn) => {
+        let found = false;
+        sn.forEach(child => {
+            const order = child.val();
+            if (order.id === text || order.code === text) {
+                found = true;
+                resultDiv.innerHTML = `
+                    <div class="scanned-order">
+                        <div style="color:#4CAF50;font-weight:bold;">✅ Заказ найден!</div>
+                        <div><span class="label">🆔</span> ${order.id}</div>
+                        <div><span class="label">👤</span> ${order.user}</div>
+                        <div><span class="label">📦</span> ${order.items.map(i => `${i.name} x${i.qty}`).join(', ')}</div>
+                        <div><span class="label">💰</span> ${order.total} ₽</div>
+                        <div><span class="label">🔑</span> ${order.code}</div>
+                        <div><span class="label">📌 Статус:</span> ${order.status === 'pending' ? '⏳ Ожидает' : order.status === 'ready' ? '✅ Готов' : '📦 Выдан'}</div>
+                        ${order.status === 'pending' ? `<button class="btn-success" onclick="pvzReadyFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">✅ Готов к выдаче</button>` : ''}
+                        ${order.status === 'ready' ? `<button class="btn-primary" onclick="pvzDeliverFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📤 Выдать</button>` : ''}
+                    </div>
+                `;
+            }
+        });
+        if (!found) {
+            resultDiv.innerHTML = '<div style="color:#ff4444;padding:12px;border:1px solid #ff4444;border-radius:12px;">❌ Заказ не найден</div>';
+        }
+    });
+}
+
+function pvzReadyFromScan(orderId) {
+    db.ref('orders').orderByChild('id').equalTo(orderId).once('value', (sn) => {
+        sn.forEach(child => {
+            db.ref('orders/' + child.key).update({ status: 'ready' });
+            showToast('✅ Заказ готов к выдаче');
+            document.getElementById('scannedResult').innerHTML = '';
+            pvzView('pending');
+        });
+    });
+}
+
+function pvzDeliverFromScan(orderId) {
+    db.ref('orders').orderByChild('id').equalTo(orderId).once('value', (sn) => {
+        sn.forEach(child => {
+            db.ref('orders/' + child.key).update({ status: 'delivered' });
+            showToast('✅ Заказ выдан!');
+            document.getElementById('scannedResult').innerHTML = '';
+            pvzView('ready');
+        });
+    });
+}
+
+// ========== ПЕРЕКЛЮЧЕНИЕ РОЛЕЙ ==========
 function switchRole(role) {
+    currentRole = role;
     document.querySelectorAll('.role-btn').forEach(b => b.classList.toggle('active', b.dataset.role === role));
     document.querySelectorAll('#clientPanel, #sellerPanel, #pvzPanel').forEach(el => el.classList.add('hidden'));
-
     if (role === 'client') {
         document.getElementById('clientPanel').classList.remove('hidden');
         document.getElementById('clientContent').classList.add('hidden');
         document.getElementById('clientAuth').classList.remove('hidden');
-        loadPVZList();
         loadProducts();
     } else if (role === 'seller') {
         document.getElementById('sellerPanel').classList.remove('hidden');
@@ -358,70 +425,26 @@ function switchRole(role) {
         document.getElementById('pvzPanel').classList.remove('hidden');
         document.getElementById('pvzContent').classList.add('hidden');
         document.getElementById('pvzAuth').classList.remove('hidden');
-        loadPVZList();
-        stopScanner();
+        if (document.getElementById('scannerContainer')) {
+            document.getElementById('scannerContainer').classList.add('hidden');
+        }
+        if (html5QrCode) {
+            html5QrCode.stop();
+            html5QrCode.clear();
+            isScanning = false;
+        }
     }
 }
 
-// ===== ТОВАРЫ =====
-const defaultProducts = [
-    { id: 'default_1', name: 'Смартфон X Pro', price: 49990, sellerName: 'WHOPPER Shop' },
-    { id: 'default_2', name: 'Наушники Pro Max', price: 8990, sellerName: 'WHOPPER Shop' },
-    { id: 'default_3', name: 'Фитнес-браслет 5', price: 3990, sellerName: 'WHOPPER Shop' },
-    { id: 'default_4', name: 'Игровая мышь RGB', price: 2590, sellerName: 'WHOPPER Shop' }
-];
-
-function loadProducts() {
-    defaultProducts.forEach(p => {
-        db.ref('products/' + p.id).once('value', sn => {
-            if (!sn.exists()) {
-                db.ref('products/' + p.id).set({ id: p.id, name: p.name, price: p.price, sellerName: p.sellerName, sellerId: 'default_seller', isDefault: true, photo: null, createdAt: Date.now() });
-            }
-        });
-    });
-
-    db.ref('products').on('value', (sn) => {
-        allProducts = [];
-        sn.forEach(child => {
-            const data = child.val();
-            allProducts.push({ id: child.key, name: data.name, price: data.price, sellerId: data.sellerId, sellerName: data.sellerName || 'Продавец', isDefault: data.isDefault || false, photo: data.photo || null });
-        });
-        allProducts.sort((a, b) => { if (a.isDefault && !b.isDefault) return -1; if (!a.isDefault && b.isDefault) return 1; return a.name.localeCompare(b.name); });
-        renderProducts(allProducts);
-        renderSellerProducts();
-    });
-}
-
-function renderProducts(products) {
-    const grid = document.getElementById('productsGrid');
-    if (!products || products.length === 0) {
-        grid.innerHTML = '<div style="text-align:center;color:#555;padding:15px;font-size:0.85rem;">Товаров нет</div>';
-        return;
-    }
-    grid.innerHTML = products.map(p => `
-        <div class="product-card" onclick="openProductModal('${p.id}')">
-            ${p.photo ? `<img src="${p.photo}" class="product-photo" loading="lazy" onerror="this.style.display='none'">` : ''}
-            <div class="name">${p.name}</div>
-            <div class="price">${p.price.toLocaleString()} ₽</div>
-            <button class="add-btn" onclick="event.stopPropagation();addToCart('${p.id}')">➕</button>
-        </div>
-    `).join('');
-}
-
-// ===== КЛИЕНТ =====
+// ========== КЛИЕНТ ==========
 function clientLogin() {
-    const phone = document.getElementById('clientPhone').value.trim();
-    if (!phone) { showToast('❌ Введите телефон'); return; }
-    db.ref('users').orderByChild('phone').equalTo(phone).once('value', (sn) => {
+    const login = document.getElementById('loginInput').value.trim();
+    db.ref('users').orderByChild('login').equalTo(login).once('value', (sn) => {
         if (sn.exists()) {
             sn.forEach(child => {
-                currentUser.id = child.key;
-                currentUser.name = child.val().name;
-                currentUser.phone = child.val().phone;
-                currentUser.type = 'client';
-                currentUser.wallet = child.val().wallet || 0;
+                currentUser = { id: child.key, ...child.val() };
             });
-            showToast('👋 Добро пожаловать!');
+            showToast('👋 Добро пожаловать, ' + currentUser.name + '!');
             enterClientMode();
         } else {
             showToast('❌ Пользователь не найден');
@@ -430,38 +453,90 @@ function clientLogin() {
 }
 
 function clientRegister() {
-    const phone = document.getElementById('clientPhone').value.trim();
-    const name = document.getElementById('clientName').value.trim();
-    if (!phone || !name) { showToast('❌ Заполните все поля'); return; }
-    const userId = 'user_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
-    db.ref('users/' + userId).set({ id: userId, name: name, phone: phone, type: 'client', wallet: 1000, createdAt: Date.now() })
-        .then(() => {
-            currentUser = { id: userId, name: name, phone: phone, type: 'client', wallet: 1000 };
+    const login = document.getElementById('loginInput').value.trim();
+    const name = document.getElementById('nameInput').value.trim();
+    if (!login || !name) { showToast('❌ Заполните все поля'); return; }
+    
+    db.ref('users').orderByChild('login').equalTo(login).once('value', (sn) => {
+        if (sn.exists()) { showToast('❌ Логин занят'); return; }
+        
+        const user = { login, name, wallet: 1000 };
+        const ref = db.ref('users').push();
+        ref.set(user).then(() => {
+            currentUser = { id: ref.key, ...user };
             showToast('✅ Регистрация успешна! +1000 ₽');
             enterClientMode();
         });
+    });
 }
 
 function enterClientMode() {
     document.getElementById('clientAuth').classList.add('hidden');
     document.getElementById('clientContent').classList.remove('hidden');
     document.getElementById('userNameDisplay').textContent = currentUser.name + ' 📱';
-    document.getElementById('clientWallet').textContent = (currentUser.wallet || 0).toLocaleString() + ' ₽';
-    renderClientOrders();
+    document.getElementById('clientWallet').textContent = currentUser.wallet + ' ₽';
     renderCart();
-    loadPVZList();
+    loadOrders();
     renderClientQR();
-    loadQR();
+    loadProducts();
+}
+
+function loadProducts() {
+    db.ref('products').on('value', (sn) => {
+        const products = [];
+        sn.forEach(child => {
+            products.push({ id: child.key, ...child.val() });
+        });
+        renderProducts(products);
+    });
+}
+
+function renderProducts(products) {
+    const grid = document.getElementById('productsGrid');
+    if (!products || products.length === 0) {
+        grid.innerHTML = '<div style="text-align:center;color:#555;padding:15px;">Товаров нет</div>';
+        return;
+    }
+    grid.innerHTML = products.map((p, idx) => `
+        <div class="product-card" onclick="openProduct('${p.id}', ${idx})">
+            <div class="name">${p.name}</div>
+            <div class="price">${p.price} ₽</div>
+            <button class="add-btn" onclick="event.stopPropagation();addToCart('${p.id}')">➕</button>
+        </div>
+    `).join('');
+}
+
+function openProduct(id, idx) {
+    db.ref('products/' + id).once('value', (sn) => {
+        const p = sn.val();
+        if (!p) return;
+        selectedProduct = id;
+        document.getElementById('modalName').textContent = p.name;
+        document.getElementById('modalPrice').textContent = p.price + ' ₽';
+        document.getElementById('modalSeller').textContent = '🏪 ' + (p.seller || 'Продавец');
+        document.getElementById('productModal').classList.remove('hidden');
+    });
+}
+
+function closeModal() {
+    document.getElementById('productModal').classList.add('hidden');
+}
+
+function addToCartFromModal() {
+    if (selectedProduct) addToCart(selectedProduct);
+    closeModal();
 }
 
 function addToCart(productId) {
-    const product = allProducts.find(p => p.id === productId);
-    if (!product) return;
-    const existing = cart.find(i => i.id === productId);
-    if (existing) existing.qty++;
-    else cart.push({ ...product, qty: 1 });
-    renderCart();
-    showToast(`✅ ${product.name} добавлен`);
+    db.ref('products/' + productId).once('value', (sn) => {
+        const p = sn.val();
+        if (!p) return;
+        const existing = cart.find(i => i.id === productId);
+        if (existing) existing.qty++;
+        else cart.push({ id: productId, name: p.name, price: p.price, qty: 1, seller: p.seller });
+        renderCart();
+        showToast(`✅ ${p.name} добавлен`);
+    });
 }
 
 function renderCart() {
@@ -473,169 +548,166 @@ function renderCart() {
         return;
     }
     let total = 0;
-    container.innerHTML = cart.map(item => {
+    container.innerHTML = cart.map((item, idx) => {
         total += item.price * item.qty;
-        return `<div class="cart-item"><span>${item.name} x${item.qty}</span><span>${(item.price * item.qty).toLocaleString()} ₽ <button onclick="removeFromCart('${item.id}')" style="background:none;border:none;color:#ff4444;cursor:pointer;">✕</button></span></div>`;
+        return `<div class="cart-item"><span>${item.name} x${item.qty}</span><span>${(item.price * item.qty)} ₽ <button onclick="removeFromCart(${idx})" style="background:none;border:none;color:#ff4444;cursor:pointer;">✕</button></span></div>`;
     }).join('');
-    totalSpan.textContent = total.toLocaleString() + ' ₽';
+    totalSpan.textContent = total + ' ₽';
 }
 
-function removeFromCart(id) { cart = cart.filter(i => i.id !== id); renderCart(); }
-function clearCart() { cart = []; renderCart(); showToast('🗑️ Очищено'); }
+function removeFromCart(idx) {
+    cart.splice(idx, 1);
+    renderCart();
+}
+
+function clearCart() {
+    cart = [];
+    renderCart();
+    showToast('🗑️ Очищено');
+}
 
 function switchClientTab(tab) {
     document.querySelectorAll('#clientContent .tab').forEach(t => t.classList.toggle('active', t.dataset.ctab === tab));
     document.getElementById('clientShopTab').classList.toggle('hidden', tab !== 'shop');
     document.getElementById('clientOrdersTab').classList.toggle('hidden', tab !== 'orders');
     document.getElementById('clientQrTab').classList.toggle('hidden', tab !== 'qr');
-    if (tab === 'orders') renderClientOrders();
+    if (tab === 'orders') loadOrders();
     if (tab === 'qr') renderClientQR();
 }
 
-function renderClientOrders() {
-    const container = document.getElementById('clientOrders');
-    db.ref('orders').orderByChild('userId').equalTo(currentUser.id).on('value', (sn) => {
+function loadOrders() {
+    const container = document.getElementById('ordersList');
+    db.ref('orders').orderByChild('user').equalTo(currentUser.login).on('value', (sn) => {
         const orders = [];
-        sn.forEach(child => orders.push({ id: child.key, ...child.val() }));
+        sn.forEach(child => {
+            orders.push({ id: child.key, ...child.val() });
+        });
         orders.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        
         if (orders.length === 0) {
-            container.innerHTML = '<div style="text-align:center;color:#555;padding:20px;font-size:0.85rem;">📭 Нет заказов</div>';
+            container.innerHTML = '<div style="text-align:center;color:#555;padding:20px;">📭 Нет заказов</div>';
             return;
         }
         container.innerHTML = orders.map(o => `
             <div class="order-card">
-                <div class="order-header"><span class="order-number">🆔 ${o.id}</span><span class="order-status ${getStatusClass(o.status)}">${getStatusText(o.status)}</span></div>
-                <div class="order-items-list">${o.items.map(i => `<div class="item-row"><span class="item-name">${i.name}</span><span class="item-qty">x${i.qty}</span><span style="color:#f5a623;">${(i.price * i.qty).toLocaleString()} ₽</span></div>`).join('')}</div>
-                <div class="order-total">💰 ${o.total.toLocaleString()} ₽ ${o.type === 'pvz' ? `🏪 ПВЗ №${o.pvzNumber}` : `📍 ${o.address}`}</div>
+                <div class="order-header">
+                    <span class="order-number">🆔 ${o.id}</span>
+                    <span class="order-status ${o.status === 'delivered' ? 'status-delivered' : o.status === 'ready' ? 'status-ready' : 'status-waiting'}">${o.status === 'delivered' ? '📦 Выдан' : o.status === 'ready' ? '✅ Готов' : '⏳ В обработке'}</span>
+                </div>
+                <div>${o.items.map(i => `${i.name} x${i.qty}`).join(', ')}</div>
+                <div style="font-weight:bold;">💰 ${o.total} ₽</div>
                 <div class="order-code">🔑 ${o.code}</div>
-                ${o.status === 'ready' ? `<div style="color:#4CAF50;font-size:0.7rem;">✅ Готов к выдаче</div>` : ''}
             </div>
         `).join('');
     });
 }
 
 function renderClientQR() {
-    const container = document.getElementById('clientQrContainer');
-    const info = document.getElementById('clientQrInfo');
-    if (!currentUser.id) { container.innerHTML = '<div style="color:#888;">Войдите в аккаунт</div>'; info.textContent = ''; return; }
-    db.ref('orders').orderByChild('userId').equalTo(currentUser.id).once('value', (sn) => {
-        const orders = [];
+    const container = document.getElementById('qrContainer');
+    const info = document.getElementById('qrInfo');
+    if (!currentUser) {
+        container.innerHTML = '<div style="color:#888;">Войдите в аккаунт</div>';
+        info.textContent = '';
+        return;
+    }
+    
+    db.ref('orders').orderByChild('user').equalTo(currentUser.login).once('value', (sn) => {
+        const activeOrders = [];
         sn.forEach(child => {
             const order = child.val();
-            if (order.status === 'to_pvz' || order.status === 'ready') orders.push({ id: child.key, ...order });
+            if (order.status !== 'delivered') {
+                activeOrders.push({ id: child.key, ...order });
+            }
         });
-        if (orders.length === 0) { container.innerHTML = '<div style="color:#888;">Нет активных заказов</div>'; info.textContent = 'Оформите заказ'; return; }
-        const order = orders[0];
-        const qrData = { orderId: order.id, userId: currentUser.id, items: order.items.map(i => ({ name: i.name, price: i.price })), total: order.total };
+        
+        if (activeOrders.length === 0) {
+            container.innerHTML = '<div style="color:#888;">Нет активных заказов</div>';
+            info.textContent = 'Оформите заказ';
+            return;
+        }
+        
+        const order = activeOrders[0];
+        const qrData = { orderId: order.id, user: currentUser.login, items: order.items, total: order.total };
         generateQR(container, qrData);
-        info.innerHTML = `<div style="background:rgba(255,255,255,0.05);padding:10px;border-radius:10px;margin-top:8px;"><div>📦 ${order.items.length} товаров</div><div>💰 ${order.total} ₽</div></div>`;
+        info.innerHTML = `<div style="background:rgba(255,255,255,0.05);padding:10px;border-radius:10px;">📦 ${order.items.length} товаров<br>💰 ${order.total} ₽</div>`;
     });
 }
 
-// ===== ОФОРМЛЕНИЕ =====
-function showCheckout() {
+function createOrder() {
+    if (!currentUser) { showToast('❌ Войдите в аккаунт'); return; }
     if (cart.length === 0) { showToast('❌ Корзина пуста'); return; }
-    document.getElementById('checkoutModal').classList.remove('hidden');
-    updatePVZSelect();
-}
-
-function closeCheckout() { document.getElementById('checkoutModal').classList.add('hidden'); }
-
-function toggleDeliveryFields() {
-    const type = document.getElementById('deliveryType').value;
-    document.getElementById('pvzField').style.display = type === 'pvz' ? 'block' : 'none';
-    document.getElementById('courierField').style.display = type === 'courier' ? 'block' : 'none';
-}
-
-function confirmCheckout() {
-    const type = document.getElementById('deliveryType').value;
     const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
-    if ((currentUser.wallet || 0) < total) { showToast('❌ Недостаточно средств'); return; }
-    if (type === 'pvz') {
-        const pvzNumber = document.getElementById('pvzSelect').value;
-        if (!pvzNumber) { showToast('❌ Выберите ПВЗ'); return; }
-        const pvz = allPVZ.find(p => p.number === pvzNumber);
-        createOrder('pvz', pvzNumber, pvz ? pvz.address : '');
-    } else {
-        const address = document.getElementById('deliveryAddress').value.trim();
-        if (!address) { showToast('❌ Введите адрес'); return; }
-        createOrder('courier', address);
-    }
-}
-
-function createOrder(type, address, pvzAddress) {
-    const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    if (currentUser.wallet < total) { showToast('❌ Недостаточно средств'); return; }
+    
     const orderId = 'ORD' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substr(2, 4).toUpperCase();
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const order = {
         id: orderId,
-        userId: currentUser.id,
-        userName: currentUser.name,
-        phone: currentUser.phone,
-        items: cart.map(i => ({ id: i.id, name: i.name, price: i.price, qty: i.qty, photo: i.photo || null })),
+        user: currentUser.login,
+        items: cart.map(i => ({ name: i.name, price: i.price, qty: i.qty })),
         total: total,
-        type: type,
-        address: type === 'courier' ? address : pvzAddress,
-        pvzNumber: type === 'pvz' ? address : null,
         code: code,
-        status: type === 'pvz' ? 'to_pvz' : 'to_courier',
+        status: 'pending',
         createdAt: Date.now()
     };
-    const newWallet = (currentUser.wallet || 0) - total;
-    db.ref('users/' + currentUser.id + '/wallet').set(newWallet);
-    currentUser.wallet = newWallet;
-    document.getElementById('clientWallet').textContent = newWallet.toLocaleString() + ' ₽';
-    db.ref('orders/' + orderId).set(order).then(() => {
-        showToast(`✅ Заказ #${orderId} оформлен! Код: ${code}`);
+    
+    // Списываем деньги
+    currentUser.wallet -= total;
+    db.ref('users/' + currentUser.id).update({ wallet: currentUser.wallet });
+    document.getElementById('clientWallet').textContent = currentUser.wallet + ' ₽';
+    
+    db.ref('orders').push().set(order).then(() => {
         cart = [];
         renderCart();
-        renderClientOrders();
+        loadOrders();
         renderClientQR();
-        closeCheckout();
+        showToast(`✅ Заказ #${orderId} оформлен! Код: ${code}`);
     });
 }
 
-// ===== ПРОДАВЕЦ =====
+function addMoney() {
+    if (!currentUser) { showToast('❌ Войдите'); return; }
+    const amount = prompt('Введите сумму пополнения:', '500');
+    if (amount && !isNaN(amount) && parseInt(amount) > 0) {
+        currentUser.wallet += parseInt(amount);
+        db.ref('users/' + currentUser.id).update({ wallet: currentUser.wallet });
+        document.getElementById('clientWallet').textContent = currentUser.wallet + ' ₽';
+        if (currentRole === 'seller') document.getElementById('sellerWallet').textContent = currentUser.wallet + ' ₽';
+        showToast(`✅ +${amount} ₽`);
+    }
+}
+
+// ========== ПРОДАВЕЦ ==========
 function sellerRegister() {
-    const fullName = document.getElementById('sellerFullName').value.trim();
-    const shopName = document.getElementById('sellerShopName').value.trim();
-    const phone = document.getElementById('sellerPhone').value.trim();
-    const login = document.getElementById('sellerLogin').value.trim();
-    const password = document.getElementById('sellerPassword').value.trim();
-    if (!fullName || !shopName || !phone || !login || !password) { showToast('❌ Заполните все поля'); return; }
-    const sellerId = 'seller_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
-    db.ref('sellers/' + sellerId).set({ id: sellerId, fullName: fullName, shopName: shopName, phone: phone, login: login, password: password, wallet: 0, createdAt: Date.now() })
-        .then(() => {
+    const login = document.getElementById('sellerLoginInput').value.trim();
+    const pass = document.getElementById('sellerPassInput').value.trim();
+    if (!login || !pass) { showToast('❌ Заполните все поля'); return; }
+    
+    db.ref('sellers').orderByChild('login').equalTo(login).once('value', (sn) => {
+        if (sn.exists()) { showToast('❌ Логин занят'); return; }
+        const seller = { login, password: pass, wallet: 0, shopName: 'Магазин ' + login };
+        const ref = db.ref('sellers').push();
+        ref.set(seller).then(() => {
             showToast('✅ Регистрация продавца успешна!');
-            currentUser = { id: sellerId, name: fullName, shopName: shopName, type: 'seller', wallet: 0 };
-            document.getElementById('sellerAuth').classList.add('hidden');
-            document.getElementById('sellerContent').classList.remove('hidden');
-            document.getElementById('userNameDisplay').textContent = currentUser.shopName + ' 🏪';
-            document.getElementById('sellerWallet').textContent = (currentUser.wallet || 0).toLocaleString() + ' ₽';
-            renderSellerProducts();
-            loadProducts();
+            currentUser = { id: ref.key, login: login, name: seller.shopName, wallet: 0 };
+            enterSellerMode();
         });
+    });
 }
 
 function sellerLogin() {
-    const login = document.getElementById('sellerLogin').value.trim();
-    const password = document.getElementById('sellerPassword').value.trim();
-    if (!login || !password) { showToast('❌ Заполните поля'); return; }
+    const login = document.getElementById('sellerLoginInput').value.trim();
+    const pass = document.getElementById('sellerPassInput').value.trim();
     db.ref('sellers').orderByChild('login').equalTo(login).once('value', (sn) => {
         if (sn.exists()) {
             let found = false;
             sn.forEach(child => {
-                const data = child.val();
-                if (data.password === password) {
-                    currentUser = { id: child.key, name: data.fullName, shopName: data.shopName, type: 'seller', wallet: data.wallet || 0 };
+                const seller = child.val();
+                if (seller.password === pass) {
+                    currentUser = { id: child.key, login: login, name: seller.shopName, wallet: seller.wallet || 0 };
                     found = true;
-                    showToast('👋 Добро пожаловать!');
-                    document.getElementById('sellerAuth').classList.add('hidden');
-                    document.getElementById('sellerContent').classList.remove('hidden');
-                    document.getElementById('userNameDisplay').textContent = currentUser.shopName + ' 🏪';
-                    document.getElementById('sellerWallet').textContent = (currentUser.wallet || 0).toLocaleString() + ' ₽';
-                    renderSellerProducts();
-                    loadProducts();
+                    showToast('👋 Добро пожаловать, ' + seller.shopName + '!');
+                    enterSellerMode();
                 }
             });
             if (!found) showToast('❌ Неверный пароль');
@@ -645,251 +717,160 @@ function sellerLogin() {
     });
 }
 
-function addProduct() {
-    const name = document.getElementById('productName').value.trim();
-    const price = parseInt(document.getElementById('productPrice').value);
-    if (!name || !price || price <= 0) { showToast('❌ Заполните название и цену'); return; }
-    const productId = 'prod_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
-    const photoFile = document.getElementById('productPhoto').files[0];
-    const saveProduct = (photoUrl) => {
-        db.ref('products/' + productId).set({ id: productId, name: name, price: price, sellerId: currentUser.id, sellerName: currentUser.shopName, isDefault: false, photo: photoUrl || null, createdAt: Date.now() })
-            .then(() => { showToast('✅ Товар добавлен!'); document.getElementById('productName').value = ''; document.getElementById('productPrice').value = ''; document.getElementById('productPhoto').value = ''; loadProducts(); });
-    };
-    if (photoFile) { uploadPhoto(photoFile, 'products/' + productId).then(saveProduct).catch(() => saveProduct(null)); } else { saveProduct(null); }
+function enterSellerMode() {
+    document.getElementById('sellerAuth').classList.add('hidden');
+    document.getElementById('sellerContent').classList.remove('hidden');
+    document.getElementById('userNameDisplay').textContent = currentUser.name + ' 🏪';
+    document.getElementById('sellerWallet').textContent = (currentUser.wallet || 0) + ' ₽';
+    loadSellerProducts();
 }
 
-function renderSellerProducts() {
+function loadSellerProducts() {
     const container = document.getElementById('sellerProducts');
-    if (!currentUser.id) { container.innerHTML = ''; return; }
-    db.ref('products').orderByChild('sellerId').equalTo(currentUser.id).on('value', (sn) => {
-        const items = [];
-        sn.forEach(child => items.push({ id: child.key, ...child.val() }));
-        if (items.length === 0) { container.innerHTML = '<div style="color:#555;padding:8px;font-size:0.8rem;">Нет товаров</div>'; return; }
-        container.innerHTML = items.map(p => `
+    db.ref('products').orderByChild('seller').equalTo(currentUser.name).on('value', (sn) => {
+        const products = [];
+        sn.forEach(child => {
+            products.push({ id: child.key, ...child.val() });
+        });
+        if (products.length === 0) {
+            container.innerHTML = '<div style="color:#555;padding:8px;">Нет товаров</div>';
+            return;
+        }
+        container.innerHTML = products.map(p => `
             <div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:8px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
-                <div>${p.photo ? `<img src="${p.photo}" style="width:30px;height:30px;border-radius:6px;object-fit:cover;vertical-align:middle;margin-right:6px;">` : ''}
-                <span style="font-weight:bold;font-size:0.8rem;">${p.name}</span>
-                <span style="color:#f5a623;font-size:0.8rem;">${p.price} ₽</span></div>
+                <div><span style="font-weight:bold;font-size:0.8rem;">${p.name}</span> <span style="color:#f5a623;">${p.price} ₽</span></div>
                 <button class="btn-danger" onclick="deleteProduct('${p.id}')" style="padding:4px 10px;border:none;border-radius:30px;cursor:pointer;font-size:0.7rem;">✕</button>
             </div>
         `).join('');
     });
 }
 
-function deleteProduct(productId) { if (!confirm('Удалить товар?')) return; db.ref('products/' + productId).remove(); showToast('🗑️ Удалено'); }
-
-// ===== ПВЗ =====
-function pvzLogin() {
-    const login = document.getElementById('pvzLogin').value.trim();
-    const password = document.getElementById('pvzPassword').value.trim();
-    if (!login || !password) { showToast('❌ Заполните поля'); return; }
-    db.ref('pvz').orderByChild('number').equalTo(login).once('value', (sn) => {
-        if (sn.exists()) {
-            let found = false;
-            sn.forEach(child => {
-                const data = child.val();
-                if (data.password === password) {
-                    currentUser = { id: child.key, name: 'ПВЗ №' + data.number, type: 'pvz', pvzNumber: data.number };
-                    found = true;
-                    showToast('👋 Добро пожаловать, ПВЗ №' + data.number + '!');
-                    document.getElementById('pvzAuth').classList.add('hidden');
-                    document.getElementById('pvzContent').classList.remove('hidden');
-                    document.getElementById('userNameDisplay').textContent = currentUser.name + ' 🏪';
-                    pvzAction('receive');
-                    loadPVZList();
-                }
-            });
-            if (!found) showToast('❌ Неверный пароль');
-        } else {
-            showToast('❌ ПВЗ не найден');
-        }
+function addProduct() {
+    if (!currentUser) { showToast('❌ Войдите'); return; }
+    const name = document.getElementById('productName').value.trim();
+    const price = parseInt(document.getElementById('productPrice').value);
+    if (!name || !price || price <= 0) { showToast('❌ Заполните название и цену'); return; }
+    
+    const product = { name, price, seller: currentUser.name };
+    db.ref('products').push().set(product).then(() => {
+        document.getElementById('productName').value = '';
+        document.getElementById('productPrice').value = '';
+        showToast('✅ Товар добавлен!');
     });
 }
 
-function pvzAction(action) {
-    const container = document.getElementById('pvzOrders');
-    if (action === 'receive') {
-        db.ref('orders').orderByChild('status').equalTo('to_pvz').on('value', renderPVZOrders);
-    } else if (action === 'issue') {
-        db.ref('orders').orderByChild('status').equalTo('ready').on('value', renderPVZOrders);
+function deleteProduct(productId) {
+    if (!confirm('Удалить товар?')) return;
+    db.ref('products/' + productId).remove().then(() => {
+        showToast('🗑️ Удалено');
+    });
+}
+
+// ========== ПВЗ ==========
+function pvzLogin() {
+    const code = document.getElementById('pvzCode').value.trim();
+    if (!code) { showToast('❌ Введите код ПВЗ'); return; }
+    if (code === '12345') {
+        document.getElementById('pvzAuth').classList.add('hidden');
+        document.getElementById('pvzContent').classList.remove('hidden');
+        document.getElementById('userNameDisplay').textContent = '🏪 ПВЗ';
+        showToast('👋 Добро пожаловать в ПВЗ!');
+        pvzView('pending');
+    } else {
+        showToast('❌ Неверный код ПВЗ');
     }
 }
 
-function renderPVZOrders(sn) {
-    const container = document.getElementById('pvzOrders');
-    const orders = [];
-    sn.forEach(child => orders.push({ id: child.key, ...child.val() }));
-    const filtered = orders.filter(o => o.pvzNumber === currentUser.pvzNumber);
-    if (filtered.length === 0) { container.innerHTML = '<div style="text-align:center;color:#555;padding:20px;font-size:0.85rem;">📭 Нет заказов</div>'; return; }
-    container.innerHTML = filtered.map(o => `
-        <div class="order-card">
-            <div class="order-header"><span class="order-number">🆔 ${o.id}</span><span class="order-status ${getStatusClass(o.status)}">${getStatusText(o.status)}</span></div>
-            <div class="order-items-list">${o.items.map(i => `<div class="item-row"><span class="item-name">${i.name}</span><span class="item-qty">x${i.qty}</span><span style="color:#f5a623;">${(i.price * i.qty).toLocaleString()} ₽</span></div>`).join('')}</div>
-            <div class="order-total">💰 ${o.total.toLocaleString()} ₽</div>
-            <div style="font-size:0.75rem;color:#888;">👤 ${o.userName}</div>
-            <div class="order-code">🔑 ${o.code}</div>
-            <div class="order-actions">
-                ${o.status === 'to_pvz' ? `<button class="btn-success" onclick="pvzReady('${o.id}')">✅ Готов к выдаче</button>` : ''}
-                ${o.status === 'ready' ? `<button class="btn-primary" onclick="pvzIssue('${o.id}')">📤 Выдать</button>` : ''}
-                ${o.status === 'ready' ? `<button class="btn-danger" onclick="pvzReturn('${o.id}')">🔄 Возврат</button>` : ''}
-            </div>
-        </div>
-    `).join('');
-}
-
-function pvzReady(orderId) { db.ref('orders/' + orderId).update({ status: 'ready' }); showToast('✅ Заказ готов к выдаче'); pvzAction('receive'); }
-
-function pvzIssue(orderId) {
-    const code = document.getElementById('pvzScanInput').value.trim();
-    if (!code) { const manualCode = prompt('Введите код клиента:'); if (!manualCode) return; verifyAndIssue(orderId, manualCode); } else { verifyAndIssue(orderId, code); document.getElementById('pvzScanInput').value = ''; }
-}
-
-function verifyAndIssue(orderId, code) {
-    db.ref('orders/' + orderId).once('value', (sn) => {
-        const order = sn.val();
-        if (!order) { showToast('❌ Заказ не найден'); return; }
-        if (order.code === code) { db.ref('orders/' + orderId).update({ status: 'delivered' }); showToast('✅ Заказ выдан!'); document.getElementById('pvzScanResult').innerHTML = ''; pvzAction('issue'); } else { showToast('❌ Неверный код!'); document.getElementById('pvzScanResult').innerHTML = '<div style="color:#ff4444;">❌ Неверный код</div>'; }
-    });
-}
-
-function pvzScanQR(input) {
-    const result = document.getElementById('pvzScanResult');
-    if (!input || input.length < 6) { result.innerHTML = ''; return; }
-    db.ref('orders').orderByChild('code').equalTo(input).once('value', (sn) => {
-        let found = false;
+function pvzView(type) {
+    const container = document.getElementById('pvzOrdersList');
+    const status = type === 'pending' ? 'pending' : 'ready';
+    db.ref('orders').orderByChild('status').equalTo(status).on('value', (sn) => {
+        const orders = [];
         sn.forEach(child => {
-            const order = child.val();
-            if (order.pvzNumber === currentUser.pvzNumber) {
-                found = true;
-                result.innerHTML = `
-                    <div style="background:rgba(76,175,80,0.15);padding:12px;border-radius:12px;border:1px solid #4CAF50;">
-                        <div style="color:#4CAF50;font-weight:bold;">✅ Заказ найден!</div>
-                        <div>👤 ${order.userName}</div>
-                        <div>📦 ${order.items.map(i => `${i.name} x${i.qty}`).join(', ')}</div>
-                        <div style="font-weight:bold;">${order.total} ₽</div>
-                        <div style="font-size:0.8rem;color:#888;">Код: ${order.code}</div>
-                        ${order.status === 'ready' ? `<button onclick="verifyAndIssue('${order.id}', '${order.code}')" style="margin-top:8px;padding:8px 20px;border-radius:30px;border:none;background:#4CAF50;color:white;font-weight:bold;cursor:pointer;">📤 Выдать</button>` : `<div style="color:#ff9800;font-size:0.8rem;">Статус: ${getStatusText(order.status)}</div>`}
-                    </div>
-                `;
-            }
+            orders.push({ id: child.key, ...child.val() });
         });
-        if (!found) { result.innerHTML = '<div style="color:#ff4444;">❌ Заказ не найден или не для этого ПВЗ</div>'; }
-    });
-}
-
-function pvzReturn(orderId) { if (!confirm('Оформить возврат?')) return; db.ref('orders/' + orderId).update({ status: 'return' }); showToast('🔄 Возврат оформлен'); pvzAction('issue'); }
-
-// ===== МОДАЛКА ТОВАРА =====
-function openProductModal(productId) {
-    currentProductId = productId;
-    selectedRating = 0;
-    document.getElementById('reviewPhoto').value = '';
-    const product = allProducts.find(p => p.id === productId);
-    if (!product) return;
-    document.getElementById('modalProductName').textContent = product.name;
-    document.getElementById('modalProductSeller').textContent = '🏪 ' + (product.sellerName || 'Продавец');
-    document.getElementById('modalProductPrice').textContent = product.price.toLocaleString() + ' ₽';
-    const photoContainer = document.getElementById('modalProductPhoto');
-    photoContainer.innerHTML = product.photo ? `<img src="${product.photo}" style="max-width:100%;max-height:150px;border-radius:10px;object-fit:cover;">` : '';
-    document.querySelectorAll('#modalStars .star').forEach(s => s.classList.remove('active'));
-    document.getElementById('modalReviewText').value = '';
-    loadReviews(productId);
-    document.getElementById('productModal').classList.remove('hidden');
-}
-
-function closeProductModal() { document.getElementById('productModal').classList.add('hidden'); }
-
-function setRating(rating) {
-    selectedRating = rating;
-    document.querySelectorAll('#modalStars .star').forEach(s => s.classList.toggle('active', parseInt(s.dataset.star) <= rating));
-}
-
-function submitReview() {
-    if (!currentUser.id || currentUser.type !== 'client') { showToast('❌ Войдите как клиент'); return; }
-    if (selectedRating === 0) { showToast('❌ Поставьте оценку'); return; }
-    const text = document.getElementById('modalReviewText').value.trim();
-    if (!text) { showToast('❌ Напишите отзыв'); return; }
-    const reviewId = 'rev_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
-    const photoFile = document.getElementById('reviewPhoto').files[0];
-    const saveReview = (photoUrl) => {
-        db.ref('reviews/' + currentProductId + '/' + reviewId).set({ id: reviewId, userId: currentUser.id, userName: currentUser.name, rating: selectedRating, text: text, photo: photoUrl || null, createdAt: Date.now() })
-            .then(() => { showToast('✅ Отзыв добавлен!'); loadReviews(currentProductId); document.getElementById('modalReviewText').value = ''; document.querySelectorAll('#modalStars .star').forEach(s => s.classList.remove('active')); selectedRating = 0; document.getElementById('reviewPhoto').value = ''; });
-    };
-    if (photoFile) { uploadPhoto(photoFile, 'reviews/' + currentProductId + '/' + reviewId).then(saveReview).catch(() => saveReview(null)); } else { saveReview(null); }
-}
-
-function loadReviews(productId) {
-    const container = document.getElementById('modalReviews');
-    db.ref('reviews/' + productId).orderByChild('createdAt').limitToLast(20).on('value', (sn) => {
-        const reviews = [];
-        sn.forEach(child => reviews.push({ id: child.key, ...child.val() }));
-        reviews.reverse();
-        if (reviews.length === 0) { container.innerHTML = '<div style="color:#555;padding:8px;font-size:0.8rem;">Нет отзывов</div>'; return; }
-        container.innerHTML = reviews.map(r => `
-            <div class="review-item"><div class="review-user">👤 ${r.userName || 'Кто-то'}</div><div class="review-rating">${'⭐'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</div><div class="review-text">${r.text || ''}</div>${r.photo ? `<img src="${r.photo}" class="review-photo" style="max-width:80px;max-height:80px;border-radius:6px;margin-top:4px;object-fit:cover;">` : ''}<div class="review-date">${new Date(r.createdAt).toLocaleDateString()}</div></div>
+        if (orders.length === 0) {
+            container.innerHTML = '<div style="text-align:center;color:#555;padding:20px;">📭 Нет заказов</div>';
+            return;
+        }
+        container.innerHTML = orders.map(o => `
+            <div class="order-card">
+                <div class="order-header">
+                    <span class="order-number">🆔 ${o.id}</span>
+                    <span class="order-status ${o.status === 'ready' ? 'status-ready' : 'status-waiting'}">${o.status === 'ready' ? '✅ Готов' : '⏳ Ожидает'}</span>
+                </div>
+                <div>👤 ${o.user}</div>
+                <div>${o.items.map(i => `${i.name} x${i.qty}`).join(', ')}</div>
+                <div style="font-weight:bold;">💰 ${o.total} ₽</div>
+                <div class="order-code">🔑 ${o.code}</div>
+                ${o.status === 'pending' ? `<button class="btn-success" onclick="pvzReady('${o.id}')" style="margin-top:4px;padding:4px 12px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">✅ Готов к выдаче</button>` : ''}
+                ${o.status === 'ready' ? `<button class="btn-primary" onclick="pvzDeliver('${o.id}')" style="margin-top:4px;padding:4px 12px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📤 Выдать</button>` : ''}
+            </div>
         `).join('');
     });
 }
 
-// ===== ПОПОЛНЕНИЕ =====
-function depositAmount(amount) {
-    if (!currentUser.id) { showToast('❌ Войдите'); return; }
-    const newBalance = (currentUser.wallet || 0) + amount;
-    let path = currentRole === 'client' ? 'users/' + currentUser.id + '/wallet' : 'sellers/' + currentUser.id + '/wallet';
-    db.ref(path).set(newBalance).then(() => {
-        currentUser.wallet = newBalance;
-        if (currentRole === 'client') { document.getElementById('clientWallet').textContent = newBalance.toLocaleString() + ' ₽'; }
-        if (currentRole === 'seller') { document.getElementById('sellerWallet').textContent = newBalance.toLocaleString() + ' ₽'; }
-        document.getElementById('depositCurrentBalance').textContent = newBalance.toLocaleString() + ' ₽';
-        showToast(`✅ +${amount} ₽`);
-        setTimeout(() => closeDepositModal(), 500);
-    });
-}
-
-function depositCustom() {
-    const amount = parseInt(document.getElementById('depositCustomAmount').value);
-    if (!amount || amount <= 0) { showToast('❌ Введите сумму'); return; }
-    depositAmount(amount);
-}
-
-function openDepositModal(target) {
-    if (!currentUser.id) { showToast('❌ Войдите'); return; }
-    document.getElementById('depositCurrentBalance').textContent = (currentUser.wallet || 0).toLocaleString() + ' ₽';
-    document.getElementById('depositCustomAmount').value = '';
-    document.getElementById('depositModal').classList.remove('hidden');
-}
-
-function closeDepositModal() { document.getElementById('depositModal').classList.add('hidden'); }
-
-// ===== ПВЗ СПИСОК =====
-function loadPVZList() {
-    db.ref('pvz').on('value', (sn) => {
-        allPVZ = [];
+function pvzReady(orderId) {
+    db.ref('orders').orderByChild('id').equalTo(orderId).once('value', (sn) => {
         sn.forEach(child => {
-            const data = child.val();
-            allPVZ.push({ id: child.key, number: data.number, address: data.address || 'Адрес не указан' });
+            db.ref('orders/' + child.key).update({ status: 'ready' });
+            showToast('✅ Заказ готов к выдаче');
         });
-        updatePVZSelect();
     });
 }
 
-function updatePVZSelect() {
-    const select = document.getElementById('pvzSelect');
-    if (!select) return;
-    select.innerHTML = '<option value="">-- Выберите ПВЗ --</option>';
-    allPVZ.forEach(p => {
-        const option = document.createElement('option');
-        option.value = p.number;
-        option.textContent = 'ПВЗ №' + p.number;
-        select.appendChild(option);
+function pvzDeliver(orderId) {
+    db.ref('orders').orderByChild('id').equalTo(orderId).once('value', (sn) => {
+        sn.forEach(child => {
+            db.ref('orders/' + child.key).update({ status: 'delivered' });
+            showToast('✅ Заказ выдан!');
+        });
     });
 }
 
-// ===== ИНИЦИАЛИЗАЦИЯ =====
-loadPVZList();
-loadProducts();
-loadQR();
-console.log('🛍️ WHOPPER MARKET');
+function pvzFindOrder(code) {
+    const result = document.getElementById('pvzResult');
+    if (!code || code.length < 6) { result.innerHTML = ''; return; }
+    
+    db.ref('orders').orderByChild('code').equalTo(code).once('value', (sn) => {
+        if (sn.exists()) {
+            sn.forEach(child => {
+                const o = child.val();
+                result.innerHTML = `
+                    <div style="background:rgba(76,175,80,0.15);padding:12px;border-radius:12px;border:1px solid #4CAF50;">
+                        <div style="color:#4CAF50;font-weight:bold;">✅ Заказ найден!</div>
+                        <div>👤 ${o.user}</div>
+                        <div>📦 ${o.items.map(i => `${i.name} x${i.qty}`).join(', ')}</div>
+                        <div style="font-weight:bold;">💰 ${o.total} ₽</div>
+                        <div>Код: ${o.code}</div>
+                        ${o.status === 'ready' ? `<button onclick="pvzDeliver('${o.id}')" style="margin-top:8px;padding:8px 20px;border-radius:30px;border:none;background:#4CAF50;color:white;font-weight:bold;cursor:pointer;">📤 Выдать</button>` : `<div style="color:#ff9800;">Статус: ${o.status === 'pending' ? 'Ожидает' : 'Выдан'}</div>`}
+                    </div>
+                `;
+            });
+        } else {
+            result.innerHTML = '<div style="color:#ff4444;">❌ Заказ не найден</div>';
+        }
+    });
+}
+
+// ========== ИНИЦИАЛИЗАЦИЯ ==========
+// Добавляем тестовые товары
+db.ref('products').once('value', (sn) => {
+    if (!sn.exists()) {
+        const testProducts = [
+            { name: 'Смартфон X Pro', price: 49990, seller: 'WHOPPER Shop' },
+            { name: 'Наушники Pro Max', price: 8990, seller: 'WHOPPER Shop' },
+            { name: 'Фитнес-браслет 5', price: 3990, seller: 'WHOPPER Shop' },
+            { name: 'Игровая мышь RGB', price: 2590, seller: 'WHOPPER Shop' },
+            { name: 'Клавиатура механическая', price: 5990, seller: 'WHOPPER Shop' },
+            { name: 'Монитор 27" 4K', price: 32990, seller: 'WHOPPER Shop' }
+        ];
+        testProducts.forEach(p => db.ref('products').push().set(p));
+    }
+});
+
+console.log('🛍️ WHOPPER MARKET с Firebase и QR-сканированием');
+console.log('📷 Используйте камеру для сканирования QR-кодов заказов');
 </script>
 </body>
 </html>
