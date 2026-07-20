@@ -3,20 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Маркетплейс | Вход</title>
+    <title>Вход | Маркетплейс</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
     <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f3b5f, #1b5a7a);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
         .auth-container {
             max-width: 420px;
             width: 100%;
@@ -24,6 +15,7 @@
             border-radius: 32px;
             padding: 40px 30px;
             box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+            margin: 40px auto;
         }
         .auth-container .logo {
             text-align: center;
@@ -33,9 +25,7 @@
             font-size: 1.8rem;
             color: #0f3b5f;
         }
-        .auth-container .logo h1 i {
-            color: #ffcd3c;
-        }
+        .auth-container .logo h1 i { color: #ffcd3c; }
         .auth-container .logo p {
             color: #64748b;
             font-size: 0.9rem;
@@ -87,66 +77,26 @@
             border-color: #0f3b5f;
             box-shadow: 0 0 0 3px rgba(15,59,95,0.1);
         }
-        .btn {
-            width: 100%;
-            padding: 14px;
-            border-radius: 12px;
-            border: none;
-            font-weight: 700;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: 0.2s;
-            font-family: inherit;
-        }
-        .btn-primary { background: #0f3b5f; color: white; }
-        .btn-primary:hover { background: #1b5a7a; }
-        .btn-success { background: #22c55e; color: white; }
-        .btn-success:hover { background: #16a34a; }
-        .btn-outline { background: transparent; color: #0f3b5f; border: 2px solid #0f3b5f; }
-        .btn-outline:hover { background: #f0f4ff; }
+        .hidden { display: none !important; }
         .auth-divider {
             text-align: center;
             padding: 12px 0;
             color: #94a3b8;
             font-size: 0.85rem;
         }
-        .auth-divider span { background: white; padding: 0 12px; }
         .auth-switch { text-align: center; margin-top: 12px; font-size: 0.85rem; color: #64748b; }
-        .auth-switch a { color: #0f3b5f; font-weight: 600; cursor: pointer; text-decoration: none; }
+        .auth-switch a { color: #0f3b5f; font-weight: 600; cursor: pointer; }
         .auth-switch a:hover { text-decoration: underline; }
-        .hidden { display: none !important; }
-        .notification {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 12px 24px;
-            border-radius: 12px;
-            color: white;
-            font-weight: 600;
-            display: none;
-            z-index: 1000;
-            font-size: 0.9rem;
-            max-width: 90%;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-        .notification.show { display: block; animation: slideIn 0.3s; }
-        .notification.success { background: #22c55e; }
-        .notification.error { background: #ef4444; }
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
         @media (max-width: 480px) {
             .auth-container { padding: 24px 20px; }
             .role-selector { grid-template-columns: 1fr 1fr; gap: 6px; }
             .role-btn { padding: 10px 6px; }
             .role-btn .icon { font-size: 1.4rem; }
         }
+        body { background: linear-gradient(135deg, #0f3b5f, #1b5a7a); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
     </style>
 </head>
 <body>
-
-<div class="notification" id="notif"><span id="notifText"></span></div>
 
 <div class="auth-container" id="app">
     <div class="logo">
@@ -154,31 +104,13 @@
         <p>Войдите в свой аккаунт</p>
     </div>
 
-    <!-- Выбор роли -->
     <div class="role-selector" id="roleSelector">
-        <button class="role-btn active" data-role="client">
-            <span class="icon">🛒</span>
-            <span class="label">Клиент</span>
-            <span class="desc">Покупать товары</span>
-        </button>
-        <button class="role-btn" data-role="seller">
-            <span class="icon">🏷️</span>
-            <span class="label">Продавец</span>
-            <span class="desc">Продавать товары</span>
-        </button>
-        <button class="role-btn" data-role="pvz">
-            <span class="icon">📦</span>
-            <span class="label">ПВЗ</span>
-            <span class="desc">Выдавать заказы</span>
-        </button>
-        <button class="role-btn" data-role="admin">
-            <span class="icon">👑</span>
-            <span class="label">Админ</span>
-            <span class="desc">Управление</span>
-        </button>
+        <button class="role-btn active" data-role="client"><span class="icon">🛒</span><span class="label">Клиент</span><span class="desc">Покупать</span></button>
+        <button class="role-btn" data-role="seller"><span class="icon">🏷️</span><span class="label">Продавец</span><span class="desc">Продавать</span></button>
+        <button class="role-btn" data-role="pvz"><span class="icon">📦</span><span class="label">ПВЗ</span><span class="desc">Выдавать</span></button>
+        <button class="role-btn" data-role="admin"><span class="icon">👑</span><span class="label">Админ</span><span class="desc">Управление</span></button>
     </div>
 
-    <!-- Форма входа -->
     <div id="loginForm">
         <div class="form-group">
             <label id="loginLabel">📧 Email</label>
@@ -204,26 +136,16 @@
             <label>🔑 Пароль ПВЗ</label>
             <input type="password" id="pvzPassword" placeholder="Пароль ПВЗ">
         </div>
-        <button class="btn btn-primary" id="loginBtn">🔐 Войти</button>
+        <button class="btn btn-primary" id="loginBtn" style="width:100%;padding:14px;border-radius:12px;font-size:1rem;">🔐 Войти</button>
     </div>
 
     <div class="auth-divider"><span>или</span></div>
 
-    <!-- Форма регистрации -->
     <div id="registerForm">
-        <div class="form-group">
-            <label>📧 Email</label>
-            <input type="email" id="regEmail" placeholder="email@example.com">
-        </div>
-        <div class="form-group">
-            <label>🔑 Пароль</label>
-            <input type="password" id="regPassword" placeholder="Придумайте пароль">
-        </div>
-        <div class="form-group">
-            <label>👤 Имя / Название</label>
-            <input type="text" id="regName" placeholder="Ваше имя или название магазина">
-        </div>
-        <button class="btn btn-success" id="registerBtn">📝 Зарегистрироваться</button>
+        <div class="form-group"><label>📧 Email</label><input type="email" id="regEmail" placeholder="email@example.com"></div>
+        <div class="form-group"><label>🔑 Пароль</label><input type="password" id="regPassword" placeholder="Придумайте пароль"></div>
+        <div class="form-group"><label>👤 Имя / Название</label><input type="text" id="regName" placeholder="Ваше имя или название магазина"></div>
+        <button class="btn btn-success" id="registerBtn" style="width:100%;padding:14px;border-radius:12px;font-size:1rem;">📝 Зарегистрироваться</button>
     </div>
 
     <div class="auth-switch">
@@ -244,18 +166,9 @@
 
 <script type="module">
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { getDatabase, ref, set, get } from "firebase/database";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyBfoIEyhvlUfIgAvXJwOthT6uzfB4gV0Uo",
-    authDomain: "electronic-journal-5dff1.firebaseapp.com",
-    databaseURL: "https://electronic-journal-5dff1-default-rtdb.firebaseio.com",
-    projectId: "electronic-journal-5dff1",
-    storageBucket: "electronic-journal-5dff1.firebasestorage.app",
-    messagingSenderId: "293962922085",
-    appId: "1:293962922085:web:391c3e453bb2725e392e8c"
-};
+import { firebaseConfig } from "./js/firebase-config.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -264,37 +177,34 @@ const db = getDatabase(app);
 let currentRole = 'client';
 let isLoginMode = true;
 
-// ===== УВЕДОМЛЕНИЯ =====
 function showNotif(text, isError = false) {
-    const el = document.getElementById('notif');
-    const t = document.getElementById('notifText');
-    t.textContent = text;
+    const el = document.getElementById('notif') || (() => {
+        const d = document.createElement('div');
+        d.id = 'notif';
+        d.className = 'notification';
+        document.body.appendChild(d);
+        return d;
+    })();
+    el.textContent = text;
     el.className = 'notification show ' + (isError ? 'error' : 'success');
     clearTimeout(el._t);
     el._t = setTimeout(() => el.classList.remove('show'), 3000);
 }
 
-// ===== ВЫБОР РОЛИ =====
-document.querySelectorAll('.role-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
-        this.classList.add('active');
-        currentRole = this.dataset.role;
-        updateForm();
-    });
-});
+function redirectToRole(role) {
+    const pages = { 'client': 'client.html', 'seller': 'seller.html', 'pvz': 'pvz.html', 'admin': 'admin.html' };
+    const page = pages[role];
+    if (page) { localStorage.setItem('userRole', role); window.location.href = page; }
+}
 
 function updateForm() {
-    // Скрываем все группы
     document.getElementById('loginPasswordGroup').classList.remove('hidden');
     document.getElementById('adminLoginGroup').classList.add('hidden');
     document.getElementById('adminPasswordGroup').classList.add('hidden');
     document.getElementById('pvzLoginGroup').classList.add('hidden');
     document.getElementById('pvzPasswordGroup').classList.add('hidden');
-    
     const label = document.getElementById('loginLabel');
     const emailInput = document.getElementById('loginEmail');
-    
     if (currentRole === 'admin') {
         document.getElementById('adminLoginGroup').classList.remove('hidden');
         document.getElementById('adminPasswordGroup').classList.remove('hidden');
@@ -316,7 +226,15 @@ function updateForm() {
     }
 }
 
-// ===== ПЕРЕКЛЮЧЕНИЕ ВХОД/РЕГИСТРАЦИЯ =====
+document.querySelectorAll('.role-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        currentRole = this.dataset.role;
+        updateForm();
+    });
+});
+
 document.getElementById('switchLink').addEventListener('click', function() {
     isLoginMode = !isLoginMode;
     document.getElementById('loginForm').style.display = isLoginMode ? 'block' : 'none';
@@ -326,7 +244,6 @@ document.getElementById('switchLink').addEventListener('click', function() {
     document.getElementById('switchText').textContent = isLoginMode ? 'Нет аккаунта?' : 'Уже есть аккаунт?';
 });
 
-// ===== ВХОД =====
 document.getElementById('loginBtn').addEventListener('click', async function() {
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value.trim();
@@ -338,17 +255,13 @@ document.getElementById('loginBtn').addEventListener('click', async function() {
     try {
         if (currentRole === 'admin') {
             if (adminLogin === '2347' && adminPass === '2203') {
-                try {
-                    await signInWithEmailAndPassword(auth, 'admin@market.com', 'admin123');
-                } catch(e) {
+                try { await signInWithEmailAndPassword(auth, 'admin@market.com', 'admin123'); } catch(e) {
                     const cred = await createUserWithEmailAndPassword(auth, 'admin@market.com', 'admin123');
                     await set(ref(db, 'users/' + cred.user.uid), { role: 'admin', name: 'Администратор' });
                 }
                 showNotif('✅ Добро пожаловать, Администратор!');
                 redirectToRole('admin');
-            } else {
-                showNotif('❌ Неверный логин или пароль!', true);
-            }
+            } else { showNotif('❌ Неверный логин или пароль!', true); }
             return;
         }
 
@@ -360,9 +273,7 @@ document.getElementById('loginBtn').addEventListener('click', async function() {
                 for (const key in data) {
                     if (data[key].login === pvzLogin && data[key].password === pvzPass) {
                         found = true;
-                        try {
-                            await signInWithEmailAndPassword(auth, 'pvz_' + pvzLogin + '@market.com', pvzPass);
-                        } catch(e) {
+                        try { await signInWithEmailAndPassword(auth, 'pvz_' + pvzLogin + '@market.com', pvzPass); } catch(e) {
                             const cred = await createUserWithEmailAndPassword(auth, 'pvz_' + pvzLogin + '@market.com', pvzPass);
                             await set(ref(db, 'users/' + cred.user.uid), { role: 'pvz', name: 'ПВЗ ' + pvzLogin });
                         }
@@ -372,103 +283,42 @@ document.getElementById('loginBtn').addEventListener('click', async function() {
                     }
                 }
             }
-            if (!found) {
-                showNotif('❌ Неверный логин или пароль ПВЗ!', true);
-            }
+            if (!found) { showNotif('❌ Неверный логин или пароль ПВЗ!', true); }
             return;
         }
 
-        if (!email || !password) {
-            showNotif('❌ Заполните все поля!', true);
-            return;
-        }
-
+        if (!email || !password) { showNotif('❌ Заполните все поля!', true); return; }
         await signInWithEmailAndPassword(auth, email, password);
         showNotif('✅ Добро пожаловать!');
         redirectToRole(currentRole);
-
-    } catch(e) {
-        showNotif('❌ ' + e.message, true);
-    }
+    } catch(e) { showNotif('❌ ' + e.message, true); }
 });
 
-// ===== РЕГИСТРАЦИЯ =====
 document.getElementById('registerBtn').addEventListener('click', async function() {
     const email = document.getElementById('regEmail').value.trim();
     const password = document.getElementById('regPassword').value.trim();
     const name = document.getElementById('regName').value.trim() || 'Пользователь';
-
-    if (!email || !password) {
-        showNotif('❌ Заполните все поля!', true);
-        return;
-    }
-
+    if (!email || !password) { showNotif('❌ Заполните все поля!', true); return; }
     try {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         await set(ref(db, 'users/' + cred.user.uid), { role: currentRole, name: name });
         showNotif('✅ Регистрация успешна!');
         redirectToRole(currentRole);
-    } catch(e) {
-        showNotif('❌ ' + e.message, true);
-    }
+    } catch(e) { showNotif('❌ ' + e.message, true); }
 });
 
-// ===== ПЕРЕНАПРАВЛЕНИЕ ПО РОЛИ =====
-function redirectToRole(role) {
-    const pages = {
-        'client': 'client.html',
-        'seller': 'seller.html',
-        'pvz': 'pvz.html',
-        'admin': 'admin.html'
-    };
-    const page = pages[role];
-    if (page) {
-        // Сохраняем роль в localStorage
-        localStorage.setItem('userRole', role);
-        window.location.href = page;
-    }
-}
-
-// ===== ПРОВЕРКА АВТОРИЗАЦИИ =====
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        const snap = await get(ref(db, 'users/' + user.uid));
-        if (snap.exists()) {
-            const role = snap.val().role;
-            // Если пользователь уже авторизован, перенаправляем
-            const currentPage = window.location.pathname.split('/').pop();
-            const pages = {
-                'client': 'client.html',
-                'seller': 'seller.html',
-                'pvz': 'pvz.html',
-                'admin': 'admin.html'
-            };
-            const targetPage = pages[role];
-            if (targetPage && currentPage !== targetPage && currentPage !== 'index.html') {
-                window.location.href = targetPage;
-            }
-        }
-    }
-});
-
-// ===== ИНИЦИАЛИЗАЦИЯ =====
 updateForm();
 document.getElementById('registerForm').style.display = 'none';
 
-// Если пользователь уже вошёл, перенаправляем
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         const snap = await get(ref(db, 'users/' + user.uid));
         if (snap.exists()) {
             const role = snap.val().role;
-            const pages = {
-                'client': 'client.html',
-                'seller': 'seller.html',
-                'pvz': 'pvz.html',
-                'admin': 'admin.html'
-            };
+            const currentPage = window.location.pathname.split('/').pop();
+            const pages = { 'client': 'client.html', 'seller': 'seller.html', 'pvz': 'pvz.html', 'admin': 'admin.html' };
             const targetPage = pages[role];
-            if (targetPage) {
+            if (targetPage && currentPage !== targetPage && currentPage !== 'vxod.html') {
                 window.location.href = targetPage;
             }
         }
