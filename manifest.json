@@ -1,7 +1,7 @@
 {
     "name": "Маркетплейс",
     "short_name": "Маркет",
-    "start_url": "/vxod.html",
+    "start_url": "/index.html",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#0f3b5f",
