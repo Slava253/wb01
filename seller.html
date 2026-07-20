@@ -54,10 +54,8 @@
 <script type="module">
 import { initializeApp } from "firebase/app";
 import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
-import { getDatabase, ref, get } from "firebase/database";
+import { getDatabase, ref, get, set, push, onValue, remove } from "firebase/database";
 import { firebaseConfig } from "./js/firebase-config.js";
-import { showNotif } from "./js/auth.js";
-import { getProducts, addProduct, deleteProduct, getSellerProducts } from "./js/products.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -66,7 +64,26 @@ const db = getDatabase(app);
 let currentUser = null;
 let currentUserData = null;
 let allProducts = [];
-let myProducts = [];
+
+function showNotif(text, isError = false) {
+    const el = document.getElementById('notif') || (() => {
+        const d = document.createElement('div');
+        d.id = 'notif';
+        d.className = 'notification';
+        document.body.appendChild(d);
+        return d;
+    })();
+    el.textContent = text;
+    el.className = 'notification show ' + (isError ? 'error' : 'success');
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ===== ВЫХОД =====
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await signOut(auth);
+    window.location.href = 'vxod.html';
+});
 
 // ===== РЕНДЕР =====
 function renderCatalog() {
@@ -112,39 +129,38 @@ function renderMyProducts() {
         `;
         card.querySelector('.btn').onclick = async () => {
             if (confirm('Удалить товар?')) {
-                const result = await deleteProduct(p.id);
-                if (result.success) { showNotif('✅ Товар удалён'); } else { showNotif('❌ ' + result.error, true); }
+                await remove(ref(db, 'products/' + p.id));
+                showNotif('✅ Товар удалён');
             }
         };
         grid.appendChild(card);
     });
 }
 
-// ===== ДОБАВЛЕНИЕ ТОВАРА =====
+// ===== ДОБАВЛЕНИЕ =====
 document.getElementById('addProductBtn').onclick = async () => {
     if (!currentUser) { showNotif('❌ Войдите в аккаунт!', true); return; }
     const name = document.getElementById('prodName').value.trim();
     const price = document.getElementById('prodPrice').value.trim();
     const desc = document.getElementById('prodDesc').value.trim();
     if (!name || !price) { showNotif('❌ Заполните название и цену!', true); return; }
-    const result = await addProduct(name, price, desc, currentUser.uid, currentUserData?.name || 'Продавец');
-    if (result.success) {
+    try {
+        const newProduct = {
+            name, price, desc: desc || '',
+            sellerId: currentUser.uid,
+            sellerName: currentUserData?.name || 'Продавец',
+            createdAt: Date.now()
+        };
+        const newRef = push(ref(db, 'products'));
+        await set(newRef, newProduct);
         showNotif('✅ Товар выложен!');
         document.getElementById('prodName').value = '';
         document.getElementById('prodPrice').value = '';
         document.getElementById('prodDesc').value = '';
-    } else {
-        showNotif('❌ ' + result.error, true);
-    }
+    } catch(e) { showNotif('❌ ' + e.message, true); }
 };
 
-// ===== ВЫХОД =====
-document.getElementById('logoutBtn').onclick = async () => {
-    await signOut(auth);
-    window.location.href = 'vxod.html';
-};
-
-// ===== ПРОВЕРКА АВТОРИЗАЦИИ =====
+// ===== АВТОРИЗАЦИЯ =====
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
@@ -161,7 +177,11 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 // ===== ЗАГРУЗКА =====
-getProducts((products) => { allProducts = products; renderCatalog(); renderMyProducts(); });
+onValue(ref(db, 'products'), (snap) => {
+    allProducts = [];
+    if (snap.exists()) { const data = snap.val(); for (const key in data) allProducts.push({ id: key, ...data[key] }); }
+    renderCatalog(); renderMyProducts();
+});
 
 // ===== ВКЛАДКИ =====
 document.querySelectorAll('.tab-btn').forEach(btn => {
