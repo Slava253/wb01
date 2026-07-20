@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ПВЗ | Сканер QR</title>
+    <title>Маркетплейс | Продавец</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
@@ -12,39 +12,37 @@
 
 <div class="container">
     <div class="header">
-        <h1><i class="fas fa-warehouse"></i> ПВЗ</h1>
+        <h1><i class="fas fa-tag"></i> Панель продавца</h1>
         <div class="header-right">
-            <span class="user-badge" id="userBadge">👤 ПВЗ</span>
+            <span class="user-badge" id="userBadge">👤 Продавец</span>
             <button class="btn btn-outline" id="logoutBtn">Выйти</button>
         </div>
     </div>
 
     <div class="tabs">
-        <button class="tab-btn active" data-tab="scan">📷 Сканер QR</button>
-        <button class="tab-btn" data-tab="orders">📋 Заказы</button>
+        <button class="tab-btn active" data-tab="add">➕ Добавить товар</button>
+        <button class="tab-btn" data-tab="myproducts">📦 Мои товары</button>
+        <button class="tab-btn" data-tab="catalog">📋 Все товары</button>
     </div>
 
-    <!-- Сканер -->
-    <div class="tab-content active" id="tab-scan">
-        <div style="text-align:center;padding:30px;">
-            <h2>📷 Сканируйте QR-код клиента</h2>
-            <p style="color:#64748b;margin-bottom:20px;">Наведите камеру на QR-код для получения заказа</p>
-            
-            <div id="scanArea" style="border:2px dashed #cbd5e1;border-radius:16px;padding:40px;max-width:400px;margin:0 auto;">
-                <i class="fas fa-qrcode" style="font-size:4rem;color:#94a3b8;"></i>
-                <p style="margin-top:10px;">Нажмите для сканирования</p>
-                <input type="file" id="qrFileInput" accept="image/*" style="display:none;">
-                <button class="btn btn-primary" id="scanBtn">📷 Выбрать изображение с QR</button>
-                <div id="qrResult" style="margin-top:20px;"></div>
+    <div class="tab-content active" id="tab-add">
+        <div class="add-product-form">
+            <h3>📤 Выложить товар</h3>
+            <div class="row">
+                <input type="text" id="prodName" placeholder="Название товара">
+                <input type="number" id="prodPrice" placeholder="Цена (₽)">
             </div>
-            
-            <div id="scanResult" style="margin-top:20px;"></div>
+            <textarea id="prodDesc" placeholder="Описание товара..."></textarea>
+            <button class="btn btn-success" id="addProductBtn">📤 Выложить товар</button>
         </div>
     </div>
 
-    <!-- Заказы -->
-    <div class="tab-content" id="tab-orders">
-        <div id="ordersList"></div>
+    <div class="tab-content" id="tab-myproducts">
+        <div id="myProductsGrid" class="product-grid"></div>
+    </div>
+
+    <div class="tab-content" id="tab-catalog">
+        <div id="catalogGrid" class="product-grid"></div>
     </div>
 </div>
 
@@ -60,18 +58,27 @@
 
 <script type="module">
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
-import { getDatabase, ref, get, update, onValue } from "firebase/database";
-import { firebaseConfig } from "./js/firebase-config.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
+import { getDatabase, ref, set, get, child, push, onValue, remove } from "firebase/database";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyBfoIEyhvlUfIgAvXJwOthT6uzfB4gV0Uo",
+    authDomain: "electronic-journal-5dff1.firebaseapp.com",
+    databaseURL: "https://electronic-journal-5dff1-default-rtdb.firebaseio.com",
+    projectId: "electronic-journal-5dff1",
+    storageBucket: "electronic-journal-5dff1.firebasestorage.app",
+    messagingSenderId: "293962922085",
+    appId: "1:293962922085:web:391c3e453bb2725e392e8c"
+};
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
 
 let currentUser = null;
-let allOrders = [];
+let currentUserData = null;
+let allProducts = [];
 
-// ===== УВЕДОМЛЕНИЯ =====
 function showNotif(text, isError = false) {
     const el = document.getElementById('notif') || (() => {
         const d = document.createElement('div');
@@ -86,218 +93,174 @@ function showNotif(text, isError = false) {
     el._t = setTimeout(() => el.classList.remove('show'), 3000);
 }
 
-// ===== ВХОД ПВЗ =====
-function showPvzLogin() {
+function renderCatalog() {
+    const grid = document.getElementById('catalogGrid');
+    grid.innerHTML = '';
+    if (allProducts.length === 0) {
+        grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#94a3b8;padding:40px;">Нет товаров</p>';
+        return;
+    }
+    allProducts.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.innerHTML = `
+            <div class="name">${p.name}</div>
+            <div class="price">${p.price} ₽</div>
+            <div class="seller">👤 ${p.sellerName || 'Продавец'}</div>
+            <div style="font-size:0.85rem;color:#475569;">${p.desc || ''}</div>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+function renderMyProducts() {
+    const grid = document.getElementById('myProductsGrid');
+    grid.innerHTML = '';
+    if (!currentUser) {
+        grid.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:40px;">Войдите чтобы видеть свои товары</p>';
+        return;
+    }
+    const myProducts = allProducts.filter(p => p.sellerId === currentUser.uid);
+    if (myProducts.length === 0) {
+        grid.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:40px;">У вас нет товаров</p>';
+        return;
+    }
+    myProducts.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.innerHTML = `
+            <div class="name">${p.name}</div>
+            <div class="price">${p.price} ₽</div>
+            <div style="font-size:0.85rem;color:#475569;">${p.desc || ''}</div>
+            <button class="btn btn-danger" data-id="${p.id}" style="margin-top:4px;">🗑 Удалить</button>
+        `;
+        card.querySelector('.btn').onclick = () => {
+            if (confirm('Удалить товар?')) {
+                remove(ref(db, 'products/' + p.id));
+                showNotif('✅ Товар удалён');
+            }
+        };
+        grid.appendChild(card);
+    });
+}
+
+document.getElementById('addProductBtn').onclick = async () => {
+    if (!currentUser) {
+        showAuthModal('seller');
+        return;
+    }
+    const name = document.getElementById('prodName').value.trim();
+    const price = document.getElementById('prodPrice').value.trim();
+    const desc = document.getElementById('prodDesc').value.trim();
+    if (!name || !price) {
+        showNotif('❌ Заполните название и цену!', true);
+        return;
+    }
+    const newProduct = {
+        name,
+        price,
+        desc: desc || '',
+        sellerId: currentUser.uid,
+        sellerName: currentUserData?.name || 'Продавец',
+        createdAt: Date.now()
+    };
+    const newRef = push(ref(db, 'products'));
+    await set(newRef, newProduct);
+    showNotif('✅ Товар выложен!');
+    document.getElementById('prodName').value = '';
+    document.getElementById('prodPrice').value = '';
+    document.getElementById('prodDesc').value = '';
+    renderMyProducts();
+};
+
+function showAuthModal(role = 'seller') {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.innerHTML = `
         <div class="modal-content">
-            <h3>🏢 Вход для ПВЗ</h3>
-            <label>Логин</label>
-            <input type="text" id="pvzLogin" placeholder="Логин">
+            <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
+            <h3>🔐 Вход для продавца</h3>
+            <label>Email</label>
+            <input type="email" id="authEmail" placeholder="email@example.com">
             <label>Пароль</label>
-            <input type="password" id="pvzPassword" placeholder="Пароль">
-            <button class="btn btn-primary" id="pvzLoginBtn">Войти</button>
+            <input type="password" id="authPassword" placeholder="Пароль">
+            <label>Имя магазина</label>
+            <input type="text" id="authName" placeholder="Название магазина">
+            <button class="btn btn-primary" id="authLoginBtn">Войти</button>
+            <button class="btn btn-success" id="authRegisterBtn">Зарегистрироваться</button>
         </div>
     `;
     document.body.appendChild(modal);
     
-    document.getElementById('pvzLoginBtn').onclick = async () => {
-        const login = document.getElementById('pvzLogin').value;
-        const pass = document.getElementById('pvzPassword').value;
-        
-        // Ищем ПВЗ в базе
-        const snap = await get(ref(db, 'pvz'));
-        if (snap.exists()) {
-            const data = snap.val();
-            for (const key in data) {
-                if (data[key].login === login && data[key].password === pass) {
-                    // Вход как ПВЗ
-                    try {
-                        await signInWithEmailAndPassword(auth, 'pvz_' + login + '@market.com', pass);
-                        modal.remove();
-                        showNotif('✅ Вход выполнен!');
-                        return;
-                    } catch(e) {
-                        // Создаём пользователя для ПВЗ
-                        const cred = await createUserWithEmailAndPassword(auth, 'pvz_' + login + '@market.com', pass);
-                        await set(ref(db, 'users/' + cred.user.uid), { role: 'pvz', name: 'ПВЗ ' + login });
-                        modal.remove();
-                        showNotif('✅ Вход выполнен!');
-                        return;
-                    }
-                }
-            }
-        }
-        showNotif('❌ Неверный логин или пароль!', true);
-    };
-}
-
-// ===== СКАНИРОВАНИЕ QR =====
-document.getElementById('scanBtn').onclick = () => {
-    document.getElementById('qrFileInput').click();
-};
-
-document.getElementById('qrFileInput').onchange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    // Читаем QR-код из изображения
-    const imageUrl = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = async function() {
-        // Используем jsQR для декодирования
+    document.getElementById('authLoginBtn').onclick = async () => {
+        const email = document.getElementById('authEmail').value;
+        const pass = document.getElementById('authPassword').value;
         try {
-            // Создаём canvas
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            
-            // Декодируем QR (здесь используем упрощённый подход)
-            // Для полной версии нужно подключить jsQR библиотеку
-            // Пока используем ручной ввод
-            const result = prompt('Введите данные из QR-кода (или вставьте текст):');
-            if (result) {
-                processQRData(result);
-            }
-        } catch(error) {
-            showNotif('❌ Ошибка чтения QR', true);
+            await signInWithEmailAndPassword(auth, email, pass);
+            modal.remove();
+            showNotif('✅ Вход выполнен!');
+        } catch(e) {
+            showNotif('❌ ' + e.message, true);
         }
     };
-    img.src = imageUrl;
-};
-
-// ===== ОБРАБОТКА QR =====
-function processQRData(qrText) {
-    try {
-        const data = JSON.parse(qrText);
-        const orderId = data.orderId;
-        
-        const order = allOrders.find(o => o.id === orderId);
-        if (!order) {
-            showNotif('❌ Заказ не найден!', true);
-            return;
-        }
-        
-        if (order.status === 'received') {
-            showNotif('ℹ️ Заказ уже получен!');
-            return;
-        }
-        
-        // Показываем информацию о заказе
-        const resultDiv = document.getElementById('scanResult');
-        resultDiv.innerHTML = `
-            <div style="background:#f8fafc;padding:20px;border-radius:16px;border:2px solid #22c55e;text-align:left;">
-                <h3>✅ Заказ найден!</h3>
-                <p><strong>Клиент:</strong> ${order.userName || 'Клиент'}</p>
-                <p><strong>Товаров:</strong> ${order.items ? order.items.length : 0}</p>
-                <p><strong>Итого:</strong> ${order.total || 0} ₽</p>
-                <div style="margin-top:8px;">
-                    ${order.items ? order.items.map(i => `<div>• ${i.name} - ${i.price} ₽</div>`).join('') : ''}
-                </div>
-                <button class="btn btn-success" id="confirmReceiveBtn" style="margin-top:12px;">✅ Выдать заказ</button>
-            </div>
-        `;
-        
-        document.getElementById('confirmReceiveBtn').onclick = async () => {
-            await update(ref(db, 'orders/' + orderId), { status: 'received' });
-            showNotif('✅ Заказ выдан клиенту!');
-            resultDiv.innerHTML = '<div style="padding:20px;background:#dcfce7;border-radius:16px;color:#166534;font-weight:600;">✅ Заказ выдан!</div>';
-        };
-        
-        showNotif('✅ QR-код распознан!');
-    } catch(e) {
-        showNotif('❌ Неверный QR-код!', true);
-    }
-}
-
-// ===== ЗАГРУЗКА ЗАКАЗОВ =====
-function loadOrders() {
-    const ordersRef = ref(db, 'orders');
-    onValue(ordersRef, (snap) => {
-        allOrders = [];
-        if (snap.exists()) {
-            const data = snap.val();
-            for (const key in data) {
-                allOrders.push({ id: key, ...data[key] });
-            }
-        }
-        renderOrders();
-    });
-}
-
-// ===== РЕНДЕР ЗАКАЗОВ =====
-function renderOrders() {
-    const container = document.getElementById('ordersList');
-    if (allOrders.length === 0) {
-        container.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:40px;">Нет заказов</p>';
-        return;
-    }
-    let html = '';
-    allOrders.forEach(o => {
-        const statusText = o.status === 'received' ? '✅ Получен' : '⏳ Ожидает выдачи';
-        html += `
-            <div class="order-card">
-                <div class="order-header">
-                    <span>Заказ #${o.id?.slice(0,6) || '...'}</span>
-                    <span class="status ${o.status}">${statusText}</span>
-                </div>
-                <div>Клиент: ${o.userName || 'Клиент'}</div>
-                <div>${o.items ? o.items.map(i => `${i.name} (${i.price} ₽)`).join(', ') : ''}</div>
-                <div style="font-weight:700;">Итого: ${o.total} ₽</div>
-                <div style="font-size:0.75rem;color:#94a3b8;">${new Date(o.createdAt).toLocaleString()}</div>
-                ${o.status !== 'received' ? `<button class="btn btn-success" data-id="${o.id}" style="margin-top:4px;">✅ Выдать</button>` : ''}
-            </div>
-        `;
-    });
-    container.innerHTML = html;
     
-    container.querySelectorAll('[data-id]').forEach(btn => {
-        btn.onclick = async () => {
-            const id = btn.dataset.id;
-            await update(ref(db, 'orders/' + id), { status: 'received' });
-            showNotif('✅ Заказ выдан!');
-        };
-    });
+    document.getElementById('authRegisterBtn').onclick = async () => {
+        const email = document.getElementById('authEmail').value;
+        const pass = document.getElementById('authPassword').value;
+        const name = document.getElementById('authName').value || 'Продавец';
+        try {
+            const cred = await createUserWithEmailAndPassword(auth, email, pass);
+            await set(ref(db, 'users/' + cred.user.uid), { role: role, name: name });
+            modal.remove();
+            showNotif('✅ Регистрация успешна!');
+        } catch(e) {
+            showNotif('❌ ' + e.message, true);
+        }
+    };
 }
 
-// ===== ВЫХОД =====
 document.getElementById('logoutBtn').onclick = () => {
     signOut(auth);
     showNotif('✅ Выход выполнен');
 };
 
-// ===== ПРОВЕРКА АВТОРИЗАЦИИ =====
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
         const snap = await get(ref(db, 'users/' + user.uid));
-        if (snap.exists() && snap.val().role === 'pvz') {
-            document.getElementById('userBadge').textContent = '🏢 ' + (snap.val().name || 'ПВЗ');
+        if (snap.exists() && snap.val().role === 'seller') {
+            currentUserData = snap.val();
+            document.getElementById('userBadge').textContent = '👤 ' + (currentUserData.name || 'Продавец');
         } else {
-            // Если не ПВЗ, разлогиниваем
             signOut(auth);
+            showAuthModal('seller');
         }
     } else {
-        showPvzLogin();
+        showAuthModal('seller');
     }
+    renderMyProducts();
 });
 
-// ===== ВКЛАДКИ =====
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.onclick = function() {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+        if (this.dataset.tab === 'myproducts') renderMyProducts();
+        if (this.dataset.tab === 'catalog') renderCatalog();
     };
 });
 
-// ===== ЗАПУСК =====
-loadOrders();
+onValue(ref(db, 'products'), (snap) => {
+    allProducts = [];
+    if (snap.exists()) {
+        const data = snap.val();
+        for (const key in data) allProducts.push({ id: key, ...data[key] });
+    }
+    renderCatalog();
+    renderMyProducts();
+});
 </script>
 </body>
 </html>
