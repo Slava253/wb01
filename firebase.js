@@ -1,4 +1,3 @@
-// ===== КОНФИГУРАЦИЯ FIREBASE =====
 export const firebaseConfig = {
     apiKey: "AIzaSyBfoIEyhvlUfIgAvXJwOthT6uzfB4gV0Uo",
     authDomain: "electronic-journal-5dff1.firebaseapp.com",
