@@ -14,7 +14,7 @@
     <div class="header">
         <h1><i class="fas fa-crown"></i> Админ панель</h1>
         <div class="header-right">
-            <span class="user-badge" id="userBadge">👤 Админ</span>
+            <span class="user-badge" id="userBadge">👑 Админ</span>
             <button class="btn btn-outline" id="logoutBtn">Выйти</button>
         </div>
     </div>
@@ -26,12 +26,10 @@
         <button class="tab-btn" data-tab="orders">📋 Заказы</button>
     </div>
 
-    <!-- Дашборд -->
     <div class="tab-content active" id="tab-dashboard">
         <div class="dashboard-stats" id="dashboardStats"></div>
     </div>
 
-    <!-- ПВЗ -->
     <div class="tab-content" id="tab-pvz">
         <div style="background:#f8fafc;padding:16px;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:16px;">
             <h4>➕ Создать ПВЗ</h4>
@@ -45,12 +43,10 @@
         <div id="pvzList"></div>
     </div>
 
-    <!-- Товары -->
     <div class="tab-content" id="tab-products">
         <div id="productsList"></div>
     </div>
 
-    <!-- Заказы -->
     <div class="tab-content" id="tab-orders">
         <div id="ordersList"></div>
     </div>
@@ -68,19 +64,25 @@
 
 <script type="module">
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
 import { getDatabase, ref, set, get, push, onValue, remove } from "firebase/database";
-import { firebaseConfig } from "./js/firebase-config.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyBfoIEyhvlUfIgAvXJwOthT6uzfB4gV0Uo",
+    authDomain: "electronic-journal-5dff1.firebaseapp.com",
+    databaseURL: "https://electronic-journal-5dff1-default-rtdb.firebaseio.com",
+    projectId: "electronic-journal-5dff1",
+    storageBucket: "electronic-journal-5dff1.firebasestorage.app",
+    messagingSenderId: "293962922085",
+    appId: "1:293962922085:web:391c3e453bb2725e392e8c"
+};
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
 
-let allProducts = [];
-let allPvz = [];
-let allOrders = [];
+let allProducts = [], allPvz = [], allOrders = [];
 
-// ===== УВЕДОМЛЕНИЯ =====
 function showNotif(text, isError = false) {
     const el = document.getElementById('notif') || (() => {
         const d = document.createElement('div');
@@ -95,7 +97,6 @@ function showNotif(text, isError = false) {
     el._t = setTimeout(() => el.classList.remove('show'), 3000);
 }
 
-// ===== ВХОД АДМИНА =====
 function showAdminLogin() {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
@@ -110,7 +111,6 @@ function showAdminLogin() {
         </div>
     `;
     document.body.appendChild(modal);
-    
     document.getElementById('adminLoginBtn').onclick = async () => {
         const login = document.getElementById('adminLogin').value;
         const pass = document.getElementById('adminPassword').value;
@@ -131,10 +131,8 @@ function showAdminLogin() {
     };
 }
 
-// ===== ДАШБОРД =====
 function renderDashboard() {
-    const container = document.getElementById('dashboardStats');
-    container.innerHTML = `
+    document.getElementById('dashboardStats').innerHTML = `
         <div class="stat-card"><div class="number">${allProducts.length}</div><div class="label">Товаров</div></div>
         <div class="stat-card"><div class="number">${allPvz.length}</div><div class="label">ПВЗ</div></div>
         <div class="stat-card"><div class="number">${allOrders.length}</div><div class="label">Заказов</div></div>
@@ -142,7 +140,6 @@ function renderDashboard() {
     `;
 }
 
-// ===== РЕНДЕР ПВЗ =====
 function renderPvz() {
     const container = document.getElementById('pvzList');
     container.innerHTML = '';
@@ -156,7 +153,7 @@ function renderPvz() {
         card.innerHTML = `
             <div class="address">🏢 ${p.address}</div>
             <div class="login">🔑 Логин: ${p.login}</div>
-            <button class="btn btn-danger" data-id="${p.id}" style="margin-top:4px;">🗑 Удалить</button>
+            <button class="btn btn-danger" data-id="${p.id}">🗑 Удалить</button>
         `;
         card.querySelector('.btn').onclick = () => {
             if (confirm('Удалить ПВЗ?')) {
@@ -168,7 +165,6 @@ function renderPvz() {
     });
 }
 
-// ===== РЕНДЕР ТОВАРОВ =====
 function renderProducts() {
     const container = document.getElementById('productsList');
     container.innerHTML = '';
@@ -183,7 +179,7 @@ function renderProducts() {
             <div class="name">${p.name}</div>
             <div class="price">${p.price} ₽</div>
             <div class="seller">👤 ${p.sellerName || 'Продавец'}</div>
-            <button class="btn btn-danger" data-id="${p.id}" style="margin-top:4px;">🗑 Удалить</button>
+            <button class="btn btn-danger" data-id="${p.id}">🗑 Удалить</button>
         `;
         card.querySelector('.btn').onclick = () => {
             if (confirm('Удалить товар?')) {
@@ -195,7 +191,6 @@ function renderProducts() {
     });
 }
 
-// ===== РЕНДЕР ЗАКАЗОВ =====
 function renderOrders() {
     const container = document.getElementById('ordersList');
     container.innerHTML = '';
@@ -221,40 +216,6 @@ function renderOrders() {
     });
 }
 
-// ===== ЗАГРУЗКА ДАННЫХ =====
-function loadData() {
-    onValue(ref(db, 'products'), (snap) => {
-        allProducts = [];
-        if (snap.exists()) {
-            const data = snap.val();
-            for (const key in data) allProducts.push({ id: key, ...data[key] });
-        }
-        renderDashboard();
-        renderProducts();
-    });
-    
-    onValue(ref(db, 'pvz'), (snap) => {
-        allPvz = [];
-        if (snap.exists()) {
-            const data = snap.val();
-            for (const key in data) allPvz.push({ id: key, ...data[key] });
-        }
-        renderDashboard();
-        renderPvz();
-    });
-    
-    onValue(ref(db, 'orders'), (snap) => {
-        allOrders = [];
-        if (snap.exists()) {
-            const data = snap.val();
-            for (const key in data) allOrders.push({ id: key, ...data[key] });
-        }
-        renderDashboard();
-        renderOrders();
-    });
-}
-
-// ===== СОЗДАНИЕ ПВЗ =====
 document.getElementById('createPvzBtn').onclick = () => {
     const address = document.getElementById('pvzAddress').value.trim();
     const login = document.getElementById('pvzLogin').value.trim();
@@ -263,8 +224,7 @@ document.getElementById('createPvzBtn').onclick = () => {
         showNotif('❌ Заполните все поля!', true);
         return;
     }
-    const newRef = push(ref(db, 'pvz'));
-    set(newRef, { address, login, password }).then(() => {
+    push(ref(db, 'pvz'), { address, login, password }).then(() => {
         showNotif('✅ ПВЗ создан!');
         document.getElementById('pvzAddress').value = '';
         document.getElementById('pvzLogin').value = '';
@@ -272,13 +232,11 @@ document.getElementById('createPvzBtn').onclick = () => {
     });
 };
 
-// ===== ВЫХОД =====
 document.getElementById('logoutBtn').onclick = () => {
     signOut(auth);
     showNotif('✅ Выход выполнен');
 };
 
-// ===== ПРОВЕРКА АВТОРИЗАЦИИ =====
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         const snap = await get(ref(db, 'users/' + user.uid));
@@ -293,7 +251,6 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// ===== ВКЛАДКИ =====
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.onclick = function() {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -303,7 +260,21 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     };
 });
 
-loadData();
+onValue(ref(db, 'products'), (snap) => {
+    allProducts = [];
+    if (snap.exists()) { const data = snap.val(); for (const key in data) allProducts.push({ id: key, ...data[key] }); }
+    renderDashboard(); renderProducts();
+});
+onValue(ref(db, 'pvz'), (snap) => {
+    allPvz = [];
+    if (snap.exists()) { const data = snap.val(); for (const key in data) allPvz.push({ id: key, ...data[key] }); }
+    renderDashboard(); renderPvz();
+});
+onValue(ref(db, 'orders'), (snap) => {
+    allOrders = [];
+    if (snap.exists()) { const data = snap.val(); for (const key in data) allOrders.push({ id: key, ...data[key] }); }
+    renderDashboard(); renderOrders();
+});
 </script>
 </body>
 </html>
