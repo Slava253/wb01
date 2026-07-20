@@ -3,11 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Маркетплейс | Клиент</title>
+    <title>Маркетплейс</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
     <script src="libs/qrcode.min.js"></script>
+    <style>
+        .guest-message { text-align:center; padding:60px 20px; color:#94a3b8; }
+        .guest-message i { font-size:4rem; display:block; margin-bottom:16px; }
+    </style>
 </head>
 <body>
 
@@ -53,13 +57,8 @@
 <script type="module">
 import { initializeApp } from "firebase/app";
 import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
-import { getDatabase, ref, get } from "firebase/database";
+import { getDatabase, ref, get, set, push, onValue } from "firebase/database";
 import { firebaseConfig } from "./js/firebase-config.js";
-import { showNotif, onAuth } from "./js/auth.js";
-import { getProducts } from "./js/products.js";
-import { getOrders, getUserOrders, createOrder } from "./js/orders.js";
-import { getCart, getCartCount, getCartTotal, addToCart, removeFromCart, clearCart } from "./js/cart.js";
-import { generateQR, createQRData } from "./js/qr.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -69,12 +68,65 @@ let currentUser = null;
 let currentUserData = null;
 let allProducts = [];
 let allOrders = [];
-let cart = getCart();
+let cart = JSON.parse(localStorage.getItem('cart') || '[]');
 
-// ===== ОБНОВЛЕНИЕ КОРЗИНЫ =====
-function updateCartUI() {
-    document.getElementById('cartCount').textContent = cart.length;
+function showNotif(text, isError = false) {
+    const el = document.getElementById('notif') || (() => {
+        const d = document.createElement('div');
+        d.id = 'notif';
+        d.className = 'notification';
+        document.body.appendChild(d);
+        return d;
+    })();
+    el.textContent = text;
+    el.className = 'notification show ' + (isError ? 'error' : 'success');
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove('show'), 3000);
 }
+
+// ===== ВЫХОД =====
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+    try {
+        await signOut(auth);
+        localStorage.removeItem('userRole');
+        window.location.href = 'vxod.html';
+    } catch(e) {
+        window.location.href = 'vxod.html';
+    }
+});
+
+// ===== QR =====
+function generateQR(container, data) {
+    container.innerHTML = '';
+    if (typeof QRCode !== 'undefined') {
+        new QRCode(container, {
+            text: JSON.stringify(data),
+            width: 200,
+            height: 200,
+            colorDark: "#0f3b5f",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    } else {
+        container.innerHTML = '<p style="color:#94a3b8;">Загрузка QR...</p>';
+    }
+}
+
+// ===== КОРЗИНА =====
+function updateCartUI() { document.getElementById('cartCount').textContent = cart.length; }
+function saveCart() { localStorage.setItem('cart', JSON.stringify(cart)); }
+
+function addToCart(product) {
+    const existing = cart.findIndex(item => item.id === product.id);
+    if (existing > -1) { cart.splice(existing, 1); } else { cart.push({ id: product.id, name: product.name, price: product.price, sellerId: product.sellerId }); }
+    saveCart(); updateCartUI(); return cart;
+}
+function removeFromCart(productId) {
+    const idx = cart.findIndex(item => item.id === productId);
+    if (idx > -1) { cart.splice(idx, 1); saveCart(); updateCartUI(); }
+    return cart;
+}
+function clearCart() { cart = []; saveCart(); updateCartUI(); return cart; }
 
 // ===== РЕНДЕР КАТАЛОГА =====
 function renderCatalog() {
@@ -99,12 +151,13 @@ function renderCatalog() {
         `;
         const btn = card.querySelector('button');
         btn.onclick = () => {
-            if (!currentUser) { showNotif('❌ Войдите в аккаунт!', true); return; }
-            const idx = cart.findIndex(item => item.id === p.id);
-            if (idx > -1) { cart = removeFromCart(p.id); } else { cart = addToCart(p); }
-            updateCartUI();
-            renderCatalog();
-            renderCart();
+            if (!currentUser) {
+                showNotif('❌ Войдите в аккаунт!', true);
+                setTimeout(() => { window.location.href = 'vxod.html'; }, 1500);
+                return;
+            }
+            if (inCart) { removeFromCart(p.id); } else { addToCart(p); }
+            renderCatalog(); renderCart();
         };
         grid.appendChild(card);
     });
@@ -113,7 +166,6 @@ function renderCatalog() {
 // ===== РЕНДЕР КОРЗИНЫ =====
 function renderCart() {
     const container = document.getElementById('cartContent');
-    cart = getCart();
     if (cart.length === 0) {
         container.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:40px;">Корзина пуста</p>';
         return;
@@ -122,12 +174,7 @@ function renderCart() {
     let total = 0;
     cart.forEach((item, idx) => {
         total += parseInt(item.price);
-        html += `
-            <div class="cart-item">
-                <span><strong>${item.name}</strong> - ${item.price} ₽</span>
-                <button class="btn btn-danger" data-idx="${idx}">✕</button>
-            </div>
-        `;
+        html += `<div class="cart-item"><span><strong>${item.name}</strong> - ${item.price} ₽</span><button class="btn btn-danger" data-idx="${idx}">✕</button></div>`;
     });
     html += `</div><div style="margin-top:16px;font-weight:700;font-size:1.2rem;">Итого: ${total} ₽</div>`;
     html += `<button class="btn btn-primary" id="createOrderBtn" style="margin-top:12px;">📦 Оформить заказ</button>`;
@@ -137,27 +184,31 @@ function renderCart() {
         btn.onclick = () => {
             const idx = parseInt(btn.dataset.idx);
             const item = cart[idx];
-            if (item) { cart = removeFromCart(item.id); updateCartUI(); renderCart(); renderCatalog(); }
+            if (item) { removeFromCart(item.id); renderCart(); renderCatalog(); }
         };
     });
     
     const orderBtn = document.getElementById('createOrderBtn');
     if (orderBtn) {
         orderBtn.onclick = async () => {
-            if (!currentUser) { showNotif('❌ Войдите в аккаунт!', true); return; }
+            if (!currentUser) { showNotif('❌ Войдите в аккаунт!', true); setTimeout(() => { window.location.href = 'vxod.html'; }, 1500); return; }
             if (cart.length === 0) { showNotif('❌ Корзина пуста!', true); return; }
-            const result = await createOrder(currentUser.uid, currentUserData?.name || 'Клиент', cart);
-            if (result.success) {
-                cart = clearCart();
-                updateCartUI();
+            try {
+                const order = {
+                    userId: currentUser.uid,
+                    userName: currentUserData?.name || 'Клиент',
+                    items: cart.map(item => ({ id: item.id, name: item.name, price: item.price })),
+                    total: cart.reduce((sum, i) => sum + parseInt(i.price), 0),
+                    status: 'pending',
+                    createdAt: Date.now(),
+                    qrData: { userId: currentUser.uid, items: cart.map(item => ({ name: item.name, price: item.price })) }
+                };
+                const newRef = push(ref(db, 'orders'));
+                await set(newRef, order);
+                clearCart();
                 showNotif('✅ Заказ оформлен!');
-                renderCart();
-                renderCatalog();
-                renderOrders();
-                renderQR();
-            } else {
-                showNotif('❌ ' + result.error, true);
-            }
+                renderCart(); renderCatalog(); renderOrders(); renderQR();
+            } catch(e) { showNotif('❌ ' + e.message, true); }
         };
     }
 }
@@ -219,30 +270,40 @@ function renderQR() {
     `;
 }
 
-// ===== ВЫХОД =====
-document.getElementById('logoutBtn').onclick = async () => {
-    await signOut(auth);
-    window.location.href = 'vxod.html';
-};
-
-// ===== ПРОВЕРКА АВТОРИЗАЦИИ =====
+// ===== АВТОРИЗАЦИЯ =====
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
-        const snap = await get(ref(db, 'users/' + user.uid));
-        if (snap.exists()) {
-            currentUserData = snap.val();
-            document.getElementById('userBadge').textContent = '👤 ' + (currentUserData.name || 'Пользователь');
-        }
+        try {
+            const snap = await get(ref(db, 'users/' + user.uid));
+            if (snap.exists()) {
+                currentUserData = snap.val();
+                document.getElementById('userBadge').textContent = '👤 ' + (currentUserData.name || 'Пользователь');
+                document.getElementById('logoutBtn').style.display = 'inline-block';
+            }
+        } catch(e) { console.error('Ошибка:', e); }
     } else {
-        window.location.href = 'vxod.html';
+        currentUser = null;
+        currentUserData = null;
+        document.getElementById('userBadge').textContent = '👤 Гость';
+        document.getElementById('logoutBtn').style.display = 'inline-block';
     }
+    renderOrders(); renderQR();
 });
 
-// ===== ЗАГРУЗКА ДАННЫХ =====
-getProducts((products) => { allProducts = products; renderCatalog(); });
-getOrders((orders) => { allOrders = orders; renderOrders(); renderQR(); });
-getUserOrders(currentUser?.uid || '', (orders) => { allOrders = orders; renderOrders(); renderQR(); });
+// ===== ЗАГРУЗКА =====
+function loadData() {
+    onValue(ref(db, 'products'), (snap) => {
+        allProducts = [];
+        if (snap.exists()) { const data = snap.val(); for (const key in data) allProducts.push({ id: key, ...data[key] }); }
+        renderCatalog();
+    });
+    onValue(ref(db, 'orders'), (snap) => {
+        allOrders = [];
+        if (snap.exists()) { const data = snap.val(); for (const key in data) allOrders.push({ id: key, ...data[key] }); }
+        renderOrders(); renderQR();
+    });
+}
 
 // ===== ВКЛАДКИ =====
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -258,6 +319,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 updateCartUI();
+loadData();
 </script>
 </body>
 </html>
