@@ -25,20 +25,10 @@
             padding: 40px 30px;
             box-shadow: 0 30px 60px rgba(0,0,0,0.3);
         }
-        .auth-container .logo {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .auth-container .logo h1 {
-            font-size: 1.8rem;
-            color: #0f3b5f;
-        }
+        .auth-container .logo { text-align: center; margin-bottom: 30px; }
+        .auth-container .logo h1 { font-size: 1.8rem; color: #0f3b5f; }
         .auth-container .logo h1 i { color: #ffcd3c; }
-        .auth-container .logo p {
-            color: #64748b;
-            font-size: 0.9rem;
-            margin-top: 4px;
-        }
+        .auth-container .logo p { color: #64748b; font-size: 0.9rem; margin-top: 4px; }
         .role-selector {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -56,48 +46,17 @@
             font-family: inherit;
         }
         .role-btn:hover { border-color: #94a3b8; }
-        .role-btn.active {
-            border-color: #0f3b5f;
-            background: #f0f4ff;
-        }
+        .role-btn.active { border-color: #0f3b5f; background: #f0f4ff; }
         .role-btn .icon { font-size: 1.8rem; display: block; margin-bottom: 4px; }
         .role-btn .label { font-weight: 600; font-size: 0.85rem; }
         .role-btn .desc { font-size: 0.7rem; color: #94a3b8; }
         .form-group { margin-bottom: 16px; }
-        .form-group label {
-            display: block;
-            font-weight: 600;
-            font-size: 0.9rem;
-            margin-bottom: 4px;
-            color: #1e293b;
-        }
-        .form-group input {
-            width: 100%;
-            padding: 12px 16px;
-            border-radius: 12px;
-            border: 1px solid #cbd5e1;
-            font-size: 1rem;
-            font-family: inherit;
-            transition: 0.2s;
-        }
-        .form-group input:focus {
-            outline: none;
-            border-color: #0f3b5f;
-            box-shadow: 0 0 0 3px rgba(15,59,95,0.1);
-        }
+        .form-group label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; color: #1e293b; }
+        .form-group input { width: 100%; padding: 12px 16px; border-radius: 12px; border: 1px solid #cbd5e1; font-size: 1rem; font-family: inherit; }
+        .form-group input:focus { outline: none; border-color: #0f3b5f; box-shadow: 0 0 0 3px rgba(15,59,95,0.1); }
         .hidden { display: none !important; }
-        .auth-divider {
-            text-align: center;
-            padding: 12px 0;
-            color: #94a3b8;
-            font-size: 0.85rem;
-        }
-        .auth-switch {
-            text-align: center;
-            margin-top: 12px;
-            font-size: 0.85rem;
-            color: #64748b;
-        }
+        .auth-divider { text-align: center; padding: 12px 0; color: #94a3b8; font-size: 0.85rem; }
+        .auth-switch { text-align: center; margin-top: 12px; font-size: 0.85rem; color: #64748b; }
         .auth-switch a { color: #0f3b5f; font-weight: 600; cursor: pointer; }
         .auth-switch a:hover { text-decoration: underline; }
         @media (max-width: 480px) {
@@ -204,7 +163,7 @@ function showNotif(text, isError = false) {
 }
 
 function redirectToRole(role) {
-    const pages = { 'client': 'client.html', 'seller': 'seller.html', 'pvz': 'pvz.html', 'admin': 'admin.html' };
+    const pages = { 'client': 'index.html', 'seller': 'seller.html', 'pvz': 'pvz.html', 'admin': 'admin.html' };
     const page = pages[role];
     if (page) { localStorage.setItem('userRole', role); window.location.href = page; }
 }
@@ -328,7 +287,7 @@ onAuthStateChanged(auth, async (user) => {
         if (snap.exists()) {
             const role = snap.val().role;
             const currentPage = window.location.pathname.split('/').pop();
-            const pages = { 'client': 'client.html', 'seller': 'seller.html', 'pvz': 'pvz.html', 'admin': 'admin.html' };
+            const pages = { 'client': 'index.html', 'seller': 'seller.html', 'pvz': 'pvz.html', 'admin': 'admin.html' };
             const targetPage = pages[role];
             if (targetPage && currentPage !== targetPage && currentPage !== 'vxod.html') {
                 window.location.href = targetPage;
