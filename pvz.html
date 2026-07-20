@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>ПВЗ | Сканер QR</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -27,20 +27,21 @@
     <div class="tab-content active" id="tab-scan">
         <div style="text-align:center;padding:30px;">
             <h2>📷 Сканируйте QR-код клиента</h2>
-            <p style="color:#64748b;margin-bottom:20px;">Наведите камеру на QR-код или загрузите изображение</p>
+            <p style="color:#64748b;margin-bottom:20px;">Загрузите изображение с QR-кодом или введите данные</p>
             <div id="scanArea" style="border:2px dashed #cbd5e1;border-radius:16px;padding:40px;max-width:400px;margin:0 auto;">
                 <i class="fas fa-qrcode" style="font-size:4rem;color:#94a3b8;"></i>
                 <p style="margin-top:10px;">Загрузите изображение с QR-кодом</p>
                 <input type="file" id="qrFileInput" accept="image/*">
+                <p style="margin-top:10px;font-size:0.85rem;color:#94a3b8;">или</p>
+                <input type="text" id="qrManualInput" placeholder="Введите данные из QR-кода" style="width:100%;padding:8px;border-radius:12px;border:1px solid #cbd5e1;margin-top:8px;">
+                <button class="btn btn-primary" id="qrManualBtn" style="margin-top:8px;">🔍 Проверить</button>
                 <div id="qrResult" style="margin-top:20px;"></div>
             </div>
             <div id="scanResult" style="margin-top:20px;"></div>
         </div>
     </div>
 
-    <div class="tab-content" id="tab-orders">
-        <div id="ordersList"></div>
-    </div>
+    <div class="tab-content" id="tab-orders"><div id="ordersList"></div></div>
 </div>
 
 <script type="importmap">
@@ -55,18 +56,12 @@
 
 <script type="module">
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
-import { getDatabase, ref, get, update, onValue } from "firebase/database";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyBfoIEyhvlUfIgAvXJwOthT6uzfB4gV0Uo",
-    authDomain: "electronic-journal-5dff1.firebaseapp.com",
-    databaseURL: "https://electronic-journal-5dff1-default-rtdb.firebaseio.com",
-    projectId: "electronic-journal-5dff1",
-    storageBucket: "electronic-journal-5dff1.firebasestorage.app",
-    messagingSenderId: "293962922085",
-    appId: "1:293962922085:web:391c3e453bb2725e392e8c"
-};
+import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
+import { getDatabase, ref, get, update } from "firebase/database";
+import { firebaseConfig } from "./js/firebase-config.js";
+import { showNotif } from "./js/auth.js";
+import { getOrders, receiveOrder } from "./js/orders.js";
+import { parseQRData } from "./js/qr.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -74,117 +69,7 @@ const db = getDatabase(app);
 
 let allOrders = [];
 
-function showNotif(text, isError = false) {
-    const el = document.getElementById('notif') || (() => {
-        const d = document.createElement('div');
-        d.id = 'notif';
-        d.className = 'notification';
-        document.body.appendChild(d);
-        return d;
-    })();
-    el.textContent = text;
-    el.className = 'notification show ' + (isError ? 'error' : 'success');
-    clearTimeout(el._t);
-    el._t = setTimeout(() => el.classList.remove('show'), 3000);
-}
-
-function showPvzLogin() {
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <h3>🏢 Вход для ПВЗ</h3>
-            <label>Логин</label>
-            <input type="text" id="pvzLogin" placeholder="Логин">
-            <label>Пароль</label>
-            <input type="password" id="pvzPassword" placeholder="Пароль">
-            <button class="btn btn-primary" id="pvzLoginBtn">Войти</button>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    
-    document.getElementById('pvzLoginBtn').onclick = async () => {
-        const login = document.getElementById('pvzLogin').value;
-        const pass = document.getElementById('pvzPassword').value;
-        const snap = await get(ref(db, 'pvz'));
-        if (snap.exists()) {
-            const data = snap.val();
-            for (const key in data) {
-                if (data[key].login === login && data[key].password === pass) {
-                    try {
-                        await signInWithEmailAndPassword(auth, 'pvz_' + login + '@market.com', pass);
-                        modal.remove();
-                        showNotif('✅ Вход выполнен!');
-                        return;
-                    } catch(e) {
-                        const cred = await createUserWithEmailAndPassword(auth, 'pvz_' + login + '@market.com', pass);
-                        await set(ref(db, 'users/' + cred.user.uid), { role: 'pvz', name: 'ПВЗ ' + login });
-                        modal.remove();
-                        showNotif('✅ Вход выполнен!');
-                        return;
-                    }
-                }
-            }
-        }
-        showNotif('❌ Неверный логин или пароль!', true);
-    };
-}
-
-document.getElementById('qrFileInput').onchange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async function(event) {
-        try {
-            const text = event.target.result;
-            // Пытаемся распарсить как JSON
-            const data = JSON.parse(text);
-            processQRData(data);
-        } catch(e) {
-            // Если не JSON, пробуем как текст
-            try {
-                const data = JSON.parse(prompt('Введите данные из QR-кода:'));
-                if (data) processQRData(data);
-            } catch(e2) {
-                showNotif('❌ Не удалось распознать QR-код!', true);
-            }
-        }
-    };
-    reader.readAsText(file);
-};
-
-function processQRData(data) {
-    const orderId = data.orderId;
-    const order = allOrders.find(o => o.id === orderId);
-    if (!order) {
-        showNotif('❌ Заказ не найден!', true);
-        return;
-    }
-    if (order.status === 'received') {
-        showNotif('ℹ️ Заказ уже получен!');
-        return;
-    }
-    const resultDiv = document.getElementById('scanResult');
-    resultDiv.innerHTML = `
-        <div style="background:#f8fafc;padding:20px;border-radius:16px;border:2px solid #22c55e;text-align:left;">
-            <h3>✅ Заказ найден!</h3>
-            <p><strong>Клиент:</strong> ${order.userName || 'Клиент'}</p>
-            <p><strong>Товаров:</strong> ${order.items ? order.items.length : 0}</p>
-            <p><strong>Итого:</strong> ${order.total || 0} ₽</p>
-            <div style="margin-top:8px;">
-                ${order.items ? order.items.map(i => `<div>• ${i.name} - ${i.price} ₽</div>`).join('') : ''}
-            </div>
-            <button class="btn btn-success" id="confirmReceiveBtn">✅ Выдать заказ</button>
-        </div>
-    `;
-    document.getElementById('confirmReceiveBtn').onclick = async () => {
-        await update(ref(db, 'orders/' + orderId), { status: 'received' });
-        showNotif('✅ Заказ выдан клиенту!');
-        resultDiv.innerHTML = '<div style="padding:20px;background:#dcfce7;border-radius:16px;color:#166534;font-weight:600;">✅ Заказ выдан!</div>';
-    };
-    showNotif('✅ QR-код распознан!');
-}
-
+// ===== РЕНДЕР ЗАКАЗОВ =====
 function renderOrders() {
     const container = document.getElementById('ordersList');
     if (allOrders.length === 0) {
@@ -211,31 +96,89 @@ function renderOrders() {
     container.innerHTML = html;
     container.querySelectorAll('[data-id]').forEach(btn => {
         btn.onclick = async () => {
-            await update(ref(db, 'orders/' + btn.dataset.id), { status: 'received' });
-            showNotif('✅ Заказ выдан!');
+            const result = await receiveOrder(btn.dataset.id);
+            if (result.success) { showNotif('✅ Заказ выдан!'); } else { showNotif('❌ ' + result.error, true); }
         };
     });
 }
 
-document.getElementById('logoutBtn').onclick = () => {
-    signOut(auth);
-    showNotif('✅ Выход выполнен');
+// ===== ОБРАБОТКА QR =====
+function processQR(qrText) {
+    const data = parseQRData(qrText);
+    if (!data) { showNotif('❌ Неверный QR-код!', true); return; }
+    const order = allOrders.find(o => o.id === data.orderId);
+    if (!order) { showNotif('❌ Заказ не найден!', true); return; }
+    if (order.status === 'received') { showNotif('ℹ️ Заказ уже получен!'); return; }
+    
+    const resultDiv = document.getElementById('scanResult');
+    resultDiv.innerHTML = `
+        <div style="background:#f8fafc;padding:20px;border-radius:16px;border:2px solid #22c55e;text-align:left;">
+            <h3>✅ Заказ найден!</h3>
+            <p><strong>Клиент:</strong> ${order.userName || 'Клиент'}</p>
+            <p><strong>Товаров:</strong> ${order.items ? order.items.length : 0}</p>
+            <p><strong>Итого:</strong> ${order.total || 0} ₽</p>
+            <div style="margin-top:8px;">${order.items ? order.items.map(i => `<div>• ${i.name} - ${i.price} ₽</div>`).join('') : ''}</div>
+            <button class="btn btn-success" id="confirmReceiveBtn">✅ Выдать заказ</button>
+        </div>
+    `;
+    document.getElementById('confirmReceiveBtn').onclick = async () => {
+        const result = await receiveOrder(order.id);
+        if (result.success) {
+            showNotif('✅ Заказ выдан клиенту!');
+            resultDiv.innerHTML = '<div style="padding:20px;background:#dcfce7;border-radius:16px;color:#166534;font-weight:600;">✅ Заказ выдан!</div>';
+        } else {
+            showNotif('❌ ' + result.error, true);
+        }
+    };
+    showNotif('✅ QR-код распознан!');
+}
+
+// ===== ОБРАБОТЧИКИ QR =====
+document.getElementById('qrFileInput').onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        try {
+            const text = event.target.result;
+            processQR(text);
+        } catch(e) {
+            showNotif('❌ Ошибка чтения файла!', true);
+        }
+    };
+    reader.readAsText(file);
 };
 
+document.getElementById('qrManualBtn').onclick = () => {
+    const text = document.getElementById('qrManualInput').value.trim();
+    if (!text) { showNotif('❌ Введите данные!', true); return; }
+    processQR(text);
+};
+
+// ===== ВЫХОД =====
+document.getElementById('logoutBtn').onclick = async () => {
+    await signOut(auth);
+    window.location.href = 'vxod.html';
+};
+
+// ===== ПРОВЕРКА АВТОРИЗАЦИИ =====
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         const snap = await get(ref(db, 'users/' + user.uid));
         if (snap.exists() && snap.val().role === 'pvz') {
             document.getElementById('userBadge').textContent = '🏢 ' + (snap.val().name || 'ПВЗ');
         } else {
-            signOut(auth);
-            showPvzLogin();
+            window.location.href = 'vxod.html';
         }
     } else {
-        showPvzLogin();
+        window.location.href = 'vxod.html';
     }
 });
 
+// ===== ЗАГРУЗКА =====
+getOrders((orders) => { allOrders = orders; renderOrders(); });
+
+// ===== ВКЛАДКИ =====
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.onclick = function() {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -243,15 +186,6 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.getElementById('tab-' + this.dataset.tab).classList.add('active');
     };
-});
-
-onValue(ref(db, 'orders'), (snap) => {
-    allOrders = [];
-    if (snap.exists()) {
-        const data = snap.val();
-        for (const key in data) allOrders.push({ id: key, ...data[key] });
-    }
-    renderOrders();
 });
 </script>
 </body>
