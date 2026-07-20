@@ -27,6 +27,7 @@
         .btn-secondary { background:rgba(255,255,255,0.08); color:#fff; }
         .btn-info { background:#2196F3; color:#fff; }
         .btn-warning { background:#ff9800; color:#fff; }
+        .btn-purple { background:#9c27b0; color:#fff; }
         .form-group { margin-bottom:8px; }
         .form-group label { display:block; font-size:0.7rem; color:#888; margin-bottom:3px; }
         .form-group input, .form-group textarea, .form-group select { width:100%; padding:8px 12px; border-radius:30px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.05); color:#fff; font-size:0.85rem; outline:none; font-family:inherit; }
@@ -52,15 +53,20 @@
         .wallet { background:rgba(255,255,255,0.03); border-radius:14px; padding:10px 14px; margin-bottom:10px; border:1px solid rgba(255,255,255,0.08); display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
         .wallet .amount { font-size:1.1rem; font-weight:bold; color:#f5a623; }
         .order-card { background:rgba(255,255,255,0.04); border-radius:14px; padding:12px; margin-bottom:8px; border-left:4px solid #f5a623; }
-        .order-card .order-header { display:flex; justify-content:space-between; font-weight:bold; margin-bottom:4px; font-size:0.8rem; }
+        .order-card .order-header { display:flex; justify-content:space-between; font-weight:bold; margin-bottom:4px; font-size:0.8rem; flex-wrap:wrap; gap:4px; }
         .order-card .order-number { color:#f5a623; font-size:0.8rem; }
         .order-card .order-status { font-size:0.6rem; padding:2px 10px; border-radius:30px; }
         .status-waiting { background:#ff9800; color:#fff; }
         .status-ready { background:#4CAF50; color:#fff; }
         .status-delivered { background:#999; color:#fff; }
+        .status-return { background:#ef4444; color:#fff; }
         .order-card .order-code { font-size:1.8rem; font-weight:bold; color:#f5a623; font-family:monospace; letter-spacing:8px; background:rgba(255,255,255,0.08); padding:10px; border-radius:12px; margin:6px 0; text-align:center; border:2px solid rgba(245,166,35,0.25); }
+        .order-card .order-pickup-number { font-size:1.2rem; font-weight:bold; color:#4CAF50; font-family:monospace; background:rgba(76,175,80,0.15); padding:6px 12px; border-radius:10px; display:inline-block; border:1px solid #4CAF50; }
         .order-card .order-review { margin-top:8px; padding:8px; background:rgba(255,255,255,0.05); border-radius:10px; }
         .order-card .order-review .stars { color:#f5a623; font-size:1.2rem; }
+        .order-item-with-photo { display:flex; align-items:center; gap:8px; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.03); }
+        .order-item-with-photo img { width:40px; height:40px; object-fit:cover; border-radius:8px; background:rgba(255,255,255,0.05); }
+        .order-item-with-photo .item-info { flex:1; font-size:0.8rem; }
         .tabs { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
         .tab { padding:6px 14px; border-radius:30px; background:rgba(255,255,255,0.05); cursor:pointer; font-size:0.7rem; color:#888; border:1px solid transparent; }
         .tab.active { background:rgba(245,166,35,0.15); color:#f5a623; border-color:#f5a623; }
@@ -90,6 +96,7 @@
         .product-image-upload:hover { border-color:#f5a623; background:rgba(255,255,255,0.03); }
         .product-image-upload img { max-width:100%; max-height:150px; border-radius:10px; margin-top:6px; }
         .admin-pvz-list { max-height:200px; overflow-y:auto; }
+        .return-badge { background:#ef4444; color:#fff; padding:2px 10px; border-radius:30px; font-size:0.6rem; }
         @media (max-width:400px) { 
             .product-grid { grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); } 
             .order-card .order-code { font-size:1.3rem; letter-spacing:4px; } 
@@ -199,6 +206,7 @@
             <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
                 <button class="btn-primary" onclick="pvzView('pending')">📥 Заказы</button>
                 <button class="btn-success" onclick="pvzView('ready')">📤 Выдача</button>
+                <button class="btn-danger" onclick="pvzView('return')">🔄 Возвраты</button>
             </div>
             
             <!-- СКАНИРОВАНИЕ QR -->
@@ -406,17 +414,27 @@ function processScannedOrder(data) {
         if (sn.exists()) {
             sn.forEach(child => {
                 const order = child.val();
+                const itemsHtml = order.items.map(i => `
+                    <div class="order-item-with-photo">
+                        ${i.image ? `<img src="${i.image}" alt="${i.name}">` : '<div style="width:40px;height:40px;background:rgba(255,255,255,0.05);border-radius:8px;display:flex;align-items:center;justify-content:center;">📦</div>'}
+                        <div class="item-info">${i.name} x${i.qty}</div>
+                        <div style="color:#f5a623;">${i.price * i.qty} ₽</div>
+                    </div>
+                `).join('');
+                
                 resultDiv.innerHTML = `
                     <div class="scanned-order">
                         <div style="color:#4CAF50;font-weight:bold;">✅ Заказ найден!</div>
                         <div><span class="label">🆔</span> ${order.id}</div>
                         <div><span class="label">👤</span> ${order.user}</div>
-                        <div><span class="label">📦</span> ${order.items.map(i => `${i.name} x${i.qty}`).join(', ')}</div>
-                        <div><span class="label">💰</span> ${order.total} ₽</div>
+                        <div style="margin:6px 0;">${itemsHtml}</div>
+                        <div style="font-weight:bold;">💰 ${order.total} ₽</div>
                         <div><span class="label">🔑</span> ${order.code}</div>
-                        <div><span class="label">📌 Статус:</span> ${order.status === 'pending' ? '⏳ Ожидает' : order.status === 'ready' ? '✅ Готов' : '📦 Выдан'}</div>
+                        ${order.pickupNumber ? `<div><span class="label">📋 Номер выдачи:</span> <span class="order-pickup-number">${order.pickupNumber}</span></div>` : ''}
+                        <div><span class="label">📌 Статус:</span> ${order.status === 'pending' ? '⏳ Ожидает' : order.status === 'ready' ? '✅ Готов' : order.status === 'return' ? '🔄 Возврат' : '📦 Выдан'}</div>
                         ${order.status === 'pending' ? `<button class="btn-success" onclick="pvzReadyFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">✅ Готов к выдаче</button>` : ''}
                         ${order.status === 'ready' ? `<button class="btn-primary" onclick="pvzDeliverFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📤 Выдать</button>` : ''}
+                        ${order.status === 'pending' || order.status === 'ready' ? `<button class="btn-danger" onclick="pvzReturnFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">🔄 Возврат</button>` : ''}
                     </div>
                 `;
             });
@@ -434,17 +452,27 @@ function findOrderByText(text) {
             const order = child.val();
             if (order.id === text || order.code === text) {
                 found = true;
+                const itemsHtml = order.items.map(i => `
+                    <div class="order-item-with-photo">
+                        ${i.image ? `<img src="${i.image}" alt="${i.name}">` : '<div style="width:40px;height:40px;background:rgba(255,255,255,0.05);border-radius:8px;display:flex;align-items:center;justify-content:center;">📦</div>'}
+                        <div class="item-info">${i.name} x${i.qty}</div>
+                        <div style="color:#f5a623;">${i.price * i.qty} ₽</div>
+                    </div>
+                `).join('');
+                
                 resultDiv.innerHTML = `
                     <div class="scanned-order">
                         <div style="color:#4CAF50;font-weight:bold;">✅ Заказ найден!</div>
                         <div><span class="label">🆔</span> ${order.id}</div>
                         <div><span class="label">👤</span> ${order.user}</div>
-                        <div><span class="label">📦</span> ${order.items.map(i => `${i.name} x${i.qty}`).join(', ')}</div>
-                        <div><span class="label">💰</span> ${order.total} ₽</div>
+                        <div style="margin:6px 0;">${itemsHtml}</div>
+                        <div style="font-weight:bold;">💰 ${order.total} ₽</div>
                         <div><span class="label">🔑</span> ${order.code}</div>
-                        <div><span class="label">📌 Статус:</span> ${order.status === 'pending' ? '⏳ Ожидает' : order.status === 'ready' ? '✅ Готов' : '📦 Выдан'}</div>
+                        ${order.pickupNumber ? `<div><span class="label">📋 Номер выдачи:</span> <span class="order-pickup-number">${order.pickupNumber}</span></div>` : ''}
+                        <div><span class="label">📌 Статус:</span> ${order.status === 'pending' ? '⏳ Ожидает' : order.status === 'ready' ? '✅ Готов' : order.status === 'return' ? '🔄 Возврат' : '📦 Выдан'}</div>
                         ${order.status === 'pending' ? `<button class="btn-success" onclick="pvzReadyFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">✅ Готов к выдаче</button>` : ''}
                         ${order.status === 'ready' ? `<button class="btn-primary" onclick="pvzDeliverFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📤 Выдать</button>` : ''}
+                        ${order.status === 'pending' || order.status === 'ready' ? `<button class="btn-danger" onclick="pvzReturnFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">🔄 Возврат</button>` : ''}
                     </div>
                 `;
             }
@@ -456,10 +484,11 @@ function findOrderByText(text) {
 }
 
 function pvzReadyFromScan(orderId) {
+    const pickupNumber = 'WH-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substr(2, 3).toUpperCase();
     db.ref('orders').orderByChild('id').equalTo(orderId).once('value', (sn) => {
         sn.forEach(child => {
-            db.ref('orders/' + child.key).update({ status: 'ready' });
-            showToast('✅ Заказ готов к выдаче');
+            db.ref('orders/' + child.key).update({ status: 'ready', pickupNumber: pickupNumber });
+            showToast('✅ Заказ готов к выдаче! Номер: ' + pickupNumber);
             document.getElementById('scannedResult').innerHTML = '';
             pvzView('pending');
         });
@@ -467,12 +496,25 @@ function pvzReadyFromScan(orderId) {
 }
 
 function pvzDeliverFromScan(orderId) {
+    if (!confirm('Выдать заказ?')) return;
     db.ref('orders').orderByChild('id').equalTo(orderId).once('value', (sn) => {
         sn.forEach(child => {
             db.ref('orders/' + child.key).update({ status: 'delivered' });
             showToast('✅ Заказ выдан!');
             document.getElementById('scannedResult').innerHTML = '';
             pvzView('ready');
+        });
+    });
+}
+
+function pvzReturnFromScan(orderId) {
+    if (!confirm('Оформить возврат заказа?')) return;
+    db.ref('orders').orderByChild('id').equalTo(orderId).once('value', (sn) => {
+        sn.forEach(child => {
+            db.ref('orders/' + child.key).update({ status: 'return' });
+            showToast('🔄 Возврат оформлен');
+            document.getElementById('scannedResult').innerHTML = '';
+            pvzView('pending');
         });
     });
 }
@@ -669,11 +711,12 @@ function loadOrders() {
             <div class="order-card">
                 <div class="order-header">
                     <span class="order-number">🆔 ${o.id}</span>
-                    <span class="order-status ${o.status === 'delivered' ? 'status-delivered' : o.status === 'ready' ? 'status-ready' : 'status-waiting'}">${o.status === 'delivered' ? '📦 Выдан' : o.status === 'ready' ? '✅ Готов' : '⏳ В обработке'}</span>
+                    <span class="order-status ${o.status === 'delivered' ? 'status-delivered' : o.status === 'return' ? 'status-return' : o.status === 'ready' ? 'status-ready' : 'status-waiting'}">${o.status === 'delivered' ? '📦 Выдан' : o.status === 'return' ? '🔄 Возврат' : o.status === 'ready' ? '✅ Готов' : '⏳ В обработке'}</span>
                 </div>
                 <div>${o.items.map(i => `${i.name} x${i.qty}`).join(', ')}</div>
                 <div style="font-weight:bold;">💰 ${o.total} ₽</div>
                 <div class="order-code">🔑 ${o.code}</div>
+                ${o.pickupNumber ? `<div style="text-align:center;margin:6px 0;"><span class="order-pickup-number">📋 ${o.pickupNumber}</span></div>` : ''}
                 ${o.status === 'delivered' && !o.review ? `<button class="btn-warning" onclick="openReviewModal('${o.id}')" style="margin-top:6px;padding:4px 12px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">⭐ Оставить отзыв</button>` : ''}
                 ${o.review ? `<div class="order-review"><div class="stars">${'★'.repeat(o.review.stars)}${'☆'.repeat(5-o.review.stars)}</div><div style="font-size:0.8rem;color:#888;">${o.review.comment}</div></div>` : ''}
             </div>
@@ -694,7 +737,7 @@ function renderClientQR() {
         const activeOrders = [];
         sn.forEach(child => {
             const order = child.val();
-            if (order.status !== 'delivered') {
+            if (order.status !== 'delivered' && order.status !== 'return') {
                 activeOrders.push({ id: child.key, ...order });
             }
         });
@@ -708,7 +751,7 @@ function renderClientQR() {
         const order = activeOrders[0];
         const qrData = { orderId: order.id, user: currentUser.login, items: order.items, total: order.total };
         generateQR(container, qrData);
-        info.innerHTML = `<div style="background:rgba(255,255,255,0.05);padding:10px;border-radius:10px;">📦 ${order.items.length} товаров<br>💰 ${order.total} ₽</div>`;
+        info.innerHTML = `<div style="background:rgba(255,255,255,0.05);padding:10px;border-radius:10px;">📦 ${order.items.length} товаров<br>💰 ${order.total} ₽<br>🔑 ${order.code}</div>`;
     });
 }
 
@@ -723,7 +766,7 @@ function createOrder() {
     const order = {
         id: orderId,
         user: currentUser.login,
-        items: cart.map(i => ({ name: i.name, price: i.price, qty: i.qty })),
+        items: cart.map(i => ({ name: i.name, price: i.price, qty: i.qty, image: i.image || null })),
         total: total,
         code: code,
         status: 'pending',
@@ -934,47 +977,82 @@ function pvzLogin() {
 
 function pvzView(type) {
     const container = document.getElementById('pvzOrdersList');
-    const status = type === 'pending' ? 'pending' : 'ready';
+    const statusMap = {
+        'pending': 'pending',
+        'ready': 'ready',
+        'return': 'return'
+    };
+    const status = statusMap[type] || 'pending';
+    const statusNames = {
+        'pending': '⏳ Ожидает',
+        'ready': '✅ Готов',
+        'return': '🔄 Возврат'
+    };
+    
     db.ref('orders').orderByChild('status').equalTo(status).on('value', (sn) => {
         const orders = [];
         sn.forEach(child => {
             orders.push({ id: child.key, ...child.val() });
         });
         if (orders.length === 0) {
-            container.innerHTML = '<div style="text-align:center;color:#555;padding:20px;">📭 Нет заказов</div>';
+            container.innerHTML = `<div style="text-align:center;color:#555;padding:20px;">📭 Нет заказов (${statusNames[status]})</div>`;
             return;
         }
-        container.innerHTML = orders.map(o => `
-            <div class="order-card">
-                <div class="order-header">
-                    <span class="order-number">🆔 ${o.id}</span>
-                    <span class="order-status ${o.status === 'ready' ? 'status-ready' : 'status-waiting'}">${o.status === 'ready' ? '✅ Готов' : '⏳ Ожидает'}</span>
+        container.innerHTML = orders.map(o => {
+            const itemsHtml = o.items.map(i => `
+                <div class="order-item-with-photo">
+                    ${i.image ? `<img src="${i.image}" alt="${i.name}">` : '<div style="width:40px;height:40px;background:rgba(255,255,255,0.05);border-radius:8px;display:flex;align-items:center;justify-content:center;">📦</div>'}
+                    <div class="item-info">${i.name} x${i.qty}</div>
+                    <div style="color:#f5a623;">${i.price * i.qty} ₽</div>
                 </div>
-                <div>👤 ${o.user}</div>
-                <div>${o.items.map(i => `${i.name} x${i.qty}`).join(', ')}</div>
-                <div style="font-weight:bold;">💰 ${o.total} ₽</div>
-                <div class="order-code">🔑 ${o.code}</div>
-                ${o.status === 'pending' ? `<button class="btn-success" onclick="pvzReady('${o.id}')" style="margin-top:4px;padding:4px 12px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">✅ Готов к выдаче</button>` : ''}
-                ${o.status === 'ready' ? `<button class="btn-primary" onclick="pvzDeliver('${o.id}')" style="margin-top:4px;padding:4px 12px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📤 Выдать</button>` : ''}
-            </div>
-        `).join('');
+            `).join('');
+            
+            return `
+                <div class="order-card">
+                    <div class="order-header">
+                        <span class="order-number">🆔 ${o.id}</span>
+                        <span class="order-status ${o.status === 'ready' ? 'status-ready' : o.status === 'return' ? 'status-return' : 'status-waiting'}">${statusNames[o.status] || o.status}</span>
+                    </div>
+                    <div>👤 ${o.user}</div>
+                    <div style="margin:6px 0;">${itemsHtml}</div>
+                    <div style="font-weight:bold;">💰 ${o.total} ₽</div>
+                    <div class="order-code">🔑 ${o.code}</div>
+                    ${o.pickupNumber ? `<div style="text-align:center;margin:6px 0;"><span class="order-pickup-number">📋 ${o.pickupNumber}</span></div>` : ''}
+                    ${o.status === 'pending' ? `<button class="btn-success" onclick="pvzReady('${o.id}')" style="margin-top:4px;padding:4px 12px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">✅ Готов к выдаче</button>` : ''}
+                    ${o.status === 'ready' ? `<button class="btn-primary" onclick="pvzDeliver('${o.id}')" style="margin-top:4px;padding:4px 12px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📤 Выдать</button>` : ''}
+                    ${(o.status === 'pending' || o.status === 'ready') ? `<button class="btn-danger" onclick="pvzReturn('${o.id}')" style="margin-top:4px;padding:4px 12px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">🔄 Возврат</button>` : ''}
+                </div>
+            `;
+        }).join('');
     });
 }
 
 function pvzReady(orderId) {
+    const pickupNumber = 'WH-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substr(2, 3).toUpperCase();
     db.ref('orders').orderByChild('id').equalTo(orderId).once('value', (sn) => {
         sn.forEach(child => {
-            db.ref('orders/' + child.key).update({ status: 'ready' });
-            showToast('✅ Заказ готов к выдаче');
+            db.ref('orders/' + child.key).update({ status: 'ready', pickupNumber: pickupNumber });
+            showToast('✅ Заказ готов к выдаче! Номер: ' + pickupNumber);
         });
     });
 }
 
 function pvzDeliver(orderId) {
+    if (!confirm('Выдать заказ?')) return;
     db.ref('orders').orderByChild('id').equalTo(orderId).once('value', (sn) => {
         sn.forEach(child => {
             db.ref('orders/' + child.key).update({ status: 'delivered' });
             showToast('✅ Заказ выдан!');
+        });
+    });
+}
+
+function pvzReturn(orderId) {
+    if (!confirm('Оформить возврат заказа?')) return;
+    db.ref('orders').orderByChild('id').equalTo(orderId).once('value', (sn) => {
+        sn.forEach(child => {
+            db.ref('orders/' + child.key).update({ status: 'return' });
+            showToast('🔄 Возврат оформлен');
         });
     });
 }
@@ -987,14 +1065,26 @@ function pvzFindOrder(code) {
         if (sn.exists()) {
             sn.forEach(child => {
                 const o = child.val();
+                const itemsHtml = o.items.map(i => `
+                    <div class="order-item-with-photo">
+                        ${i.image ? `<img src="${i.image}" alt="${i.name}">` : '<div style="width:40px;height:40px;background:rgba(255,255,255,0.05);border-radius:8px;display:flex;align-items:center;justify-content:center;">📦</div>'}
+                        <div class="item-info">${i.name} x${i.qty}</div>
+                        <div style="color:#f5a623;">${i.price * i.qty} ₽</div>
+                    </div>
+                `).join('');
+                
                 result.innerHTML = `
                     <div style="background:rgba(76,175,80,0.15);padding:12px;border-radius:12px;border:1px solid #4CAF50;">
                         <div style="color:#4CAF50;font-weight:bold;">✅ Заказ найден!</div>
                         <div>👤 ${o.user}</div>
-                        <div>📦 ${o.items.map(i => `${i.name} x${i.qty}`).join(', ')}</div>
+                        <div style="margin:6px 0;">${itemsHtml}</div>
                         <div style="font-weight:bold;">💰 ${o.total} ₽</div>
                         <div>Код: ${o.code}</div>
-                        ${o.status === 'ready' ? `<button onclick="pvzDeliver('${o.id}')" style="margin-top:8px;padding:8px 20px;border-radius:30px;border:none;background:#4CAF50;color:white;font-weight:bold;cursor:pointer;">📤 Выдать</button>` : `<div style="color:#ff9800;">Статус: ${o.status === 'pending' ? 'Ожидает' : 'Выдан'}</div>`}
+                        ${o.pickupNumber ? `<div>📋 Номер выдачи: <span class="order-pickup-number">${o.pickupNumber}</span></div>` : ''}
+                        <div>Статус: ${o.status === 'pending' ? '⏳ Ожидает' : o.status === 'ready' ? '✅ Готов' : o.status === 'return' ? '🔄 Возврат' : '📦 Выдан'}</div>
+                        ${o.status === 'pending' ? `<button class="btn-success" onclick="pvzReady('${o.id}')" style="margin-top:8px;padding:8px 20px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">✅ Готов к выдаче</button>` : ''}
+                        ${o.status === 'ready' ? `<button class="btn-primary" onclick="pvzDeliver('${o.id}')" style="margin-top:8px;padding:8px 20px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📤 Выдать</button>` : ''}
+                        ${(o.status === 'pending' || o.status === 'ready') ? `<button class="btn-danger" onclick="pvzReturn('${o.id}')" style="margin-top:8px;padding:8px 20px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">🔄 Возврат</button>` : ''}
                     </div>
                 `;
             });
@@ -1079,12 +1169,14 @@ function loadAdminStats() {
         let pending = 0;
         let ready = 0;
         let delivered = 0;
+        let returns = 0;
         sn.forEach(child => {
             const order = child.val();
             total++;
             if (order.status === 'pending') pending++;
             else if (order.status === 'ready') ready++;
             else if (order.status === 'delivered') delivered++;
+            else if (order.status === 'return') returns++;
         });
         container.innerHTML = `
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
@@ -1104,13 +1196,16 @@ function loadAdminStats() {
                     <div style="font-size:1.5rem;color:#999;">${delivered}</div>
                     <div style="font-size:0.7rem;color:#888;">Выдано</div>
                 </div>
+                <div style="background:rgba(255,255,255,0.03);padding:8px;border-radius:10px;text-align:center;grid-column:span 2;">
+                    <div style="font-size:1.5rem;color:#ef4444;">${returns}</div>
+                    <div style="font-size:0.7rem;color:#888;">Возвратов</div>
+                </div>
             </div>
         `;
     });
 }
 
 // ========== ИНИЦИАЛИЗАЦИЯ ==========
-// Добавляем тестовые товары
 db.ref('products').once('value', (sn) => {
     if (!sn.exists()) {
         const testProducts = [
@@ -1125,7 +1220,6 @@ db.ref('products').once('value', (sn) => {
     }
 });
 
-// Добавляем тестовый ПВЗ
 db.ref('pvz').once('value', (sn) => {
     if (!sn.exists()) {
         db.ref('pvz').push().set({ code: '12345', address: 'ул. Тестовая, д. 1' });
@@ -1135,6 +1229,9 @@ db.ref('pvz').once('value', (sn) => {
 console.log('🛍️ WHOPPER MARKET с Firebase');
 console.log('👑 Админ: логин 2347, пароль 2203');
 console.log('🏪 ПВЗ по умолчанию: код 12345');
+console.log('📋 При готовности заказа создаётся номер выдачи');
+console.log('🔄 Сотрудник ПВЗ может оформить возврат');
+console.log('📸 Сотрудник ПВЗ видит фото товаров в заказе');
 </script>
 </body>
 </html>
