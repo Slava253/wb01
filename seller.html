@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Маркетплейс | Продавец</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -37,13 +37,8 @@
         </div>
     </div>
 
-    <div class="tab-content" id="tab-myproducts">
-        <div id="myProductsGrid" class="product-grid"></div>
-    </div>
-
-    <div class="tab-content" id="tab-catalog">
-        <div id="catalogGrid" class="product-grid"></div>
-    </div>
+    <div class="tab-content" id="tab-myproducts"><div id="myProductsGrid" class="product-grid"></div></div>
+    <div class="tab-content" id="tab-catalog"><div id="catalogGrid" class="product-grid"></div></div>
 </div>
 
 <script type="importmap">
@@ -58,18 +53,11 @@
 
 <script type="module">
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
-import { getDatabase, ref, set, get, child, push, onValue, remove } from "firebase/database";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyBfoIEyhvlUfIgAvXJwOthT6uzfB4gV0Uo",
-    authDomain: "electronic-journal-5dff1.firebaseapp.com",
-    databaseURL: "https://electronic-journal-5dff1-default-rtdb.firebaseio.com",
-    projectId: "electronic-journal-5dff1",
-    storageBucket: "electronic-journal-5dff1.firebasestorage.app",
-    messagingSenderId: "293962922085",
-    appId: "1:293962922085:web:391c3e453bb2725e392e8c"
-};
+import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
+import { getDatabase, ref, get } from "firebase/database";
+import { firebaseConfig } from "./js/firebase-config.js";
+import { showNotif } from "./js/auth.js";
+import { getProducts, addProduct, deleteProduct, getSellerProducts } from "./js/products.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -78,21 +66,9 @@ const db = getDatabase(app);
 let currentUser = null;
 let currentUserData = null;
 let allProducts = [];
+let myProducts = [];
 
-function showNotif(text, isError = false) {
-    const el = document.getElementById('notif') || (() => {
-        const d = document.createElement('div');
-        d.id = 'notif';
-        d.className = 'notification';
-        document.body.appendChild(d);
-        return d;
-    })();
-    el.textContent = text;
-    el.className = 'notification show ' + (isError ? 'error' : 'success');
-    clearTimeout(el._t);
-    el._t = setTimeout(() => el.classList.remove('show'), 3000);
-}
-
+// ===== РЕНДЕР =====
 function renderCatalog() {
     const grid = document.getElementById('catalogGrid');
     grid.innerHTML = '';
@@ -134,96 +110,41 @@ function renderMyProducts() {
             <div style="font-size:0.85rem;color:#475569;">${p.desc || ''}</div>
             <button class="btn btn-danger" data-id="${p.id}" style="margin-top:4px;">🗑 Удалить</button>
         `;
-        card.querySelector('.btn').onclick = () => {
+        card.querySelector('.btn').onclick = async () => {
             if (confirm('Удалить товар?')) {
-                remove(ref(db, 'products/' + p.id));
-                showNotif('✅ Товар удалён');
+                const result = await deleteProduct(p.id);
+                if (result.success) { showNotif('✅ Товар удалён'); } else { showNotif('❌ ' + result.error, true); }
             }
         };
         grid.appendChild(card);
     });
 }
 
+// ===== ДОБАВЛЕНИЕ ТОВАРА =====
 document.getElementById('addProductBtn').onclick = async () => {
-    if (!currentUser) {
-        showAuthModal('seller');
-        return;
-    }
+    if (!currentUser) { showNotif('❌ Войдите в аккаунт!', true); return; }
     const name = document.getElementById('prodName').value.trim();
     const price = document.getElementById('prodPrice').value.trim();
     const desc = document.getElementById('prodDesc').value.trim();
-    if (!name || !price) {
-        showNotif('❌ Заполните название и цену!', true);
-        return;
+    if (!name || !price) { showNotif('❌ Заполните название и цену!', true); return; }
+    const result = await addProduct(name, price, desc, currentUser.uid, currentUserData?.name || 'Продавец');
+    if (result.success) {
+        showNotif('✅ Товар выложен!');
+        document.getElementById('prodName').value = '';
+        document.getElementById('prodPrice').value = '';
+        document.getElementById('prodDesc').value = '';
+    } else {
+        showNotif('❌ ' + result.error, true);
     }
-    const newProduct = {
-        name,
-        price,
-        desc: desc || '',
-        sellerId: currentUser.uid,
-        sellerName: currentUserData?.name || 'Продавец',
-        createdAt: Date.now()
-    };
-    const newRef = push(ref(db, 'products'));
-    await set(newRef, newProduct);
-    showNotif('✅ Товар выложен!');
-    document.getElementById('prodName').value = '';
-    document.getElementById('prodPrice').value = '';
-    document.getElementById('prodDesc').value = '';
-    renderMyProducts();
 };
 
-function showAuthModal(role = 'seller') {
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
-            <h3>🔐 Вход для продавца</h3>
-            <label>Email</label>
-            <input type="email" id="authEmail" placeholder="email@example.com">
-            <label>Пароль</label>
-            <input type="password" id="authPassword" placeholder="Пароль">
-            <label>Имя магазина</label>
-            <input type="text" id="authName" placeholder="Название магазина">
-            <button class="btn btn-primary" id="authLoginBtn">Войти</button>
-            <button class="btn btn-success" id="authRegisterBtn">Зарегистрироваться</button>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    
-    document.getElementById('authLoginBtn').onclick = async () => {
-        const email = document.getElementById('authEmail').value;
-        const pass = document.getElementById('authPassword').value;
-        try {
-            await signInWithEmailAndPassword(auth, email, pass);
-            modal.remove();
-            showNotif('✅ Вход выполнен!');
-        } catch(e) {
-            showNotif('❌ ' + e.message, true);
-        }
-    };
-    
-    document.getElementById('authRegisterBtn').onclick = async () => {
-        const email = document.getElementById('authEmail').value;
-        const pass = document.getElementById('authPassword').value;
-        const name = document.getElementById('authName').value || 'Продавец';
-        try {
-            const cred = await createUserWithEmailAndPassword(auth, email, pass);
-            await set(ref(db, 'users/' + cred.user.uid), { role: role, name: name });
-            modal.remove();
-            showNotif('✅ Регистрация успешна!');
-        } catch(e) {
-            showNotif('❌ ' + e.message, true);
-        }
-    };
-}
-
-document.getElementById('logoutBtn').onclick = () => {
-    signOut(auth);
-    showNotif('✅ Выход выполнен');
+// ===== ВЫХОД =====
+document.getElementById('logoutBtn').onclick = async () => {
+    await signOut(auth);
+    window.location.href = 'vxod.html';
 };
 
+// ===== ПРОВЕРКА АВТОРИЗАЦИИ =====
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
@@ -232,15 +153,17 @@ onAuthStateChanged(auth, async (user) => {
             currentUserData = snap.val();
             document.getElementById('userBadge').textContent = '👤 ' + (currentUserData.name || 'Продавец');
         } else {
-            signOut(auth);
-            showAuthModal('seller');
+            window.location.href = 'vxod.html';
         }
     } else {
-        showAuthModal('seller');
+        window.location.href = 'vxod.html';
     }
-    renderMyProducts();
 });
 
+// ===== ЗАГРУЗКА =====
+getProducts((products) => { allProducts = products; renderCatalog(); renderMyProducts(); });
+
+// ===== ВКЛАДКИ =====
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.onclick = function() {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -250,16 +173,6 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         if (this.dataset.tab === 'myproducts') renderMyProducts();
         if (this.dataset.tab === 'catalog') renderCatalog();
     };
-});
-
-onValue(ref(db, 'products'), (snap) => {
-    allProducts = [];
-    if (snap.exists()) {
-        const data = snap.val();
-        for (const key in data) allProducts.push({ id: key, ...data[key] });
-    }
-    renderCatalog();
-    renderMyProducts();
 });
 </script>
 </body>
