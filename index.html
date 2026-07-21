@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>WHOPPER MARKET</title>
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
@@ -62,6 +62,7 @@
         .order-card .order-pickup-number { font-size:1.5rem; font-weight:bold; color:#4CAF50; font-family:monospace; background:rgba(76,175,80,0.15); padding:6px 20px; border-radius:10px; display:inline-block; border:2px solid #4CAF50; letter-spacing:4px; }
         .order-card .order-review { margin-top:8px; padding:8px; background:rgba(255,255,255,0.05); border-radius:10px; }
         .order-card .order-review .stars { color:#f5a623; font-size:1.2rem; }
+        .order-card .order-review .review-photo { max-width:100%; max-height:150px; border-radius:10px; margin-top:6px; cursor:pointer; }
         .order-item-with-photo { display:flex; align-items:center; gap:8px; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.03); }
         .order-item-with-photo img { width:40px; height:40px; object-fit:cover; border-radius:8px; background:rgba(255,255,255,0.05); cursor:pointer; transition:0.2s; }
         .order-item-with-photo img:hover { transform:scale(1.05); border:2px solid #f5a623; }
@@ -79,7 +80,6 @@
         .modal-close { float:right; background:none; border:none; color:#888; font-size:1.2rem; cursor:pointer; }
         .qr-code-container { display:flex; justify-content:center; padding:10px; min-height:200px; align-items:center; flex-direction:column; }
         .qr-code-container img { border-radius:12px; background:white; padding:10px; max-width:100%; max-height:250px; }
-        .qr-code-container canvas { border-radius:12px; background:white; padding:10px; max-width:100%; max-height:250px; }
         .scanner-container { background:#000; border-radius:16px; overflow:hidden; position:relative; min-height:300px; display:flex; align-items:center; justify-content:center; margin:10px 0; }
         .scanner-container video { width:100%; display:block; }
         .scanner-overlay { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:200px; height:200px; border:2px solid #f5a623; border-radius:12px; box-shadow:0 0 0 4000px rgba(0,0,0,0.4); pointer-events:none; }
@@ -110,7 +110,13 @@
         .support-message.admin { border-left:3px solid #f5a623; }
         .support-message.client { border-left:3px solid #4CAF50; }
         .qr-placeholder { color:#888; font-size:0.9rem; text-align:center; padding:20px; }
-        .qr-loading { color:#f5a623; font-size:0.9rem; text-align:center; padding:20px; }
+        .reviews-section { margin-top:16px; }
+        .review-item { background:rgba(255,255,255,0.03); border-radius:12px; padding:12px; margin-bottom:8px; border-left:3px solid #f5a623; }
+        .review-item .review-header { display:flex; justify-content:space-between; font-size:0.8rem; color:#888; }
+        .review-item .review-header .review-user { color:#f5a623; font-weight:bold; }
+        .review-item .review-stars { color:#f5a623; font-size:1.1rem; }
+        .review-item .review-text { margin:6px 0; font-size:0.9rem; }
+        .review-item .review-photo { max-width:100%; max-height:150px; border-radius:10px; margin-top:6px; cursor:pointer; border:1px solid rgba(255,255,255,0.05); }
         @media (max-width:400px) { 
             .product-grid { grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); } 
             .order-card .order-code { font-size:1.3rem; letter-spacing:4px; } 
@@ -153,6 +159,7 @@
                 <button class="tab active" data-ctab="shop" onclick="switchClientTab('shop')">🛍️ Магазин</button>
                 <button class="tab" data-ctab="orders" onclick="switchClientTab('orders')">📦 Заказы</button>
                 <button class="tab" data-ctab="qr" onclick="switchClientTab('qr')">📱 QR-код</button>
+                <button class="tab" data-ctab="reviews" onclick="switchClientTab('reviews')">⭐ Отзывы</button>
                 <button class="tab" data-ctab="support" onclick="switchClientTab('support')">💬 Поддержка</button>
             </div>
             <div id="clientShopTab">
@@ -177,6 +184,9 @@
                     </div>
                     <div id="qrInfo" style="margin-top:10px;color:#888;font-size:0.8rem;"></div>
                 </div>
+            </div>
+            <div id="clientReviewsTab" class="hidden">
+                <div id="allReviews"></div>
             </div>
             <div id="clientSupportTab" class="hidden">
                 <div id="clientSupportChat" style="max-height:300px;overflow-y:auto;margin-bottom:10px;"></div>
@@ -368,6 +378,14 @@
             <label>Комментарий</label>
             <textarea id="reviewComment" placeholder="Ваш отзыв..." rows="3"></textarea>
         </div>
+        <div class="form-group">
+            <label>📸 Фото к отзыву</label>
+            <div class="product-image-upload" onclick="document.getElementById('reviewPhotoInput').click()">
+                <span>Нажмите чтобы загрузить фото</span>
+                <input type="file" id="reviewPhotoInput" accept="image/*" style="display:none;" onchange="previewReviewPhoto(event)">
+                <div id="reviewPhotoPreview"></div>
+            </div>
+        </div>
         <button class="btn-primary" onclick="submitReview()" style="width:100%;padding:8px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📝 Отправить отзыв</button>
     </div>
 </div>
@@ -397,6 +415,7 @@ let selectedStar = 0;
 let reviewOrderId = null;
 let currentChatUser = null;
 let allPvzList = [];
+let reviewPhotoData = null;
 
 // ========== ТОСТ ==========
 function showToast(msg) {
@@ -430,18 +449,28 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// ========== ГЕНЕРАЦИЯ QR-КОДА (ЧЕРЕЗ API) ==========
+// ========== ПРЕДПРОСМОТР ФОТО В ОТЗЫВЕ ==========
+function previewReviewPhoto(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            reviewPhotoData = e.target.result;
+            document.getElementById('reviewPhotoPreview').innerHTML = `<img src="${reviewPhotoData}" style="max-width:100%;max-height:150px;border-radius:10px;margin-top:6px;">`;
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// ========== ГЕНЕРАЦИЯ QR-КОДА ==========
 function generateQR(container, data) {
     container.innerHTML = '';
     
     try {
         const text = typeof data === 'string' ? data : JSON.stringify(data);
-        // Кодируем данные для URL
         const encoded = encodeURIComponent(text);
-        // Используем API для генерации QR-кода
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encoded}&format=png&bgcolor=ffffff&color=1a1a2e&margin=10`;
         
-        // Создаём изображение
         const img = document.createElement('img');
         img.src = qrUrl;
         img.alt = 'QR-код';
@@ -452,7 +481,6 @@ function generateQR(container, data) {
         img.style.padding = '10px';
         img.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
         img.onerror = function() {
-            // Если API не работает, пробуем альтернативный
             this.src = `https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=${encoded}&choe=UTF-8&chld=H|0`;
         };
         
@@ -701,6 +729,7 @@ function switchRole(role) {
         document.getElementById('clientAuth').classList.remove('hidden');
         loadProducts();
         loadPvzList();
+        loadAllReviews();
     } else if (role === 'seller') {
         document.getElementById('sellerPanel').classList.remove('hidden');
         document.getElementById('sellerContent').classList.add('hidden');
@@ -772,6 +801,7 @@ function enterClientMode() {
     loadProducts();
     loadClientSupport();
     loadPvzList();
+    loadAllReviews();
     updatePvzSelect();
 }
 
@@ -867,9 +897,11 @@ function switchClientTab(tab) {
     document.getElementById('clientShopTab').classList.toggle('hidden', tab !== 'shop');
     document.getElementById('clientOrdersTab').classList.toggle('hidden', tab !== 'orders');
     document.getElementById('clientQrTab').classList.toggle('hidden', tab !== 'qr');
+    document.getElementById('clientReviewsTab').classList.toggle('hidden', tab !== 'reviews');
     document.getElementById('clientSupportTab').classList.toggle('hidden', tab !== 'support');
     if (tab === 'orders') loadOrders();
     if (tab === 'qr') renderClientQR();
+    if (tab === 'reviews') loadAllReviews();
     if (tab === 'support') loadClientSupport();
 }
 
@@ -963,7 +995,7 @@ function loadOrders() {
                 <div class="order-delivery-info">📍 ПВЗ: <span>${o.pvz || 'Не выбран'}</span></div>
                 <div class="order-delivery-info">💳 ${o.payment === 'now' ? 'Оплачено сразу' : 'Оплата при получении'}</div>
                 ${o.status === 'delivered' && !o.review ? `<button class="btn-warning" onclick="openReviewModal('${o.id}')" style="margin-top:6px;padding:4px 12px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">⭐ Оставить отзыв</button>` : ''}
-                ${o.review ? `<div class="order-review"><div class="stars">${'★'.repeat(o.review.stars)}${'☆'.repeat(5-o.review.stars)}</div><div style="font-size:0.8rem;color:#888;">${o.review.comment}</div></div>` : ''}
+                ${o.review ? `<div class="order-review"><div class="stars">${'★'.repeat(o.review.stars)}${'☆'.repeat(5-o.review.stars)}</div><div style="font-size:0.8rem;color:#888;">${o.review.comment}</div>${o.review.photo ? `<img src="${o.review.photo}" class="review-photo" onclick="openPhotoModal('${o.review.photo}')">` : ''}</div>` : ''}
             </div>
         `).join('');
     });
@@ -1004,6 +1036,7 @@ function renderClientQR() {
             code: order.code
         };
         
+        container.innerHTML = '';
         const success = generateQR(container, qrData);
         if (success) {
             info.innerHTML = `<div style="background:rgba(255,255,255,0.05);padding:10px;border-radius:10px;">
@@ -1028,6 +1061,45 @@ function addMoney() {
         if (currentRole === 'seller') document.getElementById('sellerWallet').textContent = currentUser.wallet + ' ₽';
         showToast(`✅ +${amount} ₽`);
     }
+}
+
+// ========== ВСЕ ОТЗЫВЫ ==========
+function loadAllReviews() {
+    const container = document.getElementById('allReviews');
+    db.ref('orders').on('value', (sn) => {
+        const reviews = [];
+        sn.forEach(child => {
+            const order = child.val();
+            if (order.review) {
+                reviews.push({
+                    id: child.key,
+                    user: order.user,
+                    review: order.review,
+                    orderId: order.id,
+                    items: order.items
+                });
+            }
+        });
+        reviews.sort((a, b) => (b.review.createdAt || 0) - (a.review.createdAt || 0));
+        
+        if (reviews.length === 0) {
+            container.innerHTML = '<div style="text-align:center;color:#555;padding:20px;">⭐ Пока нет отзывов</div>';
+            return;
+        }
+        
+        container.innerHTML = reviews.map(r => `
+            <div class="review-item">
+                <div class="review-header">
+                    <span class="review-user">👤 ${r.user}</span>
+                    <span style="font-size:0.7rem;color:#555;">${new Date(r.review.createdAt).toLocaleString()}</span>
+                </div>
+                <div class="review-stars">${'★'.repeat(r.review.stars)}${'☆'.repeat(5-r.review.stars)}</div>
+                <div class="review-text">${r.review.comment}</div>
+                ${r.review.photo ? `<img src="${r.review.photo}" class="review-photo" onclick="openPhotoModal('${r.review.photo}')">` : ''}
+                <div style="font-size:0.7rem;color:#555;margin-top:4px;">📦 Заказ: ${r.orderId}</div>
+            </div>
+        `).join('');
+    });
 }
 
 // ========== ПОДДЕРЖКА КЛИЕНТА ==========
@@ -1614,6 +1686,9 @@ function loadAdminStats() {
 function openReviewModal(orderId) {
     reviewOrderId = orderId;
     selectedStar = 0;
+    reviewPhotoData = null;
+    document.getElementById('reviewPhotoPreview').innerHTML = '';
+    document.getElementById('reviewPhotoInput').value = '';
     document.querySelectorAll('#starsInput button').forEach(b => b.classList.remove('active'));
     document.getElementById('reviewComment').value = '';
     document.getElementById('reviewModal').classList.remove('hidden');
@@ -1622,6 +1697,7 @@ function openReviewModal(orderId) {
 function closeReviewModal() {
     document.getElementById('reviewModal').classList.add('hidden');
     reviewOrderId = null;
+    reviewPhotoData = null;
 }
 
 function selectStar(star) {
@@ -1635,13 +1711,20 @@ function submitReview() {
     if (!reviewOrderId) { showToast('❌ Ошибка'); return; }
     if (selectedStar === 0) { showToast('❌ Выберите оценку'); return; }
     const comment = document.getElementById('reviewComment').value.trim();
-    const review = { stars: selectedStar, comment: comment || 'Без комментария', createdAt: Date.now() };
+    const review = { 
+        stars: selectedStar, 
+        comment: comment || 'Без комментария', 
+        createdAt: Date.now(),
+        photo: reviewPhotoData || null
+    };
+    
     db.ref('orders').orderByChild('id').equalTo(reviewOrderId).once('value', (sn) => {
         sn.forEach(child => {
             db.ref('orders/' + child.key).update({ review: review }).then(() => {
                 showToast('✅ Спасибо за отзыв! ⭐');
                 closeReviewModal();
                 loadOrders();
+                loadAllReviews();
             });
         });
     });
@@ -1675,7 +1758,7 @@ console.log('🏪 ПВЗ по умолчанию: код 12345');
 console.log('📍 При заказе можно выбрать ПВЗ из списка');
 console.log('💳 Оплата: Сразу или При получении');
 console.log('💰 При возврате деньги возвращаются на кошелёк');
-console.log('📱 QR-код генерируется через API');
+console.log('⭐ Отзывы с фото видны всем пользователям');
 </script>
 </body>
 </html>
