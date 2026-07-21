@@ -27,7 +27,6 @@
         .btn-secondary { background:rgba(255,255,255,0.08); color:#fff; }
         .btn-info { background:#2196F3; color:#fff; }
         .btn-warning { background:#ff9800; color:#fff; }
-        .btn-purple { background:#9c27b0; color:#fff; }
         .form-group { margin-bottom:8px; }
         .form-group label { display:block; font-size:0.7rem; color:#888; margin-bottom:3px; }
         .form-group input, .form-group textarea, .form-group select { width:100%; padding:8px 12px; border-radius:30px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.05); color:#fff; font-size:0.85rem; outline:none; font-family:inherit; }
@@ -61,11 +60,12 @@
         .status-delivered { background:#999; color:#fff; }
         .status-return { background:#ef4444; color:#fff; }
         .order-card .order-code { font-size:1.8rem; font-weight:bold; color:#f5a623; font-family:monospace; letter-spacing:8px; background:rgba(255,255,255,0.08); padding:10px; border-radius:12px; margin:6px 0; text-align:center; border:2px solid rgba(245,166,35,0.25); }
-        .order-card .order-pickup-number { font-size:1.2rem; font-weight:bold; color:#4CAF50; font-family:monospace; background:rgba(76,175,80,0.15); padding:6px 12px; border-radius:10px; display:inline-block; border:1px solid #4CAF50; }
+        .order-card .order-pickup-number { font-size:1.5rem; font-weight:bold; color:#4CAF50; font-family:monospace; background:rgba(76,175,80,0.15); padding:6px 20px; border-radius:10px; display:inline-block; border:2px solid #4CAF50; letter-spacing:4px; }
         .order-card .order-review { margin-top:8px; padding:8px; background:rgba(255,255,255,0.05); border-radius:10px; }
         .order-card .order-review .stars { color:#f5a623; font-size:1.2rem; }
         .order-item-with-photo { display:flex; align-items:center; gap:8px; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.03); }
-        .order-item-with-photo img { width:40px; height:40px; object-fit:cover; border-radius:8px; background:rgba(255,255,255,0.05); }
+        .order-item-with-photo img { width:40px; height:40px; object-fit:cover; border-radius:8px; background:rgba(255,255,255,0.05); cursor:pointer; transition:0.2s; }
+        .order-item-with-photo img:hover { transform:scale(1.05); border:2px solid #f5a623; }
         .order-item-with-photo .item-info { flex:1; font-size:0.8rem; }
         .tabs { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
         .tab { padding:6px 14px; border-radius:30px; background:rgba(255,255,255,0.05); cursor:pointer; font-size:0.7rem; color:#888; border:1px solid transparent; }
@@ -76,8 +76,8 @@
         .modal-content { background:#1a1a2e; border-radius:20px; padding:20px; max-width:450px; width:100%; max-height:90vh; overflow-y:auto; border:1px solid rgba(255,255,255,0.08); }
         .modal-content h3 { color:#f5a623; margin-bottom:10px; font-size:1.1rem; }
         .modal-close { float:right; background:none; border:none; color:#888; font-size:1.2rem; cursor:pointer; }
-        .qr-code-container { display:flex; justify-content:center; padding:10px; }
-        .qr-code-container canvas { border-radius:12px; background:white; padding:10px; }
+        .qr-code-container { display:flex; justify-content:center; padding:10px; min-height:200px; align-items:center; flex-direction:column; }
+        .qr-code-container canvas, .qr-code-container img { border-radius:12px; background:white; padding:10px; max-width:100%; }
         .scanner-container { background:#000; border-radius:16px; overflow:hidden; position:relative; min-height:300px; display:flex; align-items:center; justify-content:center; margin:10px 0; }
         .scanner-container video { width:100%; display:block; }
         .scanner-overlay { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:200px; height:200px; border:2px solid #f5a623; border-radius:12px; box-shadow:0 0 0 4000px rgba(0,0,0,0.4); pointer-events:none; }
@@ -96,7 +96,14 @@
         .product-image-upload:hover { border-color:#f5a623; background:rgba(255,255,255,0.03); }
         .product-image-upload img { max-width:100%; max-height:150px; border-radius:10px; margin-top:6px; }
         .admin-pvz-list { max-height:200px; overflow-y:auto; }
-        .return-badge { background:#ef4444; color:#fff; padding:2px 10px; border-radius:30px; font-size:0.6rem; }
+
+        /* МОДАЛКА ДЛЯ УВЕЛИЧЕНИЯ ФОТО */
+        .photo-modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.92); z-index:2000; display:flex; align-items:center; justify-content:center; padding:20px; cursor:pointer; }
+        .photo-modal-content { max-width:95%; max-height:95%; display:flex; align-items:center; justify-content:center; }
+        .photo-modal-content img { max-width:100%; max-height:90vh; border-radius:16px; object-fit:contain; box-shadow:0 0 40px rgba(0,0,0,0.5); }
+        .photo-modal-close { position:fixed; top:20px; right:20px; color:#fff; font-size:2rem; cursor:pointer; background:none; border:none; z-index:2001; opacity:0.7; transition:0.2s; }
+        .photo-modal-close:hover { opacity:1; transform:scale(1.1); }
+
         @media (max-width:400px) { 
             .product-grid { grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); } 
             .order-card .order-code { font-size:1.3rem; letter-spacing:4px; } 
@@ -209,7 +216,6 @@
                 <button class="btn-danger" onclick="pvzView('return')">🔄 Возвраты</button>
             </div>
             
-            <!-- СКАНИРОВАНИЕ QR -->
             <div style="background:rgba(255,255,255,0.03);border-radius:14px;padding:14px;margin-bottom:12px;">
                 <h4 style="color:#f5a623;font-size:0.85rem;margin-bottom:8px;">📷 Сканировать QR-код</h4>
                 <div class="scan-btn-group">
@@ -222,7 +228,6 @@
                 <div id="scannedResult"></div>
             </div>
             
-            <!-- Ручной поиск -->
             <div class="scan-area">
                 <h4 style="color:#f5a623;font-size:0.85rem;">🔑 Поиск по коду</h4>
                 <input type="text" id="pvzSearch" placeholder="6-значный код" maxlength="6" oninput="pvzFindOrder(this.value)">
@@ -252,6 +257,14 @@
             <h4 style="color:#f5a623;margin:12px 0 8px;">📊 Статистика</h4>
             <div id="adminStats" style="background:rgba(255,255,255,0.03);border-radius:14px;padding:12px;"></div>
         </div>
+    </div>
+</div>
+
+<!-- МОДАЛКА ДЛЯ УВЕЛИЧЕНИЯ ФОТО -->
+<div id="photoModal" class="photo-modal-overlay hidden" onclick="closePhotoModal()">
+    <button class="photo-modal-close" onclick="closePhotoModal()">✕</button>
+    <div class="photo-modal-content" onclick="event.stopPropagation();">
+        <img id="photoModalImage" src="" alt="Увеличенное фото">
     </div>
 </div>
 
@@ -314,6 +327,7 @@ let html5QrCode = null;
 let isScanning = false;
 let selectedStar = 0;
 let reviewOrderId = null;
+let usedPickupNumbers = [];
 
 // ========== ТОСТ ==========
 function showToast(msg) {
@@ -324,27 +338,74 @@ function showToast(msg) {
     t._timeout = setTimeout(() => t.classList.remove('show'), 2500);
 }
 
+// ========== УВЕЛИЧЕНИЕ ФОТО ==========
+function openPhotoModal(imageSrc) {
+    if (!imageSrc) return;
+    const modal = document.getElementById('photoModal');
+    const img = document.getElementById('photoModalImage');
+    img.src = imageSrc;
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closePhotoModal() {
+    const modal = document.getElementById('photoModal');
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+// Закрытие по Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closePhotoModal();
+    }
+});
+
 // ========== ГЕНЕРАЦИЯ QR ==========
 function generateQR(container, data) {
     container.innerHTML = '';
-    if (typeof QRCode !== 'undefined') {
-        try {
-            new QRCode(container, {
-                text: JSON.stringify(data),
-                width: 180,
-                height: 180,
-                colorDark: "#f5a623",
-                colorLight: "#1a1a2e",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-            return true;
-        } catch(e) {
-            container.innerHTML = '<div style="color:#888;">⚠️ Ошибка QR</div>';
-            return false;
-        }
+    if (typeof QRCode === 'undefined') {
+        container.innerHTML = '<div style="color:#888;">⏳ Загрузка QR...</div>';
+        return false;
     }
-    container.innerHTML = '<div style="color:#888;">⏳ Загрузка QR...</div>';
-    return false;
+    try {
+        new QRCode(container, {
+            text: JSON.stringify(data),
+            width: 180,
+            height: 180,
+            colorDark: "#f5a623",
+            colorLight: "#1a1a2e",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+        return true;
+    } catch(e) {
+        container.innerHTML = '<div style="color:#888;">⚠️ Ошибка QR</div>';
+        return false;
+    }
+}
+
+// ========== ГЕНЕРАЦИЯ НОМЕРА ХРАНЕНИЯ (3 ЦИФРЫ) ==========
+function generatePickupNumber() {
+    return new Promise((resolve) => {
+        db.ref('orders').once('value', (sn) => {
+            const used = [];
+            sn.forEach(child => {
+                const order = child.val();
+                if (order.pickupNumber) {
+                    used.push(order.pickupNumber);
+                }
+            });
+            
+            for (let i = 0; i < 1000; i++) {
+                const num = String(i).padStart(3, '0');
+                if (!used.includes(num)) {
+                    resolve(num);
+                    return;
+                }
+            }
+            resolve(String(Math.floor(Math.random() * 900) + 100).padStart(3, '0'));
+        });
+    });
 }
 
 // ========== QR-СКАНЕР ==========
@@ -416,7 +477,7 @@ function processScannedOrder(data) {
                 const order = child.val();
                 const itemsHtml = order.items.map(i => `
                     <div class="order-item-with-photo">
-                        ${i.image ? `<img src="${i.image}" alt="${i.name}">` : '<div style="width:40px;height:40px;background:rgba(255,255,255,0.05);border-radius:8px;display:flex;align-items:center;justify-content:center;">📦</div>'}
+                        ${i.image ? `<img src="${i.image}" alt="${i.name}" onclick="event.stopPropagation();openPhotoModal('${i.image}')" title="Нажмите для увеличения">` : '<div style="width:40px;height:40px;background:rgba(255,255,255,0.05);border-radius:8px;display:flex;align-items:center;justify-content:center;">📦</div>'}
                         <div class="item-info">${i.name} x${i.qty}</div>
                         <div style="color:#f5a623;">${i.price * i.qty} ₽</div>
                     </div>
@@ -430,7 +491,7 @@ function processScannedOrder(data) {
                         <div style="margin:6px 0;">${itemsHtml}</div>
                         <div style="font-weight:bold;">💰 ${order.total} ₽</div>
                         <div><span class="label">🔑</span> ${order.code}</div>
-                        ${order.pickupNumber ? `<div><span class="label">📋 Номер выдачи:</span> <span class="order-pickup-number">${order.pickupNumber}</span></div>` : ''}
+                        ${order.pickupNumber ? `<div><span class="label">📋 Номер хранения:</span> <span class="order-pickup-number">${order.pickupNumber}</span></div>` : ''}
                         <div><span class="label">📌 Статус:</span> ${order.status === 'pending' ? '⏳ Ожидает' : order.status === 'ready' ? '✅ Готов' : order.status === 'return' ? '🔄 Возврат' : '📦 Выдан'}</div>
                         ${order.status === 'pending' ? `<button class="btn-success" onclick="pvzReadyFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">✅ Готов к выдаче</button>` : ''}
                         ${order.status === 'ready' ? `<button class="btn-primary" onclick="pvzDeliverFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📤 Выдать</button>` : ''}
@@ -454,7 +515,7 @@ function findOrderByText(text) {
                 found = true;
                 const itemsHtml = order.items.map(i => `
                     <div class="order-item-with-photo">
-                        ${i.image ? `<img src="${i.image}" alt="${i.name}">` : '<div style="width:40px;height:40px;background:rgba(255,255,255,0.05);border-radius:8px;display:flex;align-items:center;justify-content:center;">📦</div>'}
+                        ${i.image ? `<img src="${i.image}" alt="${i.name}" onclick="event.stopPropagation();openPhotoModal('${i.image}')" title="Нажмите для увеличения">` : '<div style="width:40px;height:40px;background:rgba(255,255,255,0.05);border-radius:8px;display:flex;align-items:center;justify-content:center;">📦</div>'}
                         <div class="item-info">${i.name} x${i.qty}</div>
                         <div style="color:#f5a623;">${i.price * i.qty} ₽</div>
                     </div>
@@ -468,7 +529,7 @@ function findOrderByText(text) {
                         <div style="margin:6px 0;">${itemsHtml}</div>
                         <div style="font-weight:bold;">💰 ${order.total} ₽</div>
                         <div><span class="label">🔑</span> ${order.code}</div>
-                        ${order.pickupNumber ? `<div><span class="label">📋 Номер выдачи:</span> <span class="order-pickup-number">${order.pickupNumber}</span></div>` : ''}
+                        ${order.pickupNumber ? `<div><span class="label">📋 Номер хранения:</span> <span class="order-pickup-number">${order.pickupNumber}</span></div>` : ''}
                         <div><span class="label">📌 Статус:</span> ${order.status === 'pending' ? '⏳ Ожидает' : order.status === 'ready' ? '✅ Готов' : order.status === 'return' ? '🔄 Возврат' : '📦 Выдан'}</div>
                         ${order.status === 'pending' ? `<button class="btn-success" onclick="pvzReadyFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">✅ Готов к выдаче</button>` : ''}
                         ${order.status === 'ready' ? `<button class="btn-primary" onclick="pvzDeliverFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📤 Выдать</button>` : ''}
@@ -483,12 +544,12 @@ function findOrderByText(text) {
     });
 }
 
-function pvzReadyFromScan(orderId) {
-    const pickupNumber = 'WH-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substr(2, 3).toUpperCase();
+async function pvzReadyFromScan(orderId) {
+    const pickupNumber = await generatePickupNumber();
     db.ref('orders').orderByChild('id').equalTo(orderId).once('value', (sn) => {
         sn.forEach(child => {
             db.ref('orders/' + child.key).update({ status: 'ready', pickupNumber: pickupNumber });
-            showToast('✅ Заказ готов к выдаче! Номер: ' + pickupNumber);
+            showToast('✅ Заказ готов к выдаче! Номер хранения: ' + pickupNumber);
             document.getElementById('scannedResult').innerHTML = '';
             pvzView('pending');
         });
@@ -629,7 +690,7 @@ function openProduct(id) {
         const p = sn.val();
         if (!p) return;
         selectedProduct = id;
-        document.getElementById('modalImageContainer').innerHTML = p.image ? `<img src="${p.image}" style="width:100%;max-height:200px;object-fit:cover;border-radius:12px;margin-bottom:10px;">` : '';
+        document.getElementById('modalImageContainer').innerHTML = p.image ? `<img src="${p.image}" style="width:100%;max-height:200px;object-fit:cover;border-radius:12px;margin-bottom:10px;cursor:pointer;" onclick="event.stopPropagation();openPhotoModal('${p.image}')" title="Нажмите для увеличения">` : '';
         document.getElementById('modalName').textContent = p.name;
         document.getElementById('modalPrice').textContent = p.price + ' ₽';
         document.getElementById('modalSeller').textContent = '🏪 ' + (p.seller || 'Продавец');
@@ -913,7 +974,7 @@ function loadSellerProducts() {
         container.innerHTML = products.map(p => `
             <div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:8px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
                 <div style="display:flex;align-items:center;gap:8px;">
-                    ${p.image ? `<img src="${p.image}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;">` : ''}
+                    ${p.image ? `<img src="${p.image}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;cursor:pointer;" onclick="event.stopPropagation();openPhotoModal('${p.image}')" title="Нажмите для увеличения">` : ''}
                     <div><span style="font-weight:bold;font-size:0.8rem;">${p.name}</span> <span style="color:#f5a623;">${p.price} ₽</span></div>
                 </div>
                 <button class="btn-danger" onclick="deleteProduct('${p.id}')" style="padding:4px 10px;border:none;border-radius:30px;cursor:pointer;font-size:0.7rem;">✕</button>
@@ -1001,7 +1062,7 @@ function pvzView(type) {
         container.innerHTML = orders.map(o => {
             const itemsHtml = o.items.map(i => `
                 <div class="order-item-with-photo">
-                    ${i.image ? `<img src="${i.image}" alt="${i.name}">` : '<div style="width:40px;height:40px;background:rgba(255,255,255,0.05);border-radius:8px;display:flex;align-items:center;justify-content:center;">📦</div>'}
+                    ${i.image ? `<img src="${i.image}" alt="${i.name}" onclick="event.stopPropagation();openPhotoModal('${i.image}')" title="Нажмите для увеличения">` : '<div style="width:40px;height:40px;background:rgba(255,255,255,0.05);border-radius:8px;display:flex;align-items:center;justify-content:center;">📦</div>'}
                     <div class="item-info">${i.name} x${i.qty}</div>
                     <div style="color:#f5a623;">${i.price * i.qty} ₽</div>
                 </div>
@@ -1027,12 +1088,12 @@ function pvzView(type) {
     });
 }
 
-function pvzReady(orderId) {
-    const pickupNumber = 'WH-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substr(2, 3).toUpperCase();
+async function pvzReady(orderId) {
+    const pickupNumber = await generatePickupNumber();
     db.ref('orders').orderByChild('id').equalTo(orderId).once('value', (sn) => {
         sn.forEach(child => {
             db.ref('orders/' + child.key).update({ status: 'ready', pickupNumber: pickupNumber });
-            showToast('✅ Заказ готов к выдаче! Номер: ' + pickupNumber);
+            showToast('✅ Заказ готов к выдаче! Номер хранения: ' + pickupNumber);
         });
     });
 }
@@ -1067,7 +1128,7 @@ function pvzFindOrder(code) {
                 const o = child.val();
                 const itemsHtml = o.items.map(i => `
                     <div class="order-item-with-photo">
-                        ${i.image ? `<img src="${i.image}" alt="${i.name}">` : '<div style="width:40px;height:40px;background:rgba(255,255,255,0.05);border-radius:8px;display:flex;align-items:center;justify-content:center;">📦</div>'}
+                        ${i.image ? `<img src="${i.image}" alt="${i.name}" onclick="event.stopPropagation();openPhotoModal('${i.image}')" title="Нажмите для увеличения">` : '<div style="width:40px;height:40px;background:rgba(255,255,255,0.05);border-radius:8px;display:flex;align-items:center;justify-content:center;">📦</div>'}
                         <div class="item-info">${i.name} x${i.qty}</div>
                         <div style="color:#f5a623;">${i.price * i.qty} ₽</div>
                     </div>
@@ -1080,7 +1141,7 @@ function pvzFindOrder(code) {
                         <div style="margin:6px 0;">${itemsHtml}</div>
                         <div style="font-weight:bold;">💰 ${o.total} ₽</div>
                         <div>Код: ${o.code}</div>
-                        ${o.pickupNumber ? `<div>📋 Номер выдачи: <span class="order-pickup-number">${o.pickupNumber}</span></div>` : ''}
+                        ${o.pickupNumber ? `<div>📋 Номер хранения: <span class="order-pickup-number">${o.pickupNumber}</span></div>` : ''}
                         <div>Статус: ${o.status === 'pending' ? '⏳ Ожидает' : o.status === 'ready' ? '✅ Готов' : o.status === 'return' ? '🔄 Возврат' : '📦 Выдан'}</div>
                         ${o.status === 'pending' ? `<button class="btn-success" onclick="pvzReady('${o.id}')" style="margin-top:8px;padding:8px 20px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">✅ Готов к выдаче</button>` : ''}
                         ${o.status === 'ready' ? `<button class="btn-primary" onclick="pvzDeliver('${o.id}')" style="margin-top:8px;padding:8px 20px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📤 Выдать</button>` : ''}
@@ -1229,9 +1290,9 @@ db.ref('pvz').once('value', (sn) => {
 console.log('🛍️ WHOPPER MARKET с Firebase');
 console.log('👑 Админ: логин 2347, пароль 2203');
 console.log('🏪 ПВЗ по умолчанию: код 12345');
-console.log('📋 При готовности заказа создаётся номер выдачи');
+console.log('📋 При готовности заказа создаётся 3-значный номер хранения (001-999)');
 console.log('🔄 Сотрудник ПВЗ может оформить возврат');
-console.log('📸 Сотрудник ПВЗ видит фото товаров в заказе');
+console.log('📸 Клик по фото увеличивает его');
 </script>
 </body>
 </html>
