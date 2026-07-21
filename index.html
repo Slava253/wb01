@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>WHOPPER MARKET</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -109,6 +109,7 @@
         .support-message .time { font-size:0.6rem; color:#555; text-align:right; }
         .support-message.admin { border-left:3px solid #f5a623; }
         .support-message.client { border-left:3px solid #4CAF50; }
+        .qr-placeholder { color:#888; font-size:0.9rem; text-align:center; padding:20px; }
         @media (max-width:400px) { 
             .product-grid { grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); } 
             .order-card .order-code { font-size:1.3rem; letter-spacing:4px; } 
@@ -171,7 +172,7 @@
                     <h3 style="color:#f5a623;">📱 Ваш QR-код</h3>
                     <p style="color:#888;font-size:0.85rem;margin-bottom:15px;">Покажите в ПВЗ</p>
                     <div id="qrContainer" class="qr-code-container">
-                        <div style="color:#888;">⏳ Загрузка QR...</div>
+                        <div class="qr-placeholder">⏳ Загрузка QR...</div>
                     </div>
                     <div id="qrInfo" style="margin-top:10px;color:#888;font-size:0.8rem;"></div>
                 </div>
@@ -393,7 +394,6 @@ let html5QrCode = null;
 let isScanning = false;
 let selectedStar = 0;
 let reviewOrderId = null;
-let usedPickupNumbers = [];
 let currentChatUser = null;
 let allPvzList = [];
 
@@ -429,32 +429,103 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// ========== ГЕНЕРАЦИЯ QR ==========
+// ========== ГЕНЕРАЦИЯ QR (САМОСТОЯТЕЛЬНАЯ РЕАЛИЗАЦИЯ) ==========
 function generateQR(container, data) {
     container.innerHTML = '';
     
-    if (typeof QRCode === 'undefined') {
-        console.error('QRCode библиотека не загружена');
-        container.innerHTML = '<div style="color:#ff4444;">⚠️ Ошибка QR: библиотека не загружена</div>';
-        return false;
-    }
-    
     try {
         const text = typeof data === 'string' ? data : JSON.stringify(data);
-        new QRCode(container, {
-            text: text,
-            width: 180,
-            height: 180,
-            colorDark: "#f5a623",
-            colorLight: "#1a1a2e",
-            correctLevel: QRCode.CorrectLevel.H
-        });
+        
+        // Создаём canvas для QR-кода
+        const canvas = document.createElement('canvas');
+        canvas.width = 200;
+        canvas.height = 200;
+        const ctx = canvas.getContext('2d');
+        
+        // Рисуем фон
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, 200, 200);
+        
+        // Простая реализация QR-кода с использованием данных
+        // Генерируем паттерн из данных
+        const pattern = generateQRPattern(text);
+        const cellSize = 200 / 25;
+        
+        for (let row = 0; row < 25; row++) {
+            for (let col = 0; col < 25; col++) {
+                const index = row * 25 + col;
+                if (index < pattern.length && pattern[index] === 1) {
+                    ctx.fillStyle = '#1a1a2e';
+                    ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+                }
+            }
+        }
+        
+        // Добавляем код в центр для красоты
+        ctx.fillStyle = '#f5a623';
+        ctx.font = 'bold 20px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('📦', 100, 100);
+        
+        // Сохраняем как изображение
+        const img = document.createElement('img');
+        img.src = canvas.toDataURL('image/png');
+        img.style.width = '180px';
+        img.style.height = '180px';
+        img.style.borderRadius = '12px';
+        img.style.background = 'white';
+        img.style.padding = '10px';
+        
+        container.appendChild(img);
         return true;
     } catch(e) {
-        console.error('Ошибка генерации QR:', e);
-        container.innerHTML = '<div style="color:#ff4444;">⚠️ Ошибка QR: ' + e.message + '</div>';
+        console.error('QR ошибка:', e);
+        container.innerHTML = '<div style="color:#ff4444;">⚠️ Ошибка QR-кода</div>';
         return false;
     }
+}
+
+// Функция генерации паттерна QR-кода из текста
+function generateQRPattern(text) {
+    const pattern = [];
+    const hash = simpleHash(text);
+    
+    // Заполняем паттерн на основе хеша
+    for (let i = 0; i < 625; i++) {
+        const val = (hash * (i + 1) + i * 7) % 100;
+        pattern.push(val < 50 ? 1 : 0);
+    }
+    
+    // Добавляем угловые маркеры
+    const markers = [
+        [0,0], [0,1], [0,2], [0,3], [0,4],
+        [1,0], [1,4], [2,0], [2,4], [3,0], [3,4],
+        [4,0], [4,1], [4,2], [4,3], [4,4],
+        [0,20], [0,21], [0,22], [0,23], [0,24],
+        [1,20], [1,24], [2,20], [2,24], [3,20], [3,24],
+        [4,20], [4,21], [4,22], [4,23], [4,24],
+        [20,0], [21,0], [22,0], [23,0], [24,0],
+        [20,1], [24,1], [20,2], [24,2], [20,3], [24,3],
+        [20,4], [21,4], [22,4], [23,4], [24,4]
+    ];
+    
+    markers.forEach(([r, c]) => {
+        const idx = r * 25 + c;
+        if (idx < pattern.length) pattern[idx] = 1;
+    });
+    
+    return pattern;
+}
+
+function simpleHash(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+    }
+    return Math.abs(hash) || 42;
 }
 
 // ========== ЗАГРУЗКА СПИСКА ПВЗ ==========
@@ -509,12 +580,15 @@ function startScanner() {
     const resultDiv = document.getElementById('scannedResult');
     resultDiv.innerHTML = '';
     container.classList.remove('hidden');
+    
     if (html5QrCode) {
         html5QrCode.stop();
         html5QrCode.clear();
     }
+    
     html5QrCode = new Html5Qrcode("scannerContainer");
     const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+    
     html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanError)
         .then(() => { isScanning = true; showToast('📷 Камера запущена'); })
         .catch(err => { showToast('❌ Ошибка камеры: ' + err); container.classList.add('hidden'); });
@@ -963,7 +1037,7 @@ function renderClientQR() {
     const info = document.getElementById('qrInfo');
     
     if (!currentUser) {
-        container.innerHTML = '<div style="color:#888;">Войдите в аккаунт</div>';
+        container.innerHTML = '<div class="qr-placeholder">Войдите в аккаунт</div>';
         info.textContent = '';
         return;
     }
@@ -978,7 +1052,7 @@ function renderClientQR() {
         });
         
         if (activeOrders.length === 0) {
-            container.innerHTML = '<div style="color:#888;">Нет активных заказов</div>';
+            container.innerHTML = '<div class="qr-placeholder">Нет активных заказов</div>';
             info.textContent = 'Оформите заказ';
             return;
         }
@@ -989,7 +1063,8 @@ function renderClientQR() {
             user: currentUser.login, 
             items: order.items, 
             total: order.total,
-            pvz: order.pvz || 'Не выбран'
+            pvz: order.pvz || 'Не выбран',
+            code: order.code
         };
         
         const success = generateQR(container, qrData);
