@@ -26,6 +26,7 @@
         .btn-secondary { background:rgba(255,255,255,0.08); color:#fff; }
         .btn-info { background:#2196F3; color:#fff; }
         .btn-warning { background:#ff9800; color:#fff; }
+        .btn-purple { background:#9c27b0; color:#fff; }
         .form-group { margin-bottom:8px; }
         .form-group label { display:block; font-size:0.7rem; color:#888; margin-bottom:3px; }
         .form-group input, .form-group textarea, .form-group select { width:100%; padding:8px 12px; border-radius:30px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.05); color:#fff; font-size:0.85rem; outline:none; font-family:inherit; }
@@ -117,6 +118,9 @@
         .review-item .review-stars { color:#f5a623; font-size:1.1rem; }
         .review-item .review-text { margin:6px 0; font-size:0.9rem; }
         .review-item .review-photo { max-width:100%; max-height:150px; border-radius:10px; margin-top:6px; cursor:pointer; border:1px solid rgba(255,255,255,0.05); }
+        .scanner-input-area { display:flex; gap:6px; margin:8px 0; }
+        .scanner-input-area input { flex:1; padding:8px 14px; border-radius:30px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.05); color:#fff; font-size:0.85rem; outline:none; }
+        .scanner-input-area button { padding:8px 16px; border-radius:30px; border:none; font-weight:bold; cursor:pointer; }
         @media (max-width:400px) { 
             .product-grid { grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); } 
             .order-card .order-code { font-size:1.3rem; letter-spacing:4px; } 
@@ -244,10 +248,28 @@
                 <button class="btn-danger" onclick="pvzView('return')">🔄 Возвраты</button>
             </div>
             
+            <!-- СКАНИРОВАНИЕ QR -->
             <div style="background:rgba(255,255,255,0.03);border-radius:14px;padding:14px;margin-bottom:12px;">
                 <h4 style="color:#f5a623;font-size:0.85rem;margin-bottom:8px;">📷 Сканировать QR-код</h4>
+                
+                <!-- Кнопка для физического сканера -->
+                <div style="margin-bottom:8px;">
+                    <button class="btn-purple" onclick="startPhysicalScanner()" style="width:100%;padding:8px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">
+                        🔍 Сканировать сканером
+                    </button>
+                    <div style="font-size:0.6rem;color:#888;text-align:center;margin-top:4px;">
+                        Наведите сканер на QR-код или введите код вручную
+                    </div>
+                </div>
+                
+                <!-- Поле для ввода с физического сканера -->
+                <div class="scanner-input-area">
+                    <input type="text" id="scannerInput" placeholder="Введите данные с сканера..." oninput="processScannerInput(this.value)">
+                    <button class="btn-info" onclick="processScannerInput(document.getElementById('scannerInput').value)">🔍</button>
+                </div>
+                
                 <div class="scan-btn-group">
-                    <button class="btn-info" onclick="startScanner()">📷 Запустить камеру</button>
+                    <button class="btn-info" onclick="startCameraScanner()">📷 Запустить камеру</button>
                     <button class="btn-danger" onclick="stopScanner()">⏹ Остановить</button>
                 </div>
                 <div id="scannerContainer" class="scanner-container hidden">
@@ -416,6 +438,8 @@ let reviewOrderId = null;
 let currentChatUser = null;
 let allPvzList = [];
 let reviewPhotoData = null;
+let scannerBuffer = '';
+let scannerTimer = null;
 
 // ========== ТОСТ ==========
 function showToast(msg) {
@@ -469,21 +493,25 @@ function generateQR(container, data) {
     try {
         const text = typeof data === 'string' ? data : JSON.stringify(data);
         const encoded = encodeURIComponent(text);
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encoded}&format=png&bgcolor=ffffff&color=1a1a2e&margin=10`;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encoded}&format=png&bgcolor=ffffff&color=1a1a2e&margin=10`;
         
         const img = document.createElement('img');
         img.src = qrUrl;
         img.alt = 'QR-код';
-        img.style.width = '180px';
-        img.style.height = '180px';
+        img.style.width = '200px';
+        img.style.height = '200px';
         img.style.borderRadius = '12px';
         img.style.background = 'white';
         img.style.padding = '10px';
         img.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
         img.onerror = function() {
-            this.src = `https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=${encoded}&choe=UTF-8&chld=H|0`;
+            // Если API не работает, пробуем альтернативный
+            this.src = `https://chart.googleapis.com/chart?cht=qr&chs=250x250&chl=${encoded}&choe=UTF-8&chld=H|0`;
         };
-        
+        img.onload = function() {
+            container.appendChild(img);
+        };
+        // Добавляем сразу, если загрузка быстрая
         container.appendChild(img);
         return true;
     } catch(e) {
@@ -539,8 +567,63 @@ function generatePickupNumber() {
     });
 }
 
-// ========== QR-СКАНЕР ==========
-function startScanner() {
+// ========== ФИЗИЧЕСКИЙ СКАНЕР ==========
+function startPhysicalScanner() {
+    showToast('🔍 Ожидание сканера...');
+    const input = document.getElementById('scannerInput');
+    input.value = '';
+    input.focus();
+    scannerBuffer = '';
+    showToast('🔍 Наведите сканер на QR-код');
+}
+
+function processScannerInput(value) {
+    if (!value || value.length < 5) return;
+    
+    // Пытаемся распарсить как JSON
+    try {
+        const data = JSON.parse(value);
+        if (data.orderId) {
+            showToast('✅ Найден заказ: ' + data.orderId);
+            processScannedOrder(data);
+            document.getElementById('scannerInput').value = '';
+            return;
+        }
+    } catch(e) {
+        // Если не JSON, ищем по тексту
+        findOrderByText(value);
+        document.getElementById('scannerInput').value = '';
+    }
+}
+
+// Обработка ввода с клавиатуры (для физического сканера)
+document.addEventListener('keypress', function(e) {
+    const input = document.getElementById('scannerInput');
+    if (input && document.activeElement === input) {
+        // Уже обрабатывается через input событие
+        return;
+    }
+    
+    // Если сканер вводит как клавиатура (не в поле ввода)
+    if (e.key && e.key.length === 1) {
+        scannerBuffer += e.key;
+        clearTimeout(scannerTimer);
+        scannerTimer = setTimeout(() => {
+            if (scannerBuffer.length > 3) {
+                processScannerInput(scannerBuffer);
+            }
+            scannerBuffer = '';
+        }, 100);
+    } else if (e.key === 'Enter') {
+        if (scannerBuffer.length > 3) {
+            processScannerInput(scannerBuffer);
+        }
+        scannerBuffer = '';
+    }
+});
+
+// ========== СКАНЕР КАМЕРЫ ==========
+function startCameraScanner() {
     const container = document.getElementById('scannerContainer');
     const resultDiv = document.getElementById('scannedResult');
     resultDiv.innerHTML = '';
@@ -1759,6 +1842,7 @@ console.log('📍 При заказе можно выбрать ПВЗ из сп
 console.log('💳 Оплата: Сразу или При получении');
 console.log('💰 При возврате деньги возвращаются на кошелёк');
 console.log('⭐ Отзывы с фото видны всем пользователям');
+console.log('🔍 В ПВЗ есть кнопка "Сканировать сканером" для физического QR-сканера');
 </script>
 </body>
 </html>
