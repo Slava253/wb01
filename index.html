@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>WHOPPER MARKET</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -79,7 +78,8 @@
         .modal-content h3 { color:#f5a623; margin-bottom:10px; font-size:1.1rem; }
         .modal-close { float:right; background:none; border:none; color:#888; font-size:1.2rem; cursor:pointer; }
         .qr-code-container { display:flex; justify-content:center; padding:10px; min-height:200px; align-items:center; flex-direction:column; }
-        .qr-code-container canvas, .qr-code-container img { border-radius:12px; background:white; padding:10px; max-width:100%; }
+        .qr-code-container img { border-radius:12px; background:white; padding:10px; max-width:100%; max-height:250px; }
+        .qr-code-container canvas { border-radius:12px; background:white; padding:10px; max-width:100%; max-height:250px; }
         .scanner-container { background:#000; border-radius:16px; overflow:hidden; position:relative; min-height:300px; display:flex; align-items:center; justify-content:center; margin:10px 0; }
         .scanner-container video { width:100%; display:block; }
         .scanner-overlay { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:200px; height:200px; border:2px solid #f5a623; border-radius:12px; box-shadow:0 0 0 4000px rgba(0,0,0,0.4); pointer-events:none; }
@@ -110,6 +110,7 @@
         .support-message.admin { border-left:3px solid #f5a623; }
         .support-message.client { border-left:3px solid #4CAF50; }
         .qr-placeholder { color:#888; font-size:0.9rem; text-align:center; padding:20px; }
+        .qr-loading { color:#f5a623; font-size:0.9rem; text-align:center; padding:20px; }
         @media (max-width:400px) { 
             .product-grid { grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); } 
             .order-card .order-code { font-size:1.3rem; letter-spacing:4px; } 
@@ -429,53 +430,31 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// ========== ГЕНЕРАЦИЯ QR (САМОСТОЯТЕЛЬНАЯ РЕАЛИЗАЦИЯ) ==========
+// ========== ГЕНЕРАЦИЯ QR-КОДА (ЧЕРЕЗ API) ==========
 function generateQR(container, data) {
     container.innerHTML = '';
     
     try {
         const text = typeof data === 'string' ? data : JSON.stringify(data);
+        // Кодируем данные для URL
+        const encoded = encodeURIComponent(text);
+        // Используем API для генерации QR-кода
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encoded}&format=png&bgcolor=ffffff&color=1a1a2e&margin=10`;
         
-        // Создаём canvas для QR-кода
-        const canvas = document.createElement('canvas');
-        canvas.width = 200;
-        canvas.height = 200;
-        const ctx = canvas.getContext('2d');
-        
-        // Рисуем фон
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, 200, 200);
-        
-        // Простая реализация QR-кода с использованием данных
-        // Генерируем паттерн из данных
-        const pattern = generateQRPattern(text);
-        const cellSize = 200 / 25;
-        
-        for (let row = 0; row < 25; row++) {
-            for (let col = 0; col < 25; col++) {
-                const index = row * 25 + col;
-                if (index < pattern.length && pattern[index] === 1) {
-                    ctx.fillStyle = '#1a1a2e';
-                    ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
-                }
-            }
-        }
-        
-        // Добавляем код в центр для красоты
-        ctx.fillStyle = '#f5a623';
-        ctx.font = 'bold 20px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('📦', 100, 100);
-        
-        // Сохраняем как изображение
+        // Создаём изображение
         const img = document.createElement('img');
-        img.src = canvas.toDataURL('image/png');
+        img.src = qrUrl;
+        img.alt = 'QR-код';
         img.style.width = '180px';
         img.style.height = '180px';
         img.style.borderRadius = '12px';
         img.style.background = 'white';
         img.style.padding = '10px';
+        img.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
+        img.onerror = function() {
+            // Если API не работает, пробуем альтернативный
+            this.src = `https://chart.googleapis.com/chart?cht=qr&chs=200x200&chl=${encoded}&choe=UTF-8&chld=H|0`;
+        };
         
         container.appendChild(img);
         return true;
@@ -484,48 +463,6 @@ function generateQR(container, data) {
         container.innerHTML = '<div style="color:#ff4444;">⚠️ Ошибка QR-кода</div>';
         return false;
     }
-}
-
-// Функция генерации паттерна QR-кода из текста
-function generateQRPattern(text) {
-    const pattern = [];
-    const hash = simpleHash(text);
-    
-    // Заполняем паттерн на основе хеша
-    for (let i = 0; i < 625; i++) {
-        const val = (hash * (i + 1) + i * 7) % 100;
-        pattern.push(val < 50 ? 1 : 0);
-    }
-    
-    // Добавляем угловые маркеры
-    const markers = [
-        [0,0], [0,1], [0,2], [0,3], [0,4],
-        [1,0], [1,4], [2,0], [2,4], [3,0], [3,4],
-        [4,0], [4,1], [4,2], [4,3], [4,4],
-        [0,20], [0,21], [0,22], [0,23], [0,24],
-        [1,20], [1,24], [2,20], [2,24], [3,20], [3,24],
-        [4,20], [4,21], [4,22], [4,23], [4,24],
-        [20,0], [21,0], [22,0], [23,0], [24,0],
-        [20,1], [24,1], [20,2], [24,2], [20,3], [24,3],
-        [20,4], [21,4], [22,4], [23,4], [24,4]
-    ];
-    
-    markers.forEach(([r, c]) => {
-        const idx = r * 25 + c;
-        if (idx < pattern.length) pattern[idx] = 1;
-    });
-    
-    return pattern;
-}
-
-function simpleHash(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash;
-    }
-    return Math.abs(hash) || 42;
 }
 
 // ========== ЗАГРУЗКА СПИСКА ПВЗ ==========
@@ -1738,6 +1675,7 @@ console.log('🏪 ПВЗ по умолчанию: код 12345');
 console.log('📍 При заказе можно выбрать ПВЗ из списка');
 console.log('💳 Оплата: Сразу или При получении');
 console.log('💰 При возврате деньги возвращаются на кошелёк');
+console.log('📱 QR-код генерируется через API');
 </script>
 </body>
 </html>
