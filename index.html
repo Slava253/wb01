@@ -27,6 +27,8 @@
         .btn-info { background:#2196F3; color:#fff; }
         .btn-warning { background:#ff9800; color:#fff; }
         .btn-purple { background:#9c27b0; color:#fff; }
+        .btn-cyan { background:#00bcd4; color:#fff; }
+        .btn-pink { background:#e91e63; color:#fff; }
         .form-group { margin-bottom:8px; }
         .form-group label { display:block; font-size:0.7rem; color:#888; margin-bottom:3px; }
         .form-group input, .form-group textarea, .form-group select { width:100%; padding:8px 12px; border-radius:30px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.05); color:#fff; font-size:0.85rem; outline:none; font-family:inherit; }
@@ -55,7 +57,9 @@
         .order-card .order-header { display:flex; justify-content:space-between; font-weight:bold; margin-bottom:4px; font-size:0.8rem; flex-wrap:wrap; gap:4px; }
         .order-card .order-number { color:#f5a623; font-size:0.8rem; }
         .order-card .order-status { font-size:0.6rem; padding:2px 10px; border-radius:30px; }
-        .status-waiting { background:#ff9800; color:#fff; }
+        .status-collecting { background:#ff9800; color:#fff; }
+        .status-sent { background:#2196F3; color:#fff; }
+        .status-in_pvz { background:#4CAF50; color:#fff; }
         .status-ready { background:#4CAF50; color:#fff; }
         .status-delivered { background:#999; color:#fff; }
         .status-return { background:#ef4444; color:#fff; }
@@ -81,6 +85,7 @@
         .modal-close { float:right; background:none; border:none; color:#888; font-size:1.2rem; cursor:pointer; }
         .qr-code-container { display:flex; justify-content:center; padding:10px; min-height:200px; align-items:center; flex-direction:column; }
         .qr-code-container img { border-radius:12px; background:white; padding:10px; max-width:100%; max-height:250px; }
+        .qr-code-info { background:rgba(255,255,255,0.05); padding:10px; border-radius:10px; margin-top:8px; font-size:0.7rem; color:#888; word-break:break-all; max-width:100%; }
         .scanner-container { background:#000; border-radius:16px; overflow:hidden; position:relative; min-height:300px; display:flex; align-items:center; justify-content:center; margin:10px 0; }
         .scanner-container video { width:100%; display:block; }
         .scanner-overlay { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:200px; height:200px; border:2px solid #f5a623; border-radius:12px; box-shadow:0 0 0 4000px rgba(0,0,0,0.4); pointer-events:none; }
@@ -121,6 +126,17 @@
         .scanner-input-area { display:flex; gap:6px; margin:8px 0; }
         .scanner-input-area input { flex:1; padding:8px 14px; border-radius:30px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.05); color:#fff; font-size:0.85rem; outline:none; }
         .scanner-input-area button { padding:8px 16px; border-radius:30px; border:none; font-weight:bold; cursor:pointer; }
+        .status-badge { font-size:0.65rem; padding:2px 10px; border-radius:30px; display:inline-block; }
+        .status-badge.collecting { background:#ff9800; color:#fff; }
+        .status-badge.sent { background:#2196F3; color:#fff; }
+        .status-badge.in_pvz { background:#4CAF50; color:#fff; }
+        .status-badge.ready { background:#4CAF50; color:#fff; }
+        .status-badge.delivered { background:#999; color:#fff; }
+        .status-badge.return { background:#ef4444; color:#fff; }
+        .send-section { background:rgba(255,255,255,0.03); border-radius:14px; padding:14px; margin-bottom:12px; border:1px solid rgba(255,255,255,0.05); }
+        .qr-text-info { background:rgba(245,166,35,0.1); border:1px solid #f5a623; border-radius:10px; padding:10px; margin-top:6px; }
+        .qr-text-info .label { color:#f5a623; font-weight:bold; font-size:0.7rem; }
+        .qr-text-info .value { color:#fff; font-size:0.75rem; font-family:monospace; word-break:break-all; margin-top:4px; background:rgba(0,0,0,0.3); padding:6px; border-radius:6px; }
         @media (max-width:400px) { 
             .product-grid { grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); } 
             .order-card .order-code { font-size:1.3rem; letter-spacing:4px; } 
@@ -215,6 +231,25 @@
         </div>
         <div id="sellerContent" class="hidden">
             <div class="wallet" onclick="addMoney()"><span>💰 Кошелёк</span><span class="amount" id="sellerWallet">0 ₽</span></div>
+            
+            <!-- ИНФОРМАЦИЯ ДЛЯ ПРОДАВЦА О QR-КОДЕ -->
+            <div style="background:rgba(245,166,35,0.08);border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid #f5a623;">
+                <h4 style="color:#f5a623;font-size:0.9rem;">📋 Информация для QR-кода</h4>
+                <p style="color:#888;font-size:0.75rem;margin:6px 0;">Для создания QR-кода на коробку используйте следующий формат:</p>
+                <div class="qr-text-info">
+                    <div class="label">📦 Формат QR-кода:</div>
+                    <div class="value">{"orderId":"ORDXXXXXXXXXX","code":"123456"}</div>
+                </div>
+                <div style="margin-top:6px;font-size:0.7rem;color:#888;">
+                    <div>🔑 <strong style="color:#f5a623;">orderId</strong> — ID заказа (виден в заказе)</div>
+                    <div>🔑 <strong style="color:#f5a623;">code</strong> — 6-значный код заказа</div>
+                </div>
+                <div style="margin-top:8px;font-size:0.7rem;color:#888;background:rgba(0,0,0,0.2);padding:8px;border-radius:8px;">
+                    <strong>Пример:</strong><br>
+                    {"orderId":"ORDA1B2C3D4E5","code":"729065"}
+                </div>
+            </div>
+            
             <div style="background:rgba(255,255,255,0.03);border-radius:14px;padding:14px;margin-bottom:12px;">
                 <h4 style="color:#f5a623;">➕ Добавить товар</h4>
                 <div class="form-group"><label>Название</label><input type="text" id="productName" placeholder="Название"></div>
@@ -243,26 +278,39 @@
         </div>
         <div id="pvzContent" class="hidden">
             <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
-                <button class="btn-primary" onclick="pvzView('pending')">📥 Заказы</button>
-                <button class="btn-success" onclick="pvzView('ready')">📤 Выдача</button>
+                <button class="btn-primary" onclick="pvzView('collecting')">📥 Сборка</button>
+                <button class="btn-success" onclick="pvzView('sent')">🚚 Отправленные</button>
+                <button class="btn-info" onclick="pvzView('in_pvz')">🏪 В ПВЗ</button>
+                <button class="btn-warning" onclick="pvzView('ready')">📤 Выдача</button>
                 <button class="btn-danger" onclick="pvzView('return')">🔄 Возвраты</button>
+            </div>
+            
+            <!-- ОТПРАВКА ТОВАРА -->
+            <div class="send-section">
+                <h4 style="color:#f5a623;font-size:0.85rem;margin-bottom:8px;">📤 Отправить товар</h4>
+                <div class="form-group">
+                    <label>Выберите ПВЗ получатель</label>
+                    <select id="sendPvzSelect">
+                        <option value="">-- Выберите ПВЗ --</option>
+                    </select>
+                </div>
+                <div style="display:flex;gap:6px;">
+                    <input type="text" id="sendOrderInput" placeholder="Введите код заказа или отсканируйте" style="flex:1;padding:8px 14px;border-radius:30px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.05);color:#fff;font-size:0.85rem;outline:none;">
+                    <button class="btn-cyan" onclick="sendOrder()">📤 Отправить</button>
+                </div>
+                <div style="font-size:0.6rem;color:#888;margin-top:4px;">Отсканируйте QR-код заказа или введите код вручную</div>
             </div>
             
             <!-- СКАНИРОВАНИЕ QR -->
             <div style="background:rgba(255,255,255,0.03);border-radius:14px;padding:14px;margin-bottom:12px;">
                 <h4 style="color:#f5a623;font-size:0.85rem;margin-bottom:8px;">📷 Сканировать QR-код</h4>
                 
-                <!-- Кнопка для физического сканера -->
                 <div style="margin-bottom:8px;">
                     <button class="btn-purple" onclick="startPhysicalScanner()" style="width:100%;padding:8px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">
                         🔍 Сканировать сканером
                     </button>
-                    <div style="font-size:0.6rem;color:#888;text-align:center;margin-top:4px;">
-                        Наведите сканер на QR-код или введите код вручную
-                    </div>
                 </div>
                 
-                <!-- Поле для ввода с физического сканера -->
                 <div class="scanner-input-area">
                     <input type="text" id="scannerInput" placeholder="Введите данные с сканера..." oninput="processScannerInput(this.value)">
                     <button class="btn-info" onclick="processScannerInput(document.getElementById('scannerInput').value)">🔍</button>
@@ -440,6 +488,7 @@ let allPvzList = [];
 let reviewPhotoData = null;
 let scannerBuffer = '';
 let scannerTimer = null;
+let currentPvzCode = null;
 
 // ========== ТОСТ ==========
 function showToast(msg) {
@@ -473,7 +522,19 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// ========== ПРЕДПРОСМОТР ФОТО В ОТЗЫВЕ ==========
+// ========== ПРЕДПРОСМОТР ФОТО ==========
+function previewProductImage(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            productImageData = e.target.result;
+            document.getElementById('productImagePreview').innerHTML = `<img src="${productImageData}" style="max-width:100%;max-height:150px;border-radius:10px;margin-top:6px;">`;
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
 function previewReviewPhoto(event) {
     const file = event.target.files[0];
     if (file) {
@@ -505,13 +566,8 @@ function generateQR(container, data) {
         img.style.padding = '10px';
         img.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
         img.onerror = function() {
-            // Если API не работает, пробуем альтернативный
             this.src = `https://chart.googleapis.com/chart?cht=qr&chs=250x250&chl=${encoded}&choe=UTF-8&chld=H|0`;
         };
-        img.onload = function() {
-            container.appendChild(img);
-        };
-        // Добавляем сразу, если загрузка быстрая
         container.appendChild(img);
         return true;
     } catch(e) {
@@ -529,6 +585,7 @@ function loadPvzList() {
             allPvzList.push({ id: child.key, ...child.val() });
         });
         updatePvzSelect();
+        updateSendPvzSelect();
     });
 }
 
@@ -537,6 +594,20 @@ function updatePvzSelect() {
     if (!select) return;
     select.innerHTML = '<option value="">-- Выберите ПВЗ --</option>';
     allPvzList.forEach(p => {
+        const option = document.createElement('option');
+        option.value = p.code;
+        option.textContent = 'ПВЗ ' + p.code + ' - ' + (p.address || 'Адрес не указан');
+        select.appendChild(option);
+    });
+}
+
+function updateSendPvzSelect() {
+    const select = document.getElementById('sendPvzSelect');
+    if (!select) return;
+    const currentPvz = currentPvzCode;
+    select.innerHTML = '<option value="">-- Выберите ПВЗ --</option>';
+    allPvzList.forEach(p => {
+        if (p.code === currentPvz) return; // Не показываем текущий ПВЗ
         const option = document.createElement('option');
         option.value = p.code;
         option.textContent = 'ПВЗ ' + p.code + ' - ' + (p.address || 'Адрес не указан');
@@ -567,6 +638,80 @@ function generatePickupNumber() {
     });
 }
 
+// ========== ОТПРАВКА ТОВАРА ==========
+function sendOrder() {
+    const input = document.getElementById('sendOrderInput');
+    const value = input.value.trim();
+    const targetPvz = document.getElementById('sendPvzSelect').value;
+    
+    if (!targetPvz) {
+        showToast('❌ Выберите ПВЗ получатель');
+        return;
+    }
+    if (!value) {
+        showToast('❌ Введите код заказа');
+        return;
+    }
+    
+    // Пытаемся распарсить как JSON
+    let orderId = null;
+    try {
+        const data = JSON.parse(value);
+        if (data.orderId) {
+            orderId = data.orderId;
+        }
+    } catch(e) {
+        // Если не JSON, ищем по тексту (код или ID)
+        findOrderForSend(value, targetPvz);
+        return;
+    }
+    
+    if (orderId) {
+        processSendOrder(orderId, targetPvz);
+    }
+}
+
+function findOrderForSend(text, targetPvz) {
+    db.ref('orders').once('value', (sn) => {
+        let found = false;
+        sn.forEach(child => {
+            const order = child.val();
+            if (order.id === text || order.code === text) {
+                found = true;
+                processSendOrder(order.id, targetPvz);
+            }
+        });
+        if (!found) {
+            showToast('❌ Заказ не найден');
+        }
+    });
+}
+
+function processSendOrder(orderId, targetPvz) {
+    db.ref('orders').orderByChild('id').equalTo(orderId).once('value', (sn) => {
+        if (sn.exists()) {
+            sn.forEach(child => {
+                const order = child.val();
+                if (order.status !== 'collecting' && order.status !== 'pending') {
+                    showToast('❌ Заказ уже отправлен');
+                    return;
+                }
+                db.ref('orders/' + child.key).update({
+                    status: 'sent',
+                    sentToPvz: targetPvz,
+                    sentAt: Date.now()
+                }).then(() => {
+                    showToast('✅ Заказ отправлен в ПВЗ ' + targetPvz);
+                    document.getElementById('sendOrderInput').value = '';
+                    pvzView('collecting');
+                });
+            });
+        } else {
+            showToast('❌ Заказ не найден');
+        }
+    });
+}
+
 // ========== ФИЗИЧЕСКИЙ СКАНЕР ==========
 function startPhysicalScanner() {
     showToast('🔍 Ожидание сканера...');
@@ -578,7 +723,7 @@ function startPhysicalScanner() {
 }
 
 function processScannerInput(value) {
-    if (!value || value.length < 5) return;
+    if (!value || value.length < 3) return;
     
     // Пытаемся распарсить как JSON
     try {
@@ -596,15 +741,13 @@ function processScannerInput(value) {
     }
 }
 
-// Обработка ввода с клавиатуры (для физического сканера)
+// Обработка ввода с клавиатуры
 document.addEventListener('keypress', function(e) {
     const input = document.getElementById('scannerInput');
     if (input && document.activeElement === input) {
-        // Уже обрабатывается через input событие
         return;
     }
     
-    // Если сканер вводит как клавиатура (не в поле ввода)
     if (e.key && e.key.length === 1) {
         scannerBuffer += e.key;
         clearTimeout(scannerTimer);
@@ -680,6 +823,14 @@ function processScannedOrder(data) {
                         <div style="color:#f5a623;">${i.price * i.qty} ₽</div>
                     </div>
                 `).join('');
+                const statusMap = {
+                    'collecting': '🟡 Собирается',
+                    'sent': '🔵 Отправлен',
+                    'in_pvz': '🟢 В ПВЗ',
+                    'ready': '✅ Готов',
+                    'delivered': '📦 Выдан',
+                    'return': '🔄 Возврат'
+                };
                 resultDiv.innerHTML = `
                     <div class="scanned-order">
                         <div style="color:#4CAF50;font-weight:bold;">✅ Заказ найден!</div>
@@ -691,10 +842,13 @@ function processScannedOrder(data) {
                         ${order.pickupNumber ? `<div><span class="label">📋 Номер хранения:</span> <span class="order-pickup-number">${order.pickupNumber}</span></div>` : ''}
                         <div><span class="label">💳 Оплата:</span> ${order.payment === 'now' ? 'Сразу' : 'При получении'}</div>
                         <div><span class="label">📍 ПВЗ:</span> ${order.pvz || 'Не выбран'}</div>
-                        <div><span class="label">📌 Статус:</span> ${order.status === 'pending' ? '⏳ Ожидает' : order.status === 'ready' ? '✅ Готов' : order.status === 'return' ? '🔄 Возврат' : '📦 Выдан'}</div>
-                        ${order.status === 'pending' ? `<button class="btn-success" onclick="pvzReadyFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">✅ Готов к выдаче</button>` : ''}
+                        ${order.sentToPvz ? `<div><span class="label">📤 Отправлен в:</span> ПВЗ ${order.sentToPvz}</div>` : ''}
+                        <div><span class="label">📌 Статус:</span> ${statusMap[order.status] || order.status}</div>
+                        ${order.status === 'collecting' || order.status === 'pending' ? `<button class="btn-cyan" onclick="sendFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📤 Отправить</button>` : ''}
+                        ${order.status === 'sent' && order.sentToPvz === currentPvzCode ? `<button class="btn-success" onclick="pvzReceiveFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📥 Принять в ПВЗ</button>` : ''}
+                        ${order.status === 'in_pvz' && order.pvz === currentPvzCode ? `<button class="btn-success" onclick="pvzReadyFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">✅ Готов к выдаче</button>` : ''}
                         ${order.status === 'ready' ? `<button class="btn-primary" onclick="pvzDeliverFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📤 Выдать</button>` : ''}
-                        ${order.status === 'pending' || order.status === 'ready' ? `<button class="btn-danger" onclick="pvzReturnFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">🔄 Возврат</button>` : ''}
+                        ${order.status === 'pending' || order.status === 'ready' || order.status === 'in_pvz' ? `<button class="btn-danger" onclick="pvzReturnFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">🔄 Возврат</button>` : ''}
                     </div>
                 `;
             });
@@ -719,6 +873,14 @@ function findOrderByText(text) {
                         <div style="color:#f5a623;">${i.price * i.qty} ₽</div>
                     </div>
                 `).join('');
+                const statusMap = {
+                    'collecting': '🟡 Собирается',
+                    'sent': '🔵 Отправлен',
+                    'in_pvz': '🟢 В ПВЗ',
+                    'ready': '✅ Готов',
+                    'delivered': '📦 Выдан',
+                    'return': '🔄 Возврат'
+                };
                 resultDiv.innerHTML = `
                     <div class="scanned-order">
                         <div style="color:#4CAF50;font-weight:bold;">✅ Заказ найден!</div>
@@ -730,10 +892,13 @@ function findOrderByText(text) {
                         ${order.pickupNumber ? `<div><span class="label">📋 Номер хранения:</span> <span class="order-pickup-number">${order.pickupNumber}</span></div>` : ''}
                         <div><span class="label">💳 Оплата:</span> ${order.payment === 'now' ? 'Сразу' : 'При получении'}</div>
                         <div><span class="label">📍 ПВЗ:</span> ${order.pvz || 'Не выбран'}</div>
-                        <div><span class="label">📌 Статус:</span> ${order.status === 'pending' ? '⏳ Ожидает' : order.status === 'ready' ? '✅ Готов' : order.status === 'return' ? '🔄 Возврат' : '📦 Выдан'}</div>
-                        ${order.status === 'pending' ? `<button class="btn-success" onclick="pvzReadyFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">✅ Готов к выдаче</button>` : ''}
+                        ${order.sentToPvz ? `<div><span class="label">📤 Отправлен в:</span> ПВЗ ${order.sentToPvz}</div>` : ''}
+                        <div><span class="label">📌 Статус:</span> ${statusMap[order.status] || order.status}</div>
+                        ${order.status === 'collecting' || order.status === 'pending' ? `<button class="btn-cyan" onclick="sendFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📤 Отправить</button>` : ''}
+                        ${order.status === 'sent' && order.sentToPvz === currentPvzCode ? `<button class="btn-success" onclick="pvzReceiveFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📥 Принять в ПВЗ</button>` : ''}
+                        ${order.status === 'in_pvz' && order.pvz === currentPvzCode ? `<button class="btn-success" onclick="pvzReadyFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">✅ Готов к выдаче</button>` : ''}
                         ${order.status === 'ready' ? `<button class="btn-primary" onclick="pvzDeliverFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📤 Выдать</button>` : ''}
-                        ${order.status === 'pending' || order.status === 'ready' ? `<button class="btn-danger" onclick="pvzReturnFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">🔄 Возврат</button>` : ''}
+                        ${order.status === 'pending' || order.status === 'ready' || order.status === 'in_pvz' ? `<button class="btn-danger" onclick="pvzReturnFromScan('${order.id}')" style="margin-top:8px;padding:6px 16px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">🔄 Возврат</button>` : ''}
                     </div>
                 `;
             }
@@ -741,6 +906,30 @@ function findOrderByText(text) {
         if (!found) {
             resultDiv.innerHTML = '<div style="color:#ff4444;padding:12px;border:1px solid #ff4444;border-radius:12px;">❌ Заказ не найден</div>';
         }
+    });
+}
+
+function sendFromScan(orderId) {
+    const targetPvz = document.getElementById('sendPvzSelect').value;
+    if (!targetPvz) {
+        showToast('❌ Выберите ПВЗ получатель');
+        return;
+    }
+    processSendOrder(orderId, targetPvz);
+}
+
+function pvzReceiveFromScan(orderId) {
+    if (!confirm('Принять заказ в ПВЗ ' + currentPvzCode + '?')) return;
+    db.ref('orders').orderByChild('id').equalTo(orderId).once('value', (sn) => {
+        sn.forEach(child => {
+            db.ref('orders/' + child.key).update({ 
+                status: 'in_pvz',
+                receivedAt: Date.now()
+            });
+            showToast('✅ Заказ принят в ПВЗ');
+            document.getElementById('scannedResult').innerHTML = '';
+            pvzView('sent');
+        });
     });
 }
 
@@ -752,7 +941,7 @@ async function pvzReadyFromScan(orderId) {
             db.ref('orders/' + child.key).update({ status: 'ready', pickupNumber: pickupNumber });
             showToast('✅ Заказ готов к выдаче! Номер хранения: ' + pickupNumber);
             document.getElementById('scannedResult').innerHTML = '';
-            pvzView('pending');
+            pvzView('in_pvz');
         });
     });
 }
@@ -796,7 +985,7 @@ function pvzReturnFromScan(orderId) {
             });
             showToast('🔄 Возврат оформлен');
             document.getElementById('scannedResult').innerHTML = '';
-            pvzView('pending');
+            pvzView('collecting');
         });
     });
 }
@@ -829,6 +1018,8 @@ function switchRole(role) {
             html5QrCode.clear();
             isScanning = false;
         }
+        loadPvzList();
+        updateSendPvzSelect();
     } else if (role === 'support') {
         document.getElementById('supportPanel').classList.remove('hidden');
         document.getElementById('supportContent').classList.add('hidden');
@@ -1027,7 +1218,7 @@ function confirmCheckout() {
         code: code,
         pvz: pvzCode,
         payment: payment,
-        status: 'pending',
+        status: 'collecting',
         createdAt: Date.now()
     };
     
@@ -1065,17 +1256,26 @@ function loadOrders() {
             container.innerHTML = '<div style="text-align:center;color:#555;padding:20px;">📭 Нет заказов</div>';
             return;
         }
+        const statusMap = {
+            'collecting': '🟡 Собирается',
+            'sent': '🔵 Отправлен',
+            'in_pvz': '🟢 В ПВЗ',
+            'ready': '✅ Готов',
+            'delivered': '📦 Выдан',
+            'return': '🔄 Возврат'
+        };
         container.innerHTML = orders.map(o => `
             <div class="order-card">
                 <div class="order-header">
                     <span class="order-number">🆔 ${o.id}</span>
-                    <span class="order-status ${o.status === 'delivered' ? 'status-delivered' : o.status === 'return' ? 'status-return' : o.status === 'ready' ? 'status-ready' : 'status-waiting'}">${o.status === 'delivered' ? '📦 Выдан' : o.status === 'return' ? '🔄 Возврат' : o.status === 'ready' ? '✅ Готов' : '⏳ В обработке'}</span>
+                    <span class="order-status status-${o.status}">${statusMap[o.status] || o.status}</span>
                 </div>
                 <div>${o.items.map(i => `${i.name} x${i.qty}`).join(', ')}</div>
                 <div style="font-weight:bold;">💰 ${o.total} ₽</div>
                 <div class="order-code">🔑 ${o.code}</div>
                 ${o.pickupNumber ? `<div style="text-align:center;margin:6px 0;"><span class="order-pickup-number">📋 ${o.pickupNumber}</span></div>` : ''}
                 <div class="order-delivery-info">📍 ПВЗ: <span>${o.pvz || 'Не выбран'}</span></div>
+                ${o.sentToPvz ? `<div class="order-delivery-info">📤 Отправлен в: <span>ПВЗ ${o.sentToPvz}</span></div>` : ''}
                 <div class="order-delivery-info">💳 ${o.payment === 'now' ? 'Оплачено сразу' : 'Оплата при получении'}</div>
                 ${o.status === 'delivered' && !o.review ? `<button class="btn-warning" onclick="openReviewModal('${o.id}')" style="margin-top:6px;padding:4px 12px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">⭐ Оставить отзыв</button>` : ''}
                 ${o.review ? `<div class="order-review"><div class="stars">${'★'.repeat(o.review.stars)}${'☆'.repeat(5-o.review.stars)}</div><div style="font-size:0.8rem;color:#888;">${o.review.comment}</div>${o.review.photo ? `<img src="${o.review.photo}" class="review-photo" onclick="openPhotoModal('${o.review.photo}')">` : ''}</div>` : ''}
@@ -1185,7 +1385,8 @@ function loadAllReviews() {
     });
 }
 
-// ========== ПОДДЕРЖКА КЛИЕНТА ==========
+// ========== ПОДДЕРЖКА ==========
+// (Функции поддержки такие же как в предыдущей версии, сокращены для компактности)
 function loadClientSupport() {
     const container = document.getElementById('clientSupportChat');
     if (!currentUser) return;
@@ -1224,6 +1425,531 @@ function sendClientSupportMessage() {
     };
     db.ref('support_messages').push().set(msg).then(() => {
         input.value = '';
+    });
+}
+
+// ========== ПВЗ ==========
+function pvzLogin() {
+    const code = document.getElementById('pvzCode').value.trim();
+    if (!code) { showToast('❌ Введите код ПВЗ'); return; }
+    db.ref('pvz').orderByChild('code').equalTo(code).once('value', (sn) => {
+        if (sn.exists()) {
+            let found = false;
+            sn.forEach(child => {
+                const pvz = child.val();
+                if (pvz.code === code) {
+                    currentPvzCode = code;
+                    currentUser = { name: 'ПВЗ ' + code, role: 'pvz', pvzCode: code };
+                    found = true;
+                    document.getElementById('pvzAuth').classList.add('hidden');
+                    document.getElementById('pvzContent').classList.remove('hidden');
+                    document.getElementById('userNameDisplay').textContent = '🏪 ПВЗ ' + code;
+                    showToast('👋 Добро пожаловать в ПВЗ!');
+                    loadPvzList();
+                    updateSendPvzSelect();
+                    pvzView('collecting');
+                }
+            });
+            if (!found) showToast('❌ Неверный код ПВЗ');
+        } else {
+            showToast('❌ ПВЗ не найден');
+        }
+    });
+}
+
+function pvzView(type) {
+    const container = document.getElementById('pvzOrdersList');
+    const statusMap = {
+        'collecting': 'collecting',
+        'sent': 'sent',
+        'in_pvz': 'in_pvz',
+        'ready': 'ready',
+        'return': 'return'
+    };
+    const status = statusMap[type] || 'collecting';
+    const statusNames = {
+        'collecting': '🟡 Собирается',
+        'sent': '🔵 Отправлен',
+        'in_pvz': '🟢 В ПВЗ',
+        'ready': '✅ Готов',
+        'return': '🔄 Возврат'
+    };
+    
+    db.ref('orders').orderByChild('status').equalTo(status).on('value', (sn) => {
+        const orders = [];
+        sn.forEach(child => {
+            orders.push({ id: child.key, ...child.val() });
+        });
+        if (orders.length === 0) {
+            container.innerHTML = `<div style="text-align:center;color:#555;padding:20px;">📭 Нет заказов (${statusNames[status]})</div>`;
+            return;
+        }
+        container.innerHTML = orders.map(o => {
+            // Показываем только те заказы, которые относятся к текущему ПВЗ
+            const isForThisPvz = o.pvz === currentPvzCode || o.sentToPvz === currentPvzCode;
+            if (!isForThisPvz && status !== 'sent') return '';
+            
+            const itemsHtml = o.items.map(i => `
+                <div class="order-item-with-photo">
+                    ${i.image ? `<img src="${i.image}" alt="${i.name}" onclick="event.stopPropagation();openPhotoModal('${i.image}')" title="Нажмите для увеличения">` : '<div style="width:40px;height:40px;background:rgba(255,255,255,0.05);border-radius:8px;display:flex;align-items:center;justify-content:center;">📦</div>'}
+                    <div class="item-info">${i.name} x${i.qty}</div>
+                    <div style="color:#f5a623;">${i.price * i.qty} ₽</div>
+                </div>
+            `).join('');
+            
+            return `
+                <div class="order-card">
+                    <div class="order-header">
+                        <span class="order-number">🆔 ${o.id}</span>
+                        <span class="order-status status-${o.status}">${statusNames[o.status] || o.status}</span>
+                    </div>
+                    <div>👤 ${o.user}</div>
+                    <div style="margin:6px 0;">${itemsHtml}</div>
+                    <div style="font-weight:bold;">💰 ${o.total} ₽</div>
+                    <div class="order-code">🔑 ${o.code}</div>
+                    ${o.pickupNumber ? `<div style="text-align:center;margin:6px 0;"><span class="order-pickup-number">📋 ${o.pickupNumber}</span></div>` : ''}
+                    <div class="order-delivery-info">📍 ПВЗ: <span>${o.pvz || 'Не выбран'}</span></div>
+                    ${o.sentToPvz ? `<div class="order-delivery-info">📤 Отправлен в: <span>ПВЗ ${o.sentToPvz}</span></div>` : ''}
+                    <div class="order-delivery-info">💳 ${o.payment === 'now' ? 'Оплачено' : 'При получении'}</div>
+                    ${o.status === 'collecting' && o.pvz === currentPvzCode ? `<button class="btn-cyan" onclick="sendOrderFromList('${o.id}')" style="margin-top:4px;padding:4px 12px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📤 Отправить</button>` : ''}
+                    ${o.status === 'sent' && o.sentToPvz === currentPvzCode ? `<button class="btn-success" onclick="pvzReceive('${o.id}')" style="margin-top:4px;padding:4px 12px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📥 Принять в ПВЗ</button>` : ''}
+                    ${o.status === 'in_pvz' && o.pvz === currentPvzCode ? `<button class="btn-success" onclick="pvzReadyFromList('${o.id}')" style="margin-top:4px;padding:4px 12px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">✅ Готов к выдаче</button>` : ''}
+                    ${o.status === 'ready' && o.pvz === currentPvzCode ? `<button class="btn-primary" onclick="pvzDeliverFromList('${o.id}')" style="margin-top:4px;padding:4px 12px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📤 Выдать</button>` : ''}
+                    ${(o.status === 'collecting' || o.status === 'ready' || o.status === 'in_pvz') && o.pvz === currentPvzCode ? `<button class="btn-danger" onclick="pvzReturnFromList('${o.id}')" style="margin-top:4px;padding:4px 12px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">🔄 Возврат</button>` : ''}
+                </div>
+            `;
+        }).filter(html => html !== '').join('');
+    });
+}
+
+function sendOrderFromList(orderId) {
+    const targetPvz = document.getElementById('sendPvzSelect').value;
+    if (!targetPvz) {
+        showToast('❌ Выберите ПВЗ получатель');
+        return;
+    }
+    processSendOrder(orderId, targetPvz);
+}
+
+function pvzReceive(orderId) {
+    if (!confirm('Принять заказ в ПВЗ ' + currentPvzCode + '?')) return;
+    db.ref('orders').orderByChild('id').equalTo(orderId).once('value', (sn) => {
+        sn.forEach(child => {
+            db.ref('orders/' + child.key).update({ 
+                status: 'in_pvz',
+                receivedAt: Date.now()
+            });
+            showToast('✅ Заказ принят в ПВЗ');
+            pvzView('sent');
+        });
+    });
+}
+
+async function pvzReadyFromList(orderId) {
+    const pickupNumber = await generatePickupNumber();
+    db.ref('orders').orderByChild('id').equalTo(orderId).once('value', (sn) => {
+        sn.forEach(child => {
+            db.ref('orders/' + child.key).update({ status: 'ready', pickupNumber: pickupNumber });
+            showToast('✅ Заказ готов к выдаче! Номер хранения: ' + pickupNumber);
+        });
+    });
+}
+
+function pvzDeliverFromList(orderId) {
+    if (!confirm('Выдать заказ?')) return;
+    db.ref('orders').orderByChild('id').equalTo(orderId).once('value', (sn) => {
+        sn.forEach(child => {
+            const order = child.val();
+            db.ref('orders/' + child.key).update({ status: 'delivered' });
+            if (order.payment === 'on_delivery') {
+                db.ref('users').orderByChild('login').equalTo(order.user).once('value', (userSn) => {
+                    userSn.forEach(userChild => {
+                        const user = userChild.val();
+                        const newWallet = (user.wallet || 0) - order.total;
+                        db.ref('users/' + userChild.key).update({ wallet: newWallet });
+                        showToast('💳 Списано ' + order.total + ' ₽ за заказ');
+                    });
+                });
+            }
+            showToast('✅ Заказ выдан!');
+        });
+    });
+}
+
+function pvzReturnFromList(orderId) {
+    if (!confirm('Оформить возврат заказа?')) return;
+    db.ref('orders').orderByChild('id').equalTo(orderId).once('value', (sn) => {
+        sn.forEach(child => {
+            const order = child.val();
+            db.ref('orders/' + child.key).update({ status: 'return' });
+            db.ref('users').orderByChild('login').equalTo(order.user).once('value', (userSn) => {
+                userSn.forEach(userChild => {
+                    const user = userChild.val();
+                    const newWallet = (user.wallet || 0) + order.total;
+                    db.ref('users/' + userChild.key).update({ wallet: newWallet });
+                    showToast('💰 Возвращено ' + order.total + ' ₽ на кошелёк');
+                });
+            });
+            showToast('🔄 Возврат оформлен');
+        });
+    });
+}
+
+function pvzFindOrder(code) {
+    const result = document.getElementById('pvzResult');
+    if (!code || code.length < 6) { result.innerHTML = ''; return; }
+    db.ref('orders').orderByChild('code').equalTo(code).once('value', (sn) => {
+        if (sn.exists()) {
+            sn.forEach(child => {
+                const o = child.val();
+                const statusMap = {
+                    'collecting': '🟡 Собирается',
+                    'sent': '🔵 Отправлен',
+                    'in_pvz': '🟢 В ПВЗ',
+                    'ready': '✅ Готов',
+                    'delivered': '📦 Выдан',
+                    'return': '🔄 Возврат'
+                };
+                const itemsHtml = o.items.map(i => `
+                    <div class="order-item-with-photo">
+                        ${i.image ? `<img src="${i.image}" alt="${i.name}" onclick="event.stopPropagation();openPhotoModal('${i.image}')" title="Нажмите для увеличения">` : '<div style="width:40px;height:40px;background:rgba(255,255,255,0.05);border-radius:8px;display:flex;align-items:center;justify-content:center;">📦</div>'}
+                        <div class="item-info">${i.name} x${i.qty}</div>
+                        <div style="color:#f5a623;">${i.price * i.qty} ₽</div>
+                    </div>
+                `).join('');
+                result.innerHTML = `
+                    <div style="background:rgba(76,175,80,0.15);padding:12px;border-radius:12px;border:1px solid #4CAF50;">
+                        <div style="color:#4CAF50;font-weight:bold;">✅ Заказ найден!</div>
+                        <div>👤 ${o.user}</div>
+                        <div style="margin:6px 0;">${itemsHtml}</div>
+                        <div style="font-weight:bold;">💰 ${o.total} ₽</div>
+                        <div>Код: ${o.code}</div>
+                        ${o.pickupNumber ? `<div>📋 Номер хранения: <span class="order-pickup-number">${o.pickupNumber}</span></div>` : ''}
+                        <div>📍 ПВЗ: ${o.pvz || 'Не выбран'}</div>
+                        ${o.sentToPvz ? `<div>📤 Отправлен в: ПВЗ ${o.sentToPvz}</div>` : ''}
+                        <div>💳 ${o.payment === 'now' ? 'Оплачено' : 'При получении'}</div>
+                        <div>Статус: ${statusMap[o.status] || o.status}</div>
+                        ${o.status === 'collecting' && o.pvz === currentPvzCode ? `<button class="btn-cyan" onclick="sendOrderFromList('${o.id}')" style="margin-top:8px;padding:8px 20px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📤 Отправить</button>` : ''}
+                        ${o.status === 'sent' && o.sentToPvz === currentPvzCode ? `<button class="btn-success" onclick="pvzReceive('${o.id}')" style="margin-top:8px;padding:8px 20px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📥 Принять в ПВЗ</button>` : ''}
+                        ${o.status === 'in_pvz' && o.pvz === currentPvzCode ? `<button class="btn-success" onclick="pvzReadyFromList('${o.id}')" style="margin-top:8px;padding:8px 20px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">✅ Готов к выдаче</button>` : ''}
+                        ${o.status === 'ready' && o.pvz === currentPvzCode ? `<button class="btn-primary" onclick="pvzDeliverFromList('${o.id}')" style="margin-top:8px;padding:8px 20px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📤 Выдать</button>` : ''}
+                        ${(o.status === 'collecting' || o.status === 'ready' || o.status === 'in_pvz') && o.pvz === currentPvzCode ? `<button class="btn-danger" onclick="pvzReturnFromList('${o.id}')" style="margin-top:8px;padding:8px 20px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">🔄 Возврат</button>` : ''}
+                    </div>
+                `;
+            });
+        } else {
+            result.innerHTML = '<div style="color:#ff4444;">❌ Заказ не найден</div>';
+        }
+    });
+}
+
+// ========== ПРОДАВЕЦ ==========
+let productImageData = null;
+
+function sellerRegister() {
+    const login = document.getElementById('sellerLoginInput').value.trim();
+    const pass = document.getElementById('sellerPassInput').value.trim();
+    if (!login || !pass) { showToast('❌ Заполните все поля'); return; }
+    db.ref('sellers').orderByChild('login').equalTo(login).once('value', (sn) => {
+        if (sn.exists()) { showToast('❌ Логин занят'); return; }
+        const seller = { login, password: pass, wallet: 0, shopName: 'Магазин ' + login };
+        db.ref('sellers').push().set(seller).then(() => {
+            showToast('✅ Регистрация продавца успешна!');
+            currentUser = { login: login, name: seller.shopName, wallet: 0 };
+            enterSellerMode();
+        });
+    });
+}
+
+function sellerLogin() {
+    const login = document.getElementById('sellerLoginInput').value.trim();
+    const pass = document.getElementById('sellerPassInput').value.trim();
+    db.ref('sellers').orderByChild('login').equalTo(login).once('value', (sn) => {
+        if (sn.exists()) {
+            let found = false;
+            sn.forEach(child => {
+                const seller = child.val();
+                if (seller.password === pass) {
+                    currentUser = { login: login, name: seller.shopName, wallet: seller.wallet || 0 };
+                    found = true;
+                    showToast('👋 Добро пожаловать, ' + seller.shopName + '!');
+                    enterSellerMode();
+                }
+            });
+            if (!found) showToast('❌ Неверный пароль');
+        } else {
+            showToast('❌ Продавец не найден');
+        }
+    });
+}
+
+function enterSellerMode() {
+    document.getElementById('sellerAuth').classList.add('hidden');
+    document.getElementById('sellerContent').classList.remove('hidden');
+    document.getElementById('userNameDisplay').textContent = currentUser.name + ' 🏪';
+    document.getElementById('sellerWallet').textContent = (currentUser.wallet || 0) + ' ₽';
+    loadSellerProducts();
+}
+
+function loadSellerProducts() {
+    const container = document.getElementById('sellerProducts');
+    db.ref('products').orderByChild('seller').equalTo(currentUser.name).on('value', (sn) => {
+        const products = [];
+        sn.forEach(child => {
+            products.push({ id: child.key, ...child.val() });
+        });
+        if (products.length === 0) {
+            container.innerHTML = '<div style="color:#555;padding:8px;">Нет товаров</div>';
+            return;
+        }
+        container.innerHTML = products.map(p => `
+            <div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:8px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    ${p.image ? `<img src="${p.image}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;cursor:pointer;" onclick="event.stopPropagation();openPhotoModal('${p.image}')" title="Нажмите для увеличения">` : ''}
+                    <div><span style="font-weight:bold;font-size:0.8rem;">${p.name}</span> <span style="color:#f5a623;">${p.price} ₽</span></div>
+                </div>
+                <button class="btn-danger" onclick="deleteProduct('${p.id}')" style="padding:4px 10px;border:none;border-radius:30px;cursor:pointer;font-size:0.7rem;">✕</button>
+            </div>
+        `).join('');
+    });
+}
+
+function addProduct() {
+    if (!currentUser) { showToast('❌ Войдите'); return; }
+    const name = document.getElementById('productName').value.trim();
+    const price = parseInt(document.getElementById('productPrice').value);
+    if (!name || !price || price <= 0) { showToast('❌ Заполните название и цену'); return; }
+    const product = { name, price, seller: currentUser.name };
+    if (productImageData) product.image = productImageData;
+    db.ref('products').push().set(product).then(() => {
+        document.getElementById('productName').value = '';
+        document.getElementById('productPrice').value = '';
+        document.getElementById('productImagePreview').innerHTML = '';
+        productImageData = null;
+        document.getElementById('productImageInput').value = '';
+        showToast('✅ Товар добавлен!');
+    });
+}
+
+function deleteProduct(productId) {
+    if (!confirm('Удалить товар?')) return;
+    db.ref('products/' + productId).remove().then(() => {
+        showToast('🗑️ Удалено');
+    });
+}
+
+// ========== АДМИН ==========
+function adminLogin() {
+    const login = document.getElementById('adminLoginInput').value.trim();
+    const pass = document.getElementById('adminPassInput').value.trim();
+    if (login === '2347' && pass === '2203') {
+        currentUser = { login: '2347', name: 'Администратор', role: 'admin' };
+        document.getElementById('adminAuth').classList.add('hidden');
+        document.getElementById('adminContent').classList.remove('hidden');
+        document.getElementById('userNameDisplay').textContent = '👑 Администратор';
+        showToast('👑 Добро пожаловать, Администратор!');
+        loadAdminPvz();
+        loadAdminSupport();
+        loadAdminStats();
+        loadPvzList();
+    } else {
+        showToast('❌ Неверный логин или пароль');
+    }
+}
+
+function loadAdminPvz() {
+    const container = document.getElementById('adminPvzList');
+    db.ref('pvz').on('value', (sn) => {
+        const pvzs = [];
+        sn.forEach(child => {
+            pvzs.push({ id: child.key, ...child.val() });
+        });
+        if (pvzs.length === 0) {
+            container.innerHTML = '<div style="color:#555;padding:8px;">Нет ПВЗ</div>';
+            return;
+        }
+        container.innerHTML = pvzs.map(p => `
+            <div class="pvz-item">
+                <div class="pvz-info">
+                    <div style="font-weight:bold;">🏪 ПВЗ ${p.code}</div>
+                    <div class="pvz-address">📍 ${p.address || 'Адрес не указан'}</div>
+                </div>
+                <button class="btn-danger" onclick="adminDeletePvz('${p.id}')" style="padding:4px 10px;border:none;border-radius:30px;cursor:pointer;font-size:0.7rem;">🗑</button>
+            </div>
+        `).join('');
+    });
+}
+
+function adminAddPvz() {
+    const code = document.getElementById('adminPvzCode').value.trim();
+    const address = document.getElementById('adminPvzAddress').value.trim();
+    if (!code) { showToast('❌ Введите код ПВЗ'); return; }
+    if (!address) { showToast('❌ Введите адрес ПВЗ'); return; }
+    db.ref('pvz').orderByChild('code').equalTo(code).once('value', (sn) => {
+        if (sn.exists()) { showToast('❌ ПВЗ с таким кодом уже существует'); return; }
+        db.ref('pvz').push().set({ code, address }).then(() => {
+            showToast('✅ ПВЗ добавлен!');
+            document.getElementById('adminPvzCode').value = '';
+            document.getElementById('adminPvzAddress').value = '';
+            loadAdminPvz();
+            loadPvzList();
+            updatePvzSelect();
+            updateSendPvzSelect();
+        });
+    });
+}
+
+function adminDeletePvz(pvzId) {
+    if (!confirm('Удалить ПВЗ?')) return;
+    db.ref('pvz/' + pvzId).remove().then(() => {
+        showToast('🗑️ ПВЗ удалён');
+        loadAdminPvz();
+        loadPvzList();
+        updatePvzSelect();
+        updateSendPvzSelect();
+    });
+}
+
+function loadAdminSupport() {
+    const container = document.getElementById('adminSupportList');
+    db.ref('support_users').on('value', (sn) => {
+        const users = [];
+        sn.forEach(child => {
+            users.push({ id: child.key, ...child.val() });
+        });
+        if (users.length === 0) {
+            container.innerHTML = '<div style="color:#555;padding:8px;">Нет сотрудников поддержки</div>';
+            return;
+        }
+        container.innerHTML = users.map(u => `
+            <div class="pvz-item">
+                <div class="pvz-info">
+                    <div style="font-weight:bold;">💬 ${u.login}</div>
+                    <div style="color:#888;font-size:0.7rem;">${u.name}</div>
+                </div>
+                <button class="btn-danger" onclick="adminDeleteSupport('${u.id}')" style="padding:4px 10px;border:none;border-radius:30px;cursor:pointer;font-size:0.7rem;">🗑</button>
+            </div>
+        `).join('');
+    });
+}
+
+function adminAddSupport() {
+    const login = document.getElementById('adminSupportLogin').value.trim();
+    const pass = document.getElementById('adminSupportPass').value.trim();
+    if (!login || !pass) { showToast('❌ Заполните все поля'); return; }
+    db.ref('support_users').orderByChild('login').equalTo(login).once('value', (sn) => {
+        if (sn.exists()) { showToast('❌ Логин занят'); return; }
+        db.ref('support_users').push().set({ login, password: pass, name: 'Оператор ' + login }).then(() => {
+            showToast('✅ Сотрудник поддержки добавлен!');
+            document.getElementById('adminSupportLogin').value = '';
+            document.getElementById('adminSupportPass').value = '';
+            loadAdminSupport();
+        });
+    });
+}
+
+function adminDeleteSupport(userId) {
+    if (!confirm('Удалить сотрудника поддержки?')) return;
+    db.ref('support_users/' + userId).remove().then(() => {
+        showToast('🗑️ Сотрудник удалён');
+        loadAdminSupport();
+    });
+}
+
+function loadAdminStats() {
+    const container = document.getElementById('adminStats');
+    db.ref('orders').once('value', (sn) => {
+        let total = 0, collecting = 0, sent = 0, in_pvz = 0, ready = 0, delivered = 0, returns = 0;
+        sn.forEach(child => {
+            const order = child.val();
+            total++;
+            if (order.status === 'collecting' || order.status === 'pending') collecting++;
+            else if (order.status === 'sent') sent++;
+            else if (order.status === 'in_pvz') in_pvz++;
+            else if (order.status === 'ready') ready++;
+            else if (order.status === 'delivered') delivered++;
+            else if (order.status === 'return') returns++;
+        });
+        container.innerHTML = `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                <div style="background:rgba(255,255,255,0.03);padding:8px;border-radius:10px;text-align:center;">
+                    <div style="font-size:1.5rem;color:#f5a623;">${total}</div>
+                    <div style="font-size:0.7rem;color:#888;">Всего заказов</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.03);padding:8px;border-radius:10px;text-align:center;">
+                    <div style="font-size:1.5rem;color:#ff9800;">${collecting}</div>
+                    <div style="font-size:0.7rem;color:#888;">Собираются</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.03);padding:8px;border-radius:10px;text-align:center;">
+                    <div style="font-size:1.5rem;color:#2196F3;">${sent}</div>
+                    <div style="font-size:0.7rem;color:#888;">Отправлены</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.03);padding:8px;border-radius:10px;text-align:center;">
+                    <div style="font-size:1.5rem;color:#4CAF50;">${in_pvz}</div>
+                    <div style="font-size:0.7rem;color:#888;">В ПВЗ</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.03);padding:8px;border-radius:10px;text-align:center;">
+                    <div style="font-size:1.5rem;color:#4CAF50;">${ready}</div>
+                    <div style="font-size:0.7rem;color:#888;">Готовы</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.03);padding:8px;border-radius:10px;text-align:center;">
+                    <div style="font-size:1.5rem;color:#999;">${delivered}</div>
+                    <div style="font-size:0.7rem;color:#888;">Выдано</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.03);padding:8px;border-radius:10px;text-align:center;grid-column:span 2;">
+                    <div style="font-size:1.5rem;color:#ef4444;">${returns}</div>
+                    <div style="font-size:0.7rem;color:#888;">Возвратов</div>
+                </div>
+            </div>
+        `;
+    });
+}
+
+// ========== ОТЗЫВЫ ==========
+function openReviewModal(orderId) {
+    reviewOrderId = orderId;
+    selectedStar = 0;
+    reviewPhotoData = null;
+    document.getElementById('reviewPhotoPreview').innerHTML = '';
+    document.getElementById('reviewPhotoInput').value = '';
+    document.querySelectorAll('#starsInput button').forEach(b => b.classList.remove('active'));
+    document.getElementById('reviewComment').value = '';
+    document.getElementById('reviewModal').classList.remove('hidden');
+}
+
+function closeReviewModal() {
+    document.getElementById('reviewModal').classList.add('hidden');
+    reviewOrderId = null;
+    reviewPhotoData = null;
+}
+
+function selectStar(star) {
+    selectedStar = star;
+    document.querySelectorAll('#starsInput button').forEach(b => {
+        b.classList.toggle('active', parseInt(b.dataset.star) <= star);
+    });
+}
+
+function submitReview() {
+    if (!reviewOrderId) { showToast('❌ Ошибка'); return; }
+    if (selectedStar === 0) { showToast('❌ Выберите оценку'); return; }
+    const comment = document.getElementById('reviewComment').value.trim();
+    const review = { 
+        stars: selectedStar, 
+        comment: comment || 'Без комментария', 
+        createdAt: Date.now(),
+        photo: reviewPhotoData || null
+    };
+    
+    db.ref('orders').orderByChild('id').equalTo(reviewOrderId).once('value', (sn) => {
+        sn.forEach(child => {
+            db.ref('orders/' + child.key).update({ review: review }).then(() => {
+                showToast('✅ Спасибо за отзыв! ⭐');
+                closeReviewModal();
+                loadOrders();
+                loadAllReviews();
+            });
+        });
     });
 }
 
@@ -1345,474 +2071,6 @@ function sendSupportReply() {
     });
 }
 
-// ========== ПРОДАВЕЦ ==========
-let productImageData = null;
-
-function previewProductImage(event) {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            productImageData = e.target.result;
-            document.getElementById('productImagePreview').innerHTML = `<img src="${productImageData}" style="max-width:100%;max-height:150px;border-radius:10px;margin-top:6px;">`;
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
-function sellerRegister() {
-    const login = document.getElementById('sellerLoginInput').value.trim();
-    const pass = document.getElementById('sellerPassInput').value.trim();
-    if (!login || !pass) { showToast('❌ Заполните все поля'); return; }
-    db.ref('sellers').orderByChild('login').equalTo(login).once('value', (sn) => {
-        if (sn.exists()) { showToast('❌ Логин занят'); return; }
-        const seller = { login, password: pass, wallet: 0, shopName: 'Магазин ' + login };
-        db.ref('sellers').push().set(seller).then(() => {
-            showToast('✅ Регистрация продавца успешна!');
-            currentUser = { login: login, name: seller.shopName, wallet: 0 };
-            enterSellerMode();
-        });
-    });
-}
-
-function sellerLogin() {
-    const login = document.getElementById('sellerLoginInput').value.trim();
-    const pass = document.getElementById('sellerPassInput').value.trim();
-    db.ref('sellers').orderByChild('login').equalTo(login).once('value', (sn) => {
-        if (sn.exists()) {
-            let found = false;
-            sn.forEach(child => {
-                const seller = child.val();
-                if (seller.password === pass) {
-                    currentUser = { login: login, name: seller.shopName, wallet: seller.wallet || 0 };
-                    found = true;
-                    showToast('👋 Добро пожаловать, ' + seller.shopName + '!');
-                    enterSellerMode();
-                }
-            });
-            if (!found) showToast('❌ Неверный пароль');
-        } else {
-            showToast('❌ Продавец не найден');
-        }
-    });
-}
-
-function enterSellerMode() {
-    document.getElementById('sellerAuth').classList.add('hidden');
-    document.getElementById('sellerContent').classList.remove('hidden');
-    document.getElementById('userNameDisplay').textContent = currentUser.name + ' 🏪';
-    document.getElementById('sellerWallet').textContent = (currentUser.wallet || 0) + ' ₽';
-    loadSellerProducts();
-}
-
-function loadSellerProducts() {
-    const container = document.getElementById('sellerProducts');
-    db.ref('products').orderByChild('seller').equalTo(currentUser.name).on('value', (sn) => {
-        const products = [];
-        sn.forEach(child => {
-            products.push({ id: child.key, ...child.val() });
-        });
-        if (products.length === 0) {
-            container.innerHTML = '<div style="color:#555;padding:8px;">Нет товаров</div>';
-            return;
-        }
-        container.innerHTML = products.map(p => `
-            <div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:8px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
-                <div style="display:flex;align-items:center;gap:8px;">
-                    ${p.image ? `<img src="${p.image}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;cursor:pointer;" onclick="event.stopPropagation();openPhotoModal('${p.image}')" title="Нажмите для увеличения">` : ''}
-                    <div><span style="font-weight:bold;font-size:0.8rem;">${p.name}</span> <span style="color:#f5a623;">${p.price} ₽</span></div>
-                </div>
-                <button class="btn-danger" onclick="deleteProduct('${p.id}')" style="padding:4px 10px;border:none;border-radius:30px;cursor:pointer;font-size:0.7rem;">✕</button>
-            </div>
-        `).join('');
-    });
-}
-
-function addProduct() {
-    if (!currentUser) { showToast('❌ Войдите'); return; }
-    const name = document.getElementById('productName').value.trim();
-    const price = parseInt(document.getElementById('productPrice').value);
-    if (!name || !price || price <= 0) { showToast('❌ Заполните название и цену'); return; }
-    const product = { name, price, seller: currentUser.name };
-    if (productImageData) product.image = productImageData;
-    db.ref('products').push().set(product).then(() => {
-        document.getElementById('productName').value = '';
-        document.getElementById('productPrice').value = '';
-        document.getElementById('productImagePreview').innerHTML = '';
-        productImageData = null;
-        document.getElementById('productImageInput').value = '';
-        showToast('✅ Товар добавлен!');
-    });
-}
-
-function deleteProduct(productId) {
-    if (!confirm('Удалить товар?')) return;
-    db.ref('products/' + productId).remove().then(() => {
-        showToast('🗑️ Удалено');
-    });
-}
-
-// ========== ПВЗ ==========
-function pvzLogin() {
-    const code = document.getElementById('pvzCode').value.trim();
-    if (!code) { showToast('❌ Введите код ПВЗ'); return; }
-    db.ref('pvz').orderByChild('code').equalTo(code).once('value', (sn) => {
-        if (sn.exists()) {
-            let found = false;
-            sn.forEach(child => {
-                const pvz = child.val();
-                if (pvz.code === code) {
-                    currentUser = { name: 'ПВЗ ' + code, role: 'pvz', pvzCode: code };
-                    found = true;
-                    document.getElementById('pvzAuth').classList.add('hidden');
-                    document.getElementById('pvzContent').classList.remove('hidden');
-                    document.getElementById('userNameDisplay').textContent = '🏪 ПВЗ ' + code;
-                    showToast('👋 Добро пожаловать в ПВЗ!');
-                    pvzView('pending');
-                }
-            });
-            if (!found) showToast('❌ Неверный код ПВЗ');
-        } else {
-            showToast('❌ ПВЗ не найден');
-        }
-    });
-}
-
-function pvzView(type) {
-    const container = document.getElementById('pvzOrdersList');
-    const statusMap = { 'pending': 'pending', 'ready': 'ready', 'return': 'return' };
-    const status = statusMap[type] || 'pending';
-    const statusNames = { 'pending': '⏳ Ожидает', 'ready': '✅ Готов', 'return': '🔄 Возврат' };
-    db.ref('orders').orderByChild('status').equalTo(status).on('value', (sn) => {
-        const orders = [];
-        sn.forEach(child => {
-            orders.push({ id: child.key, ...child.val() });
-        });
-        if (orders.length === 0) {
-            container.innerHTML = `<div style="text-align:center;color:#555;padding:20px;">📭 Нет заказов (${statusNames[status]})</div>`;
-            return;
-        }
-        container.innerHTML = orders.map(o => {
-            const itemsHtml = o.items.map(i => `
-                <div class="order-item-with-photo">
-                    ${i.image ? `<img src="${i.image}" alt="${i.name}" onclick="event.stopPropagation();openPhotoModal('${i.image}')" title="Нажмите для увеличения">` : '<div style="width:40px;height:40px;background:rgba(255,255,255,0.05);border-radius:8px;display:flex;align-items:center;justify-content:center;">📦</div>'}
-                    <div class="item-info">${i.name} x${i.qty}</div>
-                    <div style="color:#f5a623;">${i.price * i.qty} ₽</div>
-                </div>
-            `).join('');
-            return `
-                <div class="order-card">
-                    <div class="order-header">
-                        <span class="order-number">🆔 ${o.id}</span>
-                        <span class="order-status ${o.status === 'ready' ? 'status-ready' : o.status === 'return' ? 'status-return' : 'status-waiting'}">${statusNames[o.status] || o.status}</span>
-                    </div>
-                    <div>👤 ${o.user}</div>
-                    <div style="margin:6px 0;">${itemsHtml}</div>
-                    <div style="font-weight:bold;">💰 ${o.total} ₽</div>
-                    <div class="order-code">🔑 ${o.code}</div>
-                    ${o.pickupNumber ? `<div style="text-align:center;margin:6px 0;"><span class="order-pickup-number">📋 ${o.pickupNumber}</span></div>` : ''}
-                    <div class="order-delivery-info">📍 ПВЗ: <span>${o.pvz || 'Не выбран'}</span></div>
-                    <div class="order-delivery-info">💳 ${o.payment === 'now' ? 'Оплачено' : 'При получении'}</div>
-                    ${o.status === 'pending' ? `<button class="btn-success" onclick="pvzReady('${o.id}')" style="margin-top:4px;padding:4px 12px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">✅ Готов к выдаче</button>` : ''}
-                    ${o.status === 'ready' ? `<button class="btn-primary" onclick="pvzDeliver('${o.id}')" style="margin-top:4px;padding:4px 12px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📤 Выдать</button>` : ''}
-                    ${(o.status === 'pending' || o.status === 'ready') ? `<button class="btn-danger" onclick="pvzReturn('${o.id}')" style="margin-top:4px;padding:4px 12px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">🔄 Возврат</button>` : ''}
-                </div>
-            `;
-        }).join('');
-    });
-}
-
-async function pvzReady(orderId) {
-    const pickupNumber = await generatePickupNumber();
-    db.ref('orders').orderByChild('id').equalTo(orderId).once('value', (sn) => {
-        sn.forEach(child => {
-            db.ref('orders/' + child.key).update({ status: 'ready', pickupNumber: pickupNumber });
-            showToast('✅ Заказ готов к выдаче! Номер хранения: ' + pickupNumber);
-        });
-    });
-}
-
-function pvzDeliver(orderId) {
-    if (!confirm('Выдать заказ?')) return;
-    db.ref('orders').orderByChild('id').equalTo(orderId).once('value', (sn) => {
-        sn.forEach(child => {
-            const order = child.val();
-            db.ref('orders/' + child.key).update({ status: 'delivered' });
-            if (order.payment === 'on_delivery') {
-                db.ref('users').orderByChild('login').equalTo(order.user).once('value', (userSn) => {
-                    userSn.forEach(userChild => {
-                        const user = userChild.val();
-                        const newWallet = (user.wallet || 0) - order.total;
-                        db.ref('users/' + userChild.key).update({ wallet: newWallet });
-                        showToast('💳 Списано ' + order.total + ' ₽ за заказ');
-                    });
-                });
-            }
-            showToast('✅ Заказ выдан!');
-        });
-    });
-}
-
-function pvzReturn(orderId) {
-    if (!confirm('Оформить возврат заказа?')) return;
-    db.ref('orders').orderByChild('id').equalTo(orderId).once('value', (sn) => {
-        sn.forEach(child => {
-            const order = child.val();
-            db.ref('orders/' + child.key).update({ status: 'return' });
-            db.ref('users').orderByChild('login').equalTo(order.user).once('value', (userSn) => {
-                userSn.forEach(userChild => {
-                    const user = userChild.val();
-                    const newWallet = (user.wallet || 0) + order.total;
-                    db.ref('users/' + userChild.key).update({ wallet: newWallet });
-                    showToast('💰 Возвращено ' + order.total + ' ₽ на кошелёк');
-                });
-            });
-            showToast('🔄 Возврат оформлен');
-        });
-    });
-}
-
-function pvzFindOrder(code) {
-    const result = document.getElementById('pvzResult');
-    if (!code || code.length < 6) { result.innerHTML = ''; return; }
-    db.ref('orders').orderByChild('code').equalTo(code).once('value', (sn) => {
-        if (sn.exists()) {
-            sn.forEach(child => {
-                const o = child.val();
-                const itemsHtml = o.items.map(i => `
-                    <div class="order-item-with-photo">
-                        ${i.image ? `<img src="${i.image}" alt="${i.name}" onclick="event.stopPropagation();openPhotoModal('${i.image}')" title="Нажмите для увеличения">` : '<div style="width:40px;height:40px;background:rgba(255,255,255,0.05);border-radius:8px;display:flex;align-items:center;justify-content:center;">📦</div>'}
-                        <div class="item-info">${i.name} x${i.qty}</div>
-                        <div style="color:#f5a623;">${i.price * i.qty} ₽</div>
-                    </div>
-                `).join('');
-                result.innerHTML = `
-                    <div style="background:rgba(76,175,80,0.15);padding:12px;border-radius:12px;border:1px solid #4CAF50;">
-                        <div style="color:#4CAF50;font-weight:bold;">✅ Заказ найден!</div>
-                        <div>👤 ${o.user}</div>
-                        <div style="margin:6px 0;">${itemsHtml}</div>
-                        <div style="font-weight:bold;">💰 ${o.total} ₽</div>
-                        <div>Код: ${o.code}</div>
-                        ${o.pickupNumber ? `<div>📋 Номер хранения: <span class="order-pickup-number">${o.pickupNumber}</span></div>` : ''}
-                        <div>📍 ПВЗ: ${o.pvz || 'Не выбран'}</div>
-                        <div>💳 ${o.payment === 'now' ? 'Оплачено' : 'При получении'}</div>
-                        <div>Статус: ${o.status === 'pending' ? '⏳ Ожидает' : o.status === 'ready' ? '✅ Готов' : o.status === 'return' ? '🔄 Возврат' : '📦 Выдан'}</div>
-                        ${o.status === 'pending' ? `<button class="btn-success" onclick="pvzReady('${o.id}')" style="margin-top:8px;padding:8px 20px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">✅ Готов к выдаче</button>` : ''}
-                        ${o.status === 'ready' ? `<button class="btn-primary" onclick="pvzDeliver('${o.id}')" style="margin-top:8px;padding:8px 20px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📤 Выдать</button>` : ''}
-                        ${(o.status === 'pending' || o.status === 'ready') ? `<button class="btn-danger" onclick="pvzReturn('${o.id}')" style="margin-top:8px;padding:8px 20px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">🔄 Возврат</button>` : ''}
-                    </div>
-                `;
-            });
-        } else {
-            result.innerHTML = '<div style="color:#ff4444;">❌ Заказ не найден</div>';
-        }
-    });
-}
-
-// ========== АДМИН ==========
-function adminLogin() {
-    const login = document.getElementById('adminLoginInput').value.trim();
-    const pass = document.getElementById('adminPassInput').value.trim();
-    if (login === '2347' && pass === '2203') {
-        currentUser = { login: '2347', name: 'Администратор', role: 'admin' };
-        document.getElementById('adminAuth').classList.add('hidden');
-        document.getElementById('adminContent').classList.remove('hidden');
-        document.getElementById('userNameDisplay').textContent = '👑 Администратор';
-        showToast('👑 Добро пожаловать, Администратор!');
-        loadAdminPvz();
-        loadAdminSupport();
-        loadAdminStats();
-        loadPvzList();
-    } else {
-        showToast('❌ Неверный логин или пароль');
-    }
-}
-
-function loadAdminPvz() {
-    const container = document.getElementById('adminPvzList');
-    db.ref('pvz').on('value', (sn) => {
-        const pvzs = [];
-        sn.forEach(child => {
-            pvzs.push({ id: child.key, ...child.val() });
-        });
-        if (pvzs.length === 0) {
-            container.innerHTML = '<div style="color:#555;padding:8px;">Нет ПВЗ</div>';
-            return;
-        }
-        container.innerHTML = pvzs.map(p => `
-            <div class="pvz-item">
-                <div class="pvz-info">
-                    <div style="font-weight:bold;">🏪 ПВЗ ${p.code}</div>
-                    <div class="pvz-address">📍 ${p.address || 'Адрес не указан'}</div>
-                </div>
-                <button class="btn-danger" onclick="adminDeletePvz('${p.id}')" style="padding:4px 10px;border:none;border-radius:30px;cursor:pointer;font-size:0.7rem;">🗑</button>
-            </div>
-        `).join('');
-    });
-}
-
-function adminAddPvz() {
-    const code = document.getElementById('adminPvzCode').value.trim();
-    const address = document.getElementById('adminPvzAddress').value.trim();
-    if (!code) { showToast('❌ Введите код ПВЗ'); return; }
-    if (!address) { showToast('❌ Введите адрес ПВЗ'); return; }
-    db.ref('pvz').orderByChild('code').equalTo(code).once('value', (sn) => {
-        if (sn.exists()) { showToast('❌ ПВЗ с таким кодом уже существует'); return; }
-        db.ref('pvz').push().set({ code, address }).then(() => {
-            showToast('✅ ПВЗ добавлен!');
-            document.getElementById('adminPvzCode').value = '';
-            document.getElementById('adminPvzAddress').value = '';
-            loadAdminPvz();
-            loadPvzList();
-            updatePvzSelect();
-        });
-    });
-}
-
-function adminDeletePvz(pvzId) {
-    if (!confirm('Удалить ПВЗ?')) return;
-    db.ref('pvz/' + pvzId).remove().then(() => {
-        showToast('🗑️ ПВЗ удалён');
-        loadAdminPvz();
-        loadPvzList();
-        updatePvzSelect();
-    });
-}
-
-// ========== АДМИН: УПРАВЛЕНИЕ ПОДДЕРЖКОЙ ==========
-function loadAdminSupport() {
-    const container = document.getElementById('adminSupportList');
-    db.ref('support_users').on('value', (sn) => {
-        const users = [];
-        sn.forEach(child => {
-            users.push({ id: child.key, ...child.val() });
-        });
-        if (users.length === 0) {
-            container.innerHTML = '<div style="color:#555;padding:8px;">Нет сотрудников поддержки</div>';
-            return;
-        }
-        container.innerHTML = users.map(u => `
-            <div class="pvz-item">
-                <div class="pvz-info">
-                    <div style="font-weight:bold;">💬 ${u.login}</div>
-                    <div style="color:#888;font-size:0.7rem;">${u.name}</div>
-                </div>
-                <button class="btn-danger" onclick="adminDeleteSupport('${u.id}')" style="padding:4px 10px;border:none;border-radius:30px;cursor:pointer;font-size:0.7rem;">🗑</button>
-            </div>
-        `).join('');
-    });
-}
-
-function adminAddSupport() {
-    const login = document.getElementById('adminSupportLogin').value.trim();
-    const pass = document.getElementById('adminSupportPass').value.trim();
-    if (!login || !pass) { showToast('❌ Заполните все поля'); return; }
-    db.ref('support_users').orderByChild('login').equalTo(login).once('value', (sn) => {
-        if (sn.exists()) { showToast('❌ Логин занят'); return; }
-        db.ref('support_users').push().set({ login, password: pass, name: 'Оператор ' + login }).then(() => {
-            showToast('✅ Сотрудник поддержки добавлен!');
-            document.getElementById('adminSupportLogin').value = '';
-            document.getElementById('adminSupportPass').value = '';
-            loadAdminSupport();
-        });
-    });
-}
-
-function adminDeleteSupport(userId) {
-    if (!confirm('Удалить сотрудника поддержки?')) return;
-    db.ref('support_users/' + userId).remove().then(() => {
-        showToast('🗑️ Сотрудник удалён');
-        loadAdminSupport();
-    });
-}
-
-function loadAdminStats() {
-    const container = document.getElementById('adminStats');
-    db.ref('orders').once('value', (sn) => {
-        let total = 0, pending = 0, ready = 0, delivered = 0, returns = 0;
-        sn.forEach(child => {
-            const order = child.val();
-            total++;
-            if (order.status === 'pending') pending++;
-            else if (order.status === 'ready') ready++;
-            else if (order.status === 'delivered') delivered++;
-            else if (order.status === 'return') returns++;
-        });
-        container.innerHTML = `
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-                <div style="background:rgba(255,255,255,0.03);padding:8px;border-radius:10px;text-align:center;">
-                    <div style="font-size:1.5rem;color:#f5a623;">${total}</div>
-                    <div style="font-size:0.7rem;color:#888;">Всего заказов</div>
-                </div>
-                <div style="background:rgba(255,255,255,0.03);padding:8px;border-radius:10px;text-align:center;">
-                    <div style="font-size:1.5rem;color:#ff9800;">${pending}</div>
-                    <div style="font-size:0.7rem;color:#888;">Ожидают</div>
-                </div>
-                <div style="background:rgba(255,255,255,0.03);padding:8px;border-radius:10px;text-align:center;">
-                    <div style="font-size:1.5rem;color:#4CAF50;">${ready}</div>
-                    <div style="font-size:0.7rem;color:#888;">Готовы</div>
-                </div>
-                <div style="background:rgba(255,255,255,0.03);padding:8px;border-radius:10px;text-align:center;">
-                    <div style="font-size:1.5rem;color:#999;">${delivered}</div>
-                    <div style="font-size:0.7rem;color:#888;">Выдано</div>
-                </div>
-                <div style="background:rgba(255,255,255,0.03);padding:8px;border-radius:10px;text-align:center;grid-column:span 2;">
-                    <div style="font-size:1.5rem;color:#ef4444;">${returns}</div>
-                    <div style="font-size:0.7rem;color:#888;">Возвратов</div>
-                </div>
-            </div>
-        `;
-    });
-}
-
-// ========== ОТЗЫВЫ ==========
-function openReviewModal(orderId) {
-    reviewOrderId = orderId;
-    selectedStar = 0;
-    reviewPhotoData = null;
-    document.getElementById('reviewPhotoPreview').innerHTML = '';
-    document.getElementById('reviewPhotoInput').value = '';
-    document.querySelectorAll('#starsInput button').forEach(b => b.classList.remove('active'));
-    document.getElementById('reviewComment').value = '';
-    document.getElementById('reviewModal').classList.remove('hidden');
-}
-
-function closeReviewModal() {
-    document.getElementById('reviewModal').classList.add('hidden');
-    reviewOrderId = null;
-    reviewPhotoData = null;
-}
-
-function selectStar(star) {
-    selectedStar = star;
-    document.querySelectorAll('#starsInput button').forEach(b => {
-        b.classList.toggle('active', parseInt(b.dataset.star) <= star);
-    });
-}
-
-function submitReview() {
-    if (!reviewOrderId) { showToast('❌ Ошибка'); return; }
-    if (selectedStar === 0) { showToast('❌ Выберите оценку'); return; }
-    const comment = document.getElementById('reviewComment').value.trim();
-    const review = { 
-        stars: selectedStar, 
-        comment: comment || 'Без комментария', 
-        createdAt: Date.now(),
-        photo: reviewPhotoData || null
-    };
-    
-    db.ref('orders').orderByChild('id').equalTo(reviewOrderId).once('value', (sn) => {
-        sn.forEach(child => {
-            db.ref('orders/' + child.key).update({ review: review }).then(() => {
-                showToast('✅ Спасибо за отзыв! ⭐');
-                closeReviewModal();
-                loadOrders();
-                loadAllReviews();
-            });
-        });
-    });
-}
-
 // ========== ИНИЦИАЛИЗАЦИЯ ==========
 db.ref('products').once('value', (sn) => {
     if (!sn.exists()) {
@@ -1838,11 +2096,9 @@ loadPvzList();
 console.log('🛍️ WHOPPER MARKET с Firebase');
 console.log('👑 Админ: логин 2347, пароль 2203');
 console.log('🏪 ПВЗ по умолчанию: код 12345');
-console.log('📍 При заказе можно выбрать ПВЗ из списка');
-console.log('💳 Оплата: Сразу или При получении');
-console.log('💰 При возврате деньги возвращаются на кошелёк');
-console.log('⭐ Отзывы с фото видны всем пользователям');
-console.log('🔍 В ПВЗ есть кнопка "Сканировать сканером" для физического QR-сканера');
+console.log('📦 Статусы: Собирается → Отправлен → В ПВЗ → Готов → Выдан');
+console.log('📤 Кнопка "Отправить" для отправки товаров между ПВЗ');
+console.log('📋 Информация для QR-кода на коробку показана продавцу');
 </script>
 </body>
 </html>
