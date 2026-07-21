@@ -144,6 +144,7 @@
         .product-item .product-info { display:flex; align-items:center; gap:8px; }
         .product-item .product-info img { width:40px; height:40px; object-fit:cover; border-radius:8px; cursor:pointer; }
         .product-item .qr-data { margin-top:6px; padding:6px; background:rgba(0,0,0,0.2); border-radius:8px; font-size:0.65rem; color:#aaa; font-family:monospace; word-break:break-all; }
+        .product-item .qr-data .label { color:#f5a623; font-size:0.6rem; }
         @media (max-width:400px) { 
             .product-grid { grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); } 
             .order-card .order-code { font-size:1.3rem; letter-spacing:4px; } 
@@ -239,7 +240,6 @@
         <div id="sellerContent" class="hidden">
             <div class="wallet" onclick="addMoney()"><span>💰 Кошелёк</span><span class="amount" id="sellerWallet">0 ₽</span></div>
             
-            <!-- ИНФОРМАЦИЯ ДЛЯ ПРОДАВЦА О QR-КОДЕ -->
             <div style="background:rgba(245,166,35,0.08);border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid #f5a623;">
                 <h4 style="color:#f5a623;font-size:0.9rem;">📋 Информация для QR-кода</h4>
                 <p style="color:#888;font-size:0.75rem;margin:6px 0;">Для каждого товара создаётся индивидуальный QR-код:</p>
@@ -285,7 +285,6 @@
                 <button class="btn-danger" onclick="pvzView('return')">🔄 Возвраты</button>
             </div>
             
-            <!-- ОТПРАВКА ТОВАРА -->
             <div class="send-section">
                 <h4 style="color:#f5a623;font-size:0.85rem;margin-bottom:8px;">📤 Отправить товар</h4>
                 <div class="form-group">
@@ -301,7 +300,6 @@
                 <div style="font-size:0.6rem;color:#888;margin-top:4px;">Отсканируйте QR-код заказа или введите код вручную</div>
             </div>
             
-            <!-- СКАНИРОВАНИЕ QR -->
             <div style="background:rgba(255,255,255,0.03);border-radius:14px;padding:14px;margin-bottom:12px;">
                 <h4 style="color:#f5a623;font-size:0.85rem;margin-bottom:8px;">📷 Сканировать QR-код</h4>
                 
@@ -527,6 +525,7 @@ document.addEventListener('keydown', function(e) {
         closePhotoModal();
         closeCheckoutModal();
         closeModal();
+        closeReviewModal();
     }
 });
 
@@ -585,6 +584,11 @@ function previewReviewPhoto(event) {
     }
 }
 
+// ========== ГЕНЕРАЦИЯ ID ==========
+function generateId(prefix) {
+    return prefix + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substr(2, 4).toUpperCase();
+}
+
 // ========== ЗАГРУЗКА СПИСКА ПВЗ ==========
 function loadPvzList() {
     db.ref('pvz').on('value', (sn) => {
@@ -621,11 +625,6 @@ function updateSendPvzSelect() {
         option.textContent = 'ПВЗ ' + p.code + ' - ' + (p.address || 'Адрес не указан');
         select.appendChild(option);
     });
-}
-
-// ========== ГЕНЕРАЦИЯ ID ==========
-function generateId(prefix) {
-    return prefix + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substr(2, 4).toUpperCase();
 }
 
 // ========== КЛИЕНТ ==========
@@ -716,7 +715,6 @@ function openProduct(id) {
         document.getElementById('modalPrice').textContent = p.price + ' ₽';
         document.getElementById('modalSeller').textContent = '🏪 ' + (p.seller || 'Продавец');
         
-        // Генерируем QR для товара
         const qrData = { productId: p.id, name: p.name, price: p.price };
         generateQR(document.getElementById('modalQrContainer'), qrData);
         
@@ -1116,7 +1114,7 @@ function loadSellerProducts() {
                         <button class="btn-danger" onclick="deleteProduct('${p.id}')" style="padding:4px 10px;border:none;border-radius:30px;cursor:pointer;font-size:0.7rem;">✕</button>
                     </div>
                     <div class="qr-data">
-                        <div style="color:#f5a623;font-size:0.6rem;">📋 Индивидуальные данные для QR-кода:</div>
+                        <div class="label">📋 Индивидуальные данные для QR-кода:</div>
                         <div style="color:#aaa;">${qrText}</div>
                     </div>
                     <button onclick="showProductQR('${p.id}')" style="margin-top:4px;padding:4px 12px;border-radius:30px;border:none;background:#f5a623;color:#1a1a2e;font-weight:bold;cursor:pointer;font-size:0.7rem;">📱 Показать QR-код</button>
@@ -1171,8 +1169,6 @@ function addProduct() {
         productImageData = null;
         document.getElementById('productImageInput').value = '';
         showToast('✅ Товар добавлен! Создан индивидуальный QR-код');
-        
-        // Показываем QR-код созданного товара
         showProductQR(productId);
     });
 }
@@ -1181,6 +1177,78 @@ function deleteProduct(productId) {
     if (!confirm('Удалить товар?')) return;
     db.ref('products/' + productId).remove().then(() => {
         showToast('🗑️ Удалено');
+    });
+}
+
+// ========== ОТПРАВКА ТОВАРА ==========
+function sendOrder() {
+    const input = document.getElementById('sendOrderInput');
+    const value = input.value.trim();
+    const targetPvz = document.getElementById('sendPvzSelect').value;
+    
+    if (!targetPvz) {
+        showToast('❌ Выберите ПВЗ получатель');
+        return;
+    }
+    if (!value) {
+        showToast('❌ Введите код заказа');
+        return;
+    }
+    
+    let orderId = null;
+    try {
+        const data = JSON.parse(value);
+        if (data.orderId) {
+            orderId = data.orderId;
+        }
+    } catch(e) {
+        findOrderForSend(value, targetPvz);
+        return;
+    }
+    
+    if (orderId) {
+        processSendOrder(orderId, targetPvz);
+    }
+}
+
+function findOrderForSend(text, targetPvz) {
+    db.ref('orders').once('value', (sn) => {
+        let found = false;
+        sn.forEach(child => {
+            const order = child.val();
+            if (order.id === text || order.code === text) {
+                found = true;
+                processSendOrder(order.id, targetPvz);
+            }
+        });
+        if (!found) {
+            showToast('❌ Заказ не найден');
+        }
+    });
+}
+
+function processSendOrder(orderId, targetPvz) {
+    db.ref('orders').orderByChild('id').equalTo(orderId).once('value', (sn) => {
+        if (sn.exists()) {
+            sn.forEach(child => {
+                const order = child.val();
+                if (order.status !== 'collecting' && order.status !== 'pending') {
+                    showToast('❌ Заказ уже отправлен');
+                    return;
+                }
+                db.ref('orders/' + child.key).update({
+                    status: 'sent',
+                    sentToPvz: targetPvz,
+                    sentAt: Date.now()
+                }).then(() => {
+                    showToast('✅ Заказ отправлен в ПВЗ ' + targetPvz);
+                    document.getElementById('sendOrderInput').value = '';
+                    pvzView('collecting');
+                });
+            });
+        } else {
+            showToast('❌ Заказ не найден');
+        }
     });
 }
 
@@ -1386,31 +1454,6 @@ function sendFromScan(orderId) {
         return;
     }
     processSendOrder(orderId, targetPvz);
-}
-
-function processSendOrder(orderId, targetPvz) {
-    db.ref('orders').orderByChild('id').equalTo(orderId).once('value', (sn) => {
-        if (sn.exists()) {
-            sn.forEach(child => {
-                const order = child.val();
-                if (order.status !== 'collecting' && order.status !== 'pending') {
-                    showToast('❌ Заказ уже отправлен');
-                    return;
-                }
-                db.ref('orders/' + child.key).update({
-                    status: 'sent',
-                    sentToPvz: targetPvz,
-                    sentAt: Date.now()
-                }).then(() => {
-                    showToast('✅ Заказ отправлен в ПВЗ ' + targetPvz);
-                    document.getElementById('sendOrderInput').value = '';
-                    pvzView('collecting');
-                });
-            });
-        } else {
-            showToast('❌ Заказ не найден');
-        }
-    });
 }
 
 function pvzReceiveFromScan(orderId) {
