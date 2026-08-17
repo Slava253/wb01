@@ -168,17 +168,6 @@
             cursor: not-allowed;
         }
 
-        .btn-outline {
-            background: transparent;
-            border: 2px solid #dae2ec;
-            color: #1a1a2e;
-        }
-
-        .btn-outline:hover {
-            background: #eef2f8;
-            transform: scale(0.98);
-        }
-
         .success-toast {
             position: fixed;
             bottom: 20px;
@@ -347,6 +336,22 @@
             color: #7a8a9e;
         }
 
+        .urgent-badge {
+            background: #f5576c;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.6rem;
+            font-weight: 600;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
         @media (max-width: 480px) {
             .app-container { border-radius: 24px; }
             .header h1 { font-size: 1.4rem; }
@@ -380,7 +385,7 @@
                 <div class="user-info">
                     <div>
                         <div class="user-name" id="displayName">👤 Имя</div>
-                        <div class="urgent-count" id="urgentCount">⚡ Срочно: 5/5 раз сегодня</div>
+                        <div class="urgent-count" id="urgentCount">⚡ Срочно: 10/10 раз сегодня</div>
                     </div>
                     <button onclick="logout()" class="btn" style="width:auto; padding:6px 16px; font-size:0.8rem; background:#eef2f8; color:#1a1a2e;">Выйти</button>
                 </div>
@@ -391,7 +396,7 @@
                 </div>
 
                 <button onclick="openBookingModal()" class="btn btn-success" style="margin-bottom:12px;">🚻 Занять очередь</button>
-                <button onclick="useUrgent()" class="btn btn-urgent" id="urgentBtn">⚡ Срочно! (5 раз в день)</button>
+                <button onclick="useUrgent()" class="btn btn-urgent" id="urgentBtn">⚡ Срочно! (10 раз в день)</button>
             </div>
         </div>
     </div>
@@ -446,6 +451,7 @@
         let currentUser = null;
         let scheduleRef = null;
         let urgentRef = null;
+        const URGENT_LIMIT = 10; // Лимит срочных вызовов в день
 
         // ===== ВХОД/ВЫХОД =====
         function login() {
@@ -506,9 +512,12 @@
 
         function updateUrgentCount(data) {
             const used = data ? Object.keys(data).length : 0;
-            const remaining = Math.max(0, 5 - used);
-            document.getElementById('urgentCount').textContent = `⚡ Срочно: ${remaining}/5 раз сегодня`;
+            const remaining = Math.max(0, URGENT_LIMIT - used);
+            document.getElementById('urgentCount').textContent = `⚡ Срочно: ${remaining}/${URGENT_LIMIT} раз сегодня`;
             document.getElementById('urgentBtn').disabled = remaining <= 0;
+            document.getElementById('urgentBtn').textContent = remaining > 0 ? 
+                `⚡ Срочно! (${remaining} раз осталось)` : 
+                `❌ Срочно исчерпано на сегодня`;
         }
 
         function renderSchedule(data) {
@@ -519,7 +528,6 @@
                 return;
             }
             
-            // Преобразуем в массив и сортируем
             const items = Object.keys(data).map(key => ({
                 id: key,
                 ...data[key]
@@ -540,7 +548,8 @@
                         <div>
                             <div class="time">${item.start} — ${item.end}</div>
                             <div class="name">${item.user} ${isCurrentUser ? '👈' : ''}</div>
-                            ${item.isUrgent ? '<span style="color:#f5576c; font-weight:bold; font-size:0.7rem;">⚡ СРОЧНО</span>' : ''}
+                            ${item.isUrgent ? '<span class="urgent-badge">⚡ СРОЧНО</span>' : ''}
+                            ${item.isUrgent ? '<span style="font-size:0.6rem; color:#f5576c; margin-left:4px;">(экстренный)</span>' : ''}
                         </div>
                         ${isCurrentUser ? `<button class="delete-btn" onclick="cancelBooking('${item.id}')">✕</button>` : ''}
                     </div>
@@ -598,7 +607,6 @@
             }
             
             try {
-                // Проверяем пересечение
                 const snap = await db.ref('schedule/' + date).once('value');
                 const data = snap.val();
                 
@@ -620,7 +628,6 @@
                     return;
                 }
                 
-                // Сохраняем бронирование
                 const newBooking = {
                     user: user,
                     start: start,
@@ -652,24 +659,22 @@
             }
         }
 
-        // ===== СРОЧНО =====
+        // ===== СРОЧНО (10 РАЗ В ДЕНЬ) =====
         async function useUrgent() {
             if (!currentUser) return;
             
             try {
                 const today = new Date().toISOString().split('T')[0];
                 
-                // Проверяем лимит
                 const urgentSnap = await db.ref('urgent/' + today).once('value');
                 const urgentData = urgentSnap.val();
                 const used = urgentData ? Object.keys(urgentData).length : 0;
                 
-                if (used >= 5) {
-                    showToast('❌ Лимит срочных вызовов исчерпан на сегодня! (5/5)', true);
+                if (used >= URGENT_LIMIT) {
+                    showToast(`❌ Лимит срочных вызовов исчерпан на сегодня! (${URGENT_LIMIT}/${URGENT_LIMIT})`, true);
                     return;
                 }
                 
-                // Находим свободное время
                 const scheduleSnap = await db.ref('schedule/' + today).once('value');
                 const scheduleData = scheduleSnap.val();
                 
@@ -725,7 +730,6 @@
                     return;
                 }
                 
-                // Создаем срочную запись
                 const urgentBooking = {
                     user: currentUser,
                     start: startTime,
@@ -734,16 +738,15 @@
                     createdAt: firebase.database.ServerValue.TIMESTAMP
                 };
                 
-                // Сохраняем в расписание
                 await db.ref('schedule/' + today).push(urgentBooking);
                 
-                // Сохраняем в срочные вызовы
                 await db.ref('urgent/' + today).push({
                     user: currentUser,
                     timestamp: firebase.database.ServerValue.TIMESTAMP
                 });
                 
-                showToast(`⚡ СРОЧНО! Вы записаны на ${startTime} — ${endTime}`);
+                const remaining = URGENT_LIMIT - used - 1;
+                showToast(`⚡ СРОЧНО! Вы записаны на ${startTime} — ${endTime}. Осталось ${remaining} экстренных вызовов`);
             } catch (error) {
                 console.error('Ошибка срочного вызова:', error);
                 showToast('❌ Ошибка', true);
