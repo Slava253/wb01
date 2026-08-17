@@ -2,310 +2,781 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>WHOPPER MARKET</title>
-    <link rel="stylesheet" href="css/style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>🚻 Туалет | Очередь</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, 'Segoe UI', 'Roboto', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(145deg, #1a1a2e, #16213e);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .app-container {
+            max-width: 500px;
+            width: 100%;
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(145deg, #1a1a2e, #16213e);
+            color: white;
+            padding: 20px 24px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+
+        .main-content {
+            padding: 24px;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid #eef2f8;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 650;
+            color: #1a1a2e;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #1e2f41;
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid #dae2ec;
+            border-radius: 16px;
+            font-size: 1rem;
+            transition: 0.2s;
+            background: #fbfdff;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #1a1a2e;
+            box-shadow: 0 0 0 4px rgba(26,26,46,0.08);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: #1a1a2e;
+            color: white;
+            border: none;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn:hover {
+            background: #0e0e1e;
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5a6fd6 0%, #6a3f8e 100%);
+        }
+
+        .btn-success {
+            background: #1d6f2c;
+        }
+
+        .btn-success:hover {
+            background: #155a22;
+        }
+
+        .btn-danger {
+            background: #b33a34;
+        }
+
+        .btn-danger:hover {
+            background: #8f2d28;
+        }
+
+        .btn-warning {
+            background: #d4a13e;
+            color: #1a1a2e;
+        }
+
+        .btn-warning:hover {
+            background: #b8892e;
+        }
+
+        .btn-urgent {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            font-size: 1.1rem;
+            padding: 16px;
+        }
+
+        .btn-urgent:hover {
+            transform: scale(0.98);
+        }
+
+        .btn-urgent:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #dae2ec;
+            color: #1a1a2e;
+        }
+
+        .btn-outline:hover {
+            background: #eef2f8;
+            transform: scale(0.98);
+        }
+
+        .success-toast {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: #1d6f2c;
+            color: white;
+            padding: 14px 20px;
+            border-radius: 40px;
+            z-index: 9999;
+            animation: slideFade 3s ease forwards;
+            text-align: center;
+            font-weight: 500;
+            max-width: 500px;
+            margin: 0 auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .error-toast {
+            background: #b33a34;
+        }
+
+        @keyframes slideFade {
+            0% { opacity: 0; transform: translateY(30px); }
+            12% { opacity: 1; transform: translateY(0); }
+            85% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(30px); visibility: hidden; }
+        }
+
+        .user-info {
+            background: #f8faff;
+            border-radius: 16px;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            border: 1px solid #eef2f8;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #1a1a2e;
+        }
+
+        .urgent-count {
+            font-size: 0.8rem;
+            color: #7a8a9e;
+        }
+
+        .schedule-item {
+            background: #f8faff;
+            border-radius: 16px;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .schedule-item .time {
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+
+        .schedule-item .name {
+            color: #3e5f7e;
+        }
+
+        .schedule-item .delete-btn {
+            background: none;
+            border: none;
+            color: #b33a34;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: #7a8a9e;
+            font-size: 0.9rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 28px;
+            padding: 24px;
+            max-width: 420px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 650;
+            color: #1a1a2e;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+
+        .btn-cancel {
+            background: #eef2f8;
+            color: #1a1a2e;
+        }
+
+        .btn-cancel:hover {
+            background: #dae2ec;
+        }
+
+        .time-inputs {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .time-inputs input {
+            flex: 1;
+        }
+
+        .time-inputs span {
+            color: #7a8a9e;
+            font-weight: 600;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #7a8a9e;
+        }
+
+        @media (max-width: 480px) {
+            .app-container { border-radius: 24px; }
+            .header h1 { font-size: 1.4rem; }
+            .main-content { padding: 16px; }
+            .card { padding: 16px; }
+            .time-inputs { flex-direction: column; }
+            .time-inputs span { display: none; }
+        }
+    </style>
 </head>
 <body>
-
-<div id="toast" class="toast"></div>
-
-<div class="container">
-    <div class="header">
-        <div class="logo">📦 WHOPPER</div>
-        <div class="user-badge">👤 <span id="userNameDisplay">Гость</span></div>
-    </div>
-
-    <div class="role-selector">
-        <button class="role-btn active" data-role="client" onclick="switchRole('client')"><i>🛒</i> Клиент</button>
-        <button class="role-btn" data-role="seller" onclick="switchRole('seller')"><i>🏪</i> Продавец</button>
-        <button class="role-btn" data-role="pvz" onclick="switchRole('pvz')"><i>📦</i> ПВЗ</button>
-        <button class="role-btn" data-role="support" onclick="switchRole('support')"><i>💬</i> Поддержка</button>
-        <button class="role-btn" data-role="admin" onclick="switchRole('admin')"><i>👑</i> Админ</button>
-    </div>
-
-    <!-- КЛИЕНТ -->
-    <div id="clientPanel">
-        <div id="clientAuth" class="auth-box">
-            <h3>👤 Вход / Регистрация</h3>
-            <div class="form-group"><label>📱 Номер телефона</label><input type="tel" id="clientPhone" placeholder="+7 999 999 99 99"></div>
-            <div class="form-group"><label>👤 Имя</label><input type="text" id="nameInput" placeholder="Ваше имя"></div>
-            <div class="auth-actions">
-                <button class="btn-primary" onclick="clientLogin()">Войти</button>
-                <button class="btn-success" onclick="clientRegister()">Регистрация</button>
-            </div>
+    <div class="app-container" id="app">
+        <div class="header">
+            <h1>🚻 Туалет</h1>
+            <p>Система управления очередью</p>
         </div>
-        <div id="clientContent" class="hidden">
-            <div class="wallet" onclick="addMoney()"><span>💰 Кошелёк</span><span class="amount" id="clientWallet">0 ₽</span></div>
-            <div class="tabs">
-                <button class="tab active" data-ctab="shop" onclick="switchClientTab('shop')">🛍️ Магазин</button>
-                <button class="tab" data-ctab="orders" onclick="switchClientTab('orders')">📦 Заказы</button>
-                <button class="tab" data-ctab="qr" onclick="switchClientTab('qr')">📱 QR-код</button>
-                <button class="tab" data-ctab="reviews" onclick="switchClientTab('reviews')">⭐ Отзывы</button>
-                <button class="tab" data-ctab="support" onclick="switchClientTab('support')">💬 Поддержка</button>
-            </div>
-            <div id="clientShopTab">
-                <div class="product-grid" id="productsGrid"></div>
-                <div class="cart-panel">
-                    <div class="title">🛒 Корзина</div>
-                    <div id="cartItems"><div style="color:#555;">Пусто</div></div>
-                    <div class="cart-total"><span>Итого:</span> <span id="cartTotal">0 ₽</span></div>
-                    <div class="cart-actions">
-                        <button class="btn-primary" onclick="showCheckout()">💳 Оформить</button>
-                        <button class="btn-secondary" onclick="clearCart()">Очистить</button>
-                    </div>
-                </div>
-            </div>
-            <div id="clientOrdersTab" class="hidden"><div id="ordersList"></div></div>
-            <div id="clientQrTab" class="hidden">
-                <div style="text-align:center;padding:20px;">
-                    <h3 style="color:#f5a623;">📱 Ваш QR-код</h3>
-                    <p style="color:#888;font-size:0.85rem;margin-bottom:15px;">Покажите в ПВЗ</p>
-                    <div id="qrContainer" class="qr-code-container">
-                        <div class="qr-placeholder">⏳ Загрузка QR...</div>
-                    </div>
-                    <div id="qrInfo" style="margin-top:10px;color:#888;font-size:0.8rem;"></div>
-                </div>
-            </div>
-            <div id="clientReviewsTab" class="hidden">
-                <div id="allReviews"></div>
-            </div>
-            <div id="clientSupportTab" class="hidden">
-                <div id="clientSupportChat" style="max-height:300px;overflow-y:auto;margin-bottom:10px;"></div>
-                <div style="display:flex;gap:6px;">
-                    <input type="text" id="clientSupportInput" placeholder="Сообщение..." style="flex:1;padding:8px 14px;border-radius:30px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.05);color:#fff;font-size:0.85rem;outline:none;">
-                    <button class="btn-primary" onclick="sendClientSupportMessage()">📤</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- ПРОДАВЕЦ -->
-    <div id="sellerPanel" class="hidden">
-        <div id="sellerAuth" class="auth-box">
-            <h3>🏪 Вход продавца</h3>
-            <div class="form-group"><label>Логин</label><input type="text" id="sellerLoginInput" placeholder="Логин"></div>
-            <div class="form-group"><label>Пароль</label><input type="password" id="sellerPassInput" placeholder="Пароль"></div>
-            <div class="auth-actions">
-                <button class="btn-primary" onclick="sellerLogin()">Войти</button>
-                <button class="btn-success" onclick="sellerRegister()">Регистрация</button>
-            </div>
-        </div>
-        <div id="sellerContent" class="hidden">
-            <div class="wallet" onclick="addMoney()"><span>💰 Кошелёк</span><span class="amount" id="sellerWallet">0 ₽</span></div>
-            <div style="background:rgba(245,166,35,0.08);border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid #f5a623;">
-                <h4 style="color:#f5a623;font-size:0.9rem;">📋 Информация для QR-кода</h4>
-                <p style="color:#888;font-size:0.75rem;margin:6px 0;">Для каждого товара создаётся индивидуальный QR-код:</p>
-                <div class="qr-text-info">
-                    <div class="label">📦 Формат QR-кода:</div>
-                    <div class="value">{"productId":"PRODXXXXXXXXXX","name":"Название","price":999}</div>
-                </div>
-            </div>
-            <div style="background:rgba(255,255,255,0.03);border-radius:14px;padding:14px;margin-bottom:12px;">
-                <h4 style="color:#f5a623;">➕ Добавить товар</h4>
-                <div class="form-group"><label>Название</label><input type="text" id="productName" placeholder="Название"></div>
-                <div class="form-group"><label>Цена</label><input type="number" id="productPrice" placeholder="999"></div>
+        <div class="main-content">
+            <!-- Вход -->
+            <div id="loginSection" class="card">
+                <div class="card-title">👤 Вход</div>
                 <div class="form-group">
-                    <label>📸 Фото товара</label>
-                    <div class="product-image-upload" onclick="document.getElementById('productImageInput').click()">
-                        <span>Нажмите чтобы загрузить фото</span>
-                        <input type="file" id="productImageInput" accept="image/*" style="display:none;" onchange="previewProductImage(event)">
-                        <div id="productImagePreview"></div>
+                    <label>Введите ваше имя</label>
+                    <input type="text" id="userNameInput" placeholder="Например: Иван" maxlength="30">
+                </div>
+                <button onclick="login()" class="btn btn-primary">🚪 Войти</button>
+            </div>
+
+            <!-- Основной интерфейс -->
+            <div id="mainSection" style="display:none;">
+                <div class="user-info">
+                    <div>
+                        <div class="user-name" id="displayName">👤 Имя</div>
+                        <div class="urgent-count" id="urgentCount">⚡ Срочно: 5/5 раз сегодня</div>
                     </div>
+                    <button onclick="logout()" class="btn" style="width:auto; padding:6px 16px; font-size:0.8rem; background:#eef2f8; color:#1a1a2e;">Выйти</button>
                 </div>
-                <button class="btn-success" onclick="addProduct()" style="width:100%;padding:8px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">➕ Добавить товар</button>
+
+                <div class="card">
+                    <div class="card-title">📅 Расписание на сегодня</div>
+                    <div id="scheduleList"><div class="loading">Загрузка...</div></div>
+                </div>
+
+                <button onclick="openBookingModal()" class="btn btn-success" style="margin-bottom:12px;">🚻 Занять очередь</button>
+                <button onclick="useUrgent()" class="btn btn-urgent" id="urgentBtn">⚡ Срочно! (5 раз в день)</button>
             </div>
-            <h4 style="color:#f5a623;font-size:0.9rem;">📦 Мои товары с индивидуальными QR-данными</h4>
-            <div id="sellerProducts"></div>
         </div>
     </div>
 
-    <!-- ПВЗ -->
-    <div id="pvzPanel" class="hidden">
-        <div id="pvzAuth" class="auth-box">
-            <h3>🏪 Вход ПВЗ</h3>
-            <div class="form-group"><label>Код ПВЗ</label><input type="text" id="pvzCode" placeholder="Введите код ПВЗ"></div>
-            <div class="auth-actions"><button class="btn-primary" onclick="pvzLogin()">Войти</button></div>
-        </div>
-        <div id="pvzContent" class="hidden">
-            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
-                <button class="btn-primary" onclick="pvzView('collecting')">📥 Сборка</button>
-                <button class="btn-success" onclick="pvzView('sent')">🚚 Отправленные</button>
-                <button class="btn-info" onclick="pvzView('in_pvz')">🏪 В ПВЗ</button>
-                <button class="btn-warning" onclick="pvzView('ready')">📤 Выдача</button>
-                <button class="btn-danger" onclick="pvzView('return')">🔄 Возвраты</button>
+    <!-- Модальное окно бронирования -->
+    <div id="bookingModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">🚻 Занять очередь</div>
+            <div class="form-group">
+                <label>Ваше имя</label>
+                <input type="text" id="bookingName" readonly style="background:#f0f4f9;">
             </div>
-            <div class="send-section">
-                <h4 style="color:#f5a623;font-size:0.85rem;margin-bottom:8px;">📤 Отправить товар</h4>
-                <div class="form-group">
-                    <label>Выберите ПВЗ получатель</label>
-                    <select id="sendPvzSelect">
-                        <option value="">-- Выберите ПВЗ --</option>
-                    </select>
-                </div>
-                <div style="display:flex;gap:6px;">
-                    <input type="text" id="sendOrderInput" placeholder="Введите код заказа" style="flex:1;padding:8px 14px;border-radius:30px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.05);color:#fff;font-size:0.85rem;outline:none;">
-                    <button class="btn-cyan" onclick="sendOrder()">📤 Отправить</button>
+            <div class="form-group">
+                <label>📅 Дата</label>
+                <input type="date" id="bookingDate">
+            </div>
+            <div class="form-group">
+                <label>⏰ Время</label>
+                <div class="time-inputs">
+                    <input type="time" id="bookingStart" step="600">
+                    <span>—</span>
+                    <input type="time" id="bookingEnd" step="600">
                 </div>
             </div>
-            <div style="background:rgba(255,255,255,0.03);border-radius:14px;padding:14px;margin-bottom:12px;">
-                <h4 style="color:#f5a623;font-size:0.85rem;margin-bottom:8px;">📷 Сканировать QR-код</h4>
-                <div style="margin-bottom:8px;">
-                    <button class="btn-purple" onclick="startPhysicalScanner()" style="width:100%;padding:8px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">🔍 Сканировать сканером</button>
-                </div>
-                <div class="scanner-input-area">
-                    <input type="text" id="scannerInput" placeholder="Введите данные с сканера..." oninput="processScannerInput(this.value)">
-                    <button class="btn-info" onclick="processScannerInput(document.getElementById('scannerInput').value)">🔍</button>
-                </div>
-                <div class="scan-btn-group">
-                    <button class="btn-info" onclick="startCameraScanner()">📷 Запустить камеру</button>
-                    <button class="btn-danger" onclick="stopScanner()">⏹ Остановить</button>
-                </div>
-                <div id="scannerContainer" class="scanner-container hidden">
-                    <div class="scanner-overlay"></div>
-                </div>
-                <div id="scannedResult"></div>
+            <div class="modal-buttons">
+                <button onclick="confirmBooking()" class="btn-success" style="flex:2;">✅ Забронировать</button>
+                <button onclick="closeBookingModal()" class="btn-cancel" style="flex:1;">Отмена</button>
             </div>
-            <div class="scan-area">
-                <h4 style="color:#f5a623;font-size:0.85rem;">🔑 Поиск по коду</h4>
-                <input type="text" id="pvzSearch" placeholder="6-значный код" maxlength="6" oninput="pvzFindOrder(this.value)">
-                <div id="pvzResult" style="margin-top:6px;"></div>
-            </div>
-            <div id="pvzOrdersList"></div>
         </div>
     </div>
 
-    <!-- ПОДДЕРЖКА -->
-    <div id="supportPanel" class="hidden">
-        <div id="supportAuth" class="auth-box">
-            <h3>💬 Вход поддержки</h3>
-            <div class="form-group"><label>Логин</label><input type="text" id="supportLoginInput" placeholder="Логин"></div>
-            <div class="form-group"><label>Пароль</label><input type="password" id="supportPassInput" placeholder="Пароль"></div>
-            <div class="auth-actions">
-                <button class="btn-primary" onclick="supportLogin()">Войти</button>
-                <button class="btn-success" onclick="supportRegister()">Регистрация</button>
-            </div>
-        </div>
-        <div id="supportContent" class="hidden">
-            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
-                <button class="btn-primary" onclick="supportLoadChats()">💬 Чаты</button>
-            </div>
-            <div id="supportChatsList"></div>
-        </div>
-    </div>
+    <div id="toast" class="success-toast" style="display:none;"></div>
 
-    <!-- АДМИН -->
-    <div id="adminPanel" class="hidden">
-        <div id="adminAuth" class="auth-box">
-            <h3>👑 Вход администратора</h3>
-            <div class="form-group"><label>Логин</label><input type="text" id="adminLoginInput" placeholder="Логин"></div>
-            <div class="form-group"><label>Пароль</label><input type="password" id="adminPassInput" placeholder="Пароль"></div>
-            <div class="auth-actions"><button class="btn-primary" onclick="adminLogin()">Войти</button></div>
-        </div>
-        <div id="adminContent" class="hidden">
-            <h4 style="color:#f5a623;margin-bottom:10px;">🏪 Управление ПВЗ</h4>
-            <div style="background:rgba(255,255,255,0.03);border-radius:14px;padding:14px;margin-bottom:12px;">
-                <div class="form-group"><label>Код ПВЗ</label><input type="text" id="adminPvzCode" placeholder="Код ПВЗ"></div>
-                <div class="form-group"><label>Адрес ПВЗ</label><input type="text" id="adminPvzAddress" placeholder="Адрес"></div>
-                <button class="btn-success" onclick="adminAddPvz()" style="width:100%;padding:8px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">➕ Добавить ПВЗ</button>
-            </div>
-            <div class="admin-pvz-list" id="adminPvzList"></div>
-            <h4 style="color:#f5a623;margin:12px 0 8px;">💬 Управление поддержкой</h4>
-            <div style="background:rgba(255,255,255,0.03);border-radius:14px;padding:14px;margin-bottom:12px;">
-                <div class="form-group"><label>Логин сотрудника поддержки</label><input type="text" id="adminSupportLogin" placeholder="Логин"></div>
-                <div class="form-group"><label>Пароль</label><input type="text" id="adminSupportPass" placeholder="Пароль"></div>
-                <button class="btn-info" onclick="adminAddSupport()" style="width:100%;padding:8px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">➕ Добавить сотрудника поддержки</button>
-            </div>
-            <div id="adminSupportList" style="max-height:150px;overflow-y:auto;"></div>
-            <h4 style="color:#f5a623;margin:12px 0 8px;">📊 Статистика</h4>
-            <div id="adminStats" style="background:rgba(255,255,255,0.03);border-radius:14px;padding:12px;"></div>
-        </div>
-    </div>
-</div>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script>
+        // ===== FIREBASE КОНФИГ =====
+        const firebaseConfig = {
+            apiKey: "AIzaSyBlZ5ZtyTXgtXxSJAx1jOxwhTrzlHRJmo",
+            authDomain: "bk-cashier.firebaseapp.com",
+            databaseURL: "https://bk-cashier-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "bk-cashier",
+            storageBucket: "bk-cashier.firebasestorage.app",
+            messagingSenderId: "385000840969",
+            appId: "1:385000840969:web:1ec8d09176b6551dc0fdd8"
+        };
 
-<!-- МОДАЛКИ -->
-<div id="productModal" class="modal-overlay hidden" onclick="if(event.target===this) closeModal()">
-    <div class="modal-content">
-        <button class="modal-close" onclick="closeModal()">✕</button>
-        <div id="modalImageContainer"></div>
-        <h3 id="modalName">Товар</h3>
-        <div id="modalPrice" style="color:#f5a623;font-size:1.3rem;font-weight:bold;">0 ₽</div>
-        <div id="modalSeller" style="color:#888;font-size:0.75rem;">Продавец</div>
-        <div class="product-qr-section">
-            <h4 style="color:#f5a623;font-size:0.8rem;">📱 QR-код товара</h4>
-            <div id="modalQrContainer" class="qr-code-container">
-                <div class="qr-placeholder">Загрузка QR...</div>
-            </div>
-        </div>
-        <button class="btn btn-primary" onclick="addToCartFromModal()" style="width:100%;margin-top:10px;">🛒 В корзину</button>
-    </div>
-</div>
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-<div id="checkoutModal" class="modal-overlay hidden" onclick="if(event.target===this) closeCheckoutModal()">
-    <div class="modal-content">
-        <button class="modal-close" onclick="closeCheckoutModal()">✕</button>
-        <h3>💳 Оформление заказа</h3>
-        <div class="form-group">
-            <label>📍 Выберите ПВЗ</label>
-            <select id="checkoutPvz">
-                <option value="">-- Выберите ПВЗ --</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>💳 Способ оплаты</label>
-            <select id="checkoutPayment">
-                <option value="now">Сразу (списание сейчас)</option>
-                <option value="on_delivery">При получении (списание при выдаче)</option>
-            </select>
-        </div>
-        <div id="checkoutTotal" style="color:#f5a623;font-size:1.2rem;font-weight:bold;margin:10px 0;">Итого: 0 ₽</div>
-        <button class="btn-primary" onclick="confirmCheckout()" style="width:100%;padding:10px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">✅ Подтвердить заказ</button>
-    </div>
-</div>
+        // ===== ПЕРЕМЕННЫЕ =====
+        let currentUser = null;
+        let scheduleRef = null;
+        let urgentRef = null;
 
-<div id="photoModal" class="photo-modal-overlay hidden" onclick="closePhotoModal()">
-    <button class="photo-modal-close" onclick="closePhotoModal()">✕</button>
-    <div class="photo-modal-content" onclick="event.stopPropagation();">
-        <img id="photoModalImage" src="" alt="Увеличенное фото">
-    </div>
-</div>
+        // ===== ВХОД/ВЫХОД =====
+        function login() {
+            const name = document.getElementById('userNameInput').value.trim();
+            if (!name) {
+                showToast('❌ Введите ваше имя!', true);
+                return;
+            }
+            
+            currentUser = name;
+            localStorage.setItem('toilet_user', name);
+            
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('mainSection').style.display = 'block';
+            updateUI();
+            showToast(`👋 Добро пожаловать, ${name}!`);
+            
+            // Подписываемся на обновления
+            listenToSchedule();
+            listenToUrgent();
+        }
 
-<div id="reviewModal" class="modal-overlay hidden" onclick="if(event.target===this) closeReviewModal()">
-    <div class="modal-content">
-        <button class="modal-close" onclick="closeReviewModal()">✕</button>
-        <h3>⭐ Оставить отзыв</h3>
-        <div id="reviewOrderId" style="display:none;"></div>
-        <div style="margin:10px 0;">
-            <label style="color:#888;font-size:0.8rem;">Оценка</label>
-            <div class="stars-input" id="starsInput">
-                <button data-star="1" onclick="selectStar(1)">★</button>
-                <button data-star="2" onclick="selectStar(2)">★</button>
-                <button data-star="3" onclick="selectStar(3)">★</button>
-                <button data-star="4" onclick="selectStar(4)">★</button>
-                <button data-star="5" onclick="selectStar(5)">★</button>
-            </div>
-        </div>
-        <div class="form-group">
-            <label>Комментарий</label>
-            <textarea id="reviewComment" placeholder="Ваш отзыв..." rows="3"></textarea>
-        </div>
-        <div class="form-group">
-            <label>📸 Фото к отзыву</label>
-            <div class="product-image-upload" onclick="document.getElementById('reviewPhotoInput').click()">
-                <span>Нажмите чтобы загрузить фото</span>
-                <input type="file" id="reviewPhotoInput" accept="image/*" style="display:none;" onchange="previewReviewPhoto(event)">
-                <div id="reviewPhotoPreview"></div>
-            </div>
-        </div>
-        <button class="btn-primary" onclick="submitReview()" style="width:100%;padding:8px;border-radius:30px;border:none;font-weight:bold;cursor:pointer;">📝 Отправить отзыв</button>
-    </div>
-</div>
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('toilet_user');
+            if (scheduleRef) scheduleRef.off();
+            if (urgentRef) urgentRef.off();
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('mainSection').style.display = 'none';
+            document.getElementById('userNameInput').value = '';
+            showToast('👋 Вы вышли');
+        }
 
-<script src="js/firebase-config.js"></script>
-<script src="js/qr-helper.js"></script>
-<script src="js/app.js"></script>
+        // ===== СЛУШАТЕЛИ FIREBASE =====
+        function listenToSchedule() {
+            const today = new Date().toISOString().split('T')[0];
+            scheduleRef = db.ref('schedule/' + today);
+            scheduleRef.on('value', snap => {
+                const data = snap.val();
+                renderSchedule(data);
+            });
+        }
+
+        function listenToUrgent() {
+            const today = new Date().toISOString().split('T')[0];
+            urgentRef = db.ref('urgent/' + today);
+            urgentRef.on('value', snap => {
+                const data = snap.val();
+                updateUrgentCount(data);
+            });
+        }
+
+        // ===== ОБНОВЛЕНИЕ ИНТЕРФЕЙСА =====
+        function updateUI() {
+            if (!currentUser) return;
+            document.getElementById('displayName').textContent = `👤 ${currentUser}`;
+        }
+
+        function updateUrgentCount(data) {
+            const used = data ? Object.keys(data).length : 0;
+            const remaining = Math.max(0, 5 - used);
+            document.getElementById('urgentCount').textContent = `⚡ Срочно: ${remaining}/5 раз сегодня`;
+            document.getElementById('urgentBtn').disabled = remaining <= 0;
+        }
+
+        function renderSchedule(data) {
+            const container = document.getElementById('scheduleList');
+            
+            if (!data) {
+                container.innerHTML = '<div class="empty-state">📭 Сегодня никто не записан</div>';
+                return;
+            }
+            
+            // Преобразуем в массив и сортируем
+            const items = Object.keys(data).map(key => ({
+                id: key,
+                ...data[key]
+            }));
+            
+            items.sort((a, b) => a.start.localeCompare(b.start));
+            
+            if (items.length === 0) {
+                container.innerHTML = '<div class="empty-state">📭 Сегодня никто не записан</div>';
+                return;
+            }
+            
+            let html = '';
+            items.forEach(item => {
+                const isCurrentUser = item.user === currentUser;
+                html += `
+                    <div class="schedule-item" style="border-left-color: ${isCurrentUser ? '#1d6f2c' : '#667eea'};">
+                        <div>
+                            <div class="time">${item.start} — ${item.end}</div>
+                            <div class="name">${item.user} ${isCurrentUser ? '👈' : ''}</div>
+                            ${item.isUrgent ? '<span style="color:#f5576c; font-weight:bold; font-size:0.7rem;">⚡ СРОЧНО</span>' : ''}
+                        </div>
+                        ${isCurrentUser ? `<button class="delete-btn" onclick="cancelBooking('${item.id}')">✕</button>` : ''}
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // ===== БРОНИРОВАНИЕ =====
+        function openBookingModal() {
+            if (!currentUser) return;
+            
+            document.getElementById('bookingName').value = currentUser;
+            
+            const today = new Date();
+            const dateStr = today.toISOString().split('T')[0];
+            document.getElementById('bookingDate').value = dateStr;
+            
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentMinute = Math.ceil(now.getMinutes() / 30) * 30;
+            const startTime = `${String(currentHour).padStart(2, '0')}:${String(currentMinute).padStart(2, '0')}`;
+            document.getElementById('bookingStart').value = startTime;
+            
+            let endHour = currentHour;
+            let endMinute = currentMinute + 30;
+            if (endMinute >= 60) {
+                endMinute -= 60;
+                endHour += 1;
+            }
+            const endTime = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
+            document.getElementById('bookingEnd').value = endTime;
+            
+            document.getElementById('bookingModal').classList.add('active');
+        }
+
+        function closeBookingModal() {
+            document.getElementById('bookingModal').classList.remove('active');
+        }
+
+        async function confirmBooking() {
+            const user = document.getElementById('bookingName').value.trim();
+            const date = document.getElementById('bookingDate').value;
+            const start = document.getElementById('bookingStart').value;
+            const end = document.getElementById('bookingEnd').value;
+            
+            if (!user || !date || !start || !end) {
+                showToast('❌ Заполните все поля!', true);
+                return;
+            }
+            
+            if (start >= end) {
+                showToast('❌ Время окончания должно быть позже начала!', true);
+                return;
+            }
+            
+            try {
+                // Проверяем пересечение
+                const snap = await db.ref('schedule/' + date).once('value');
+                const data = snap.val();
+                
+                let conflict = false;
+                if (data) {
+                    for (let key in data) {
+                        const item = data[key];
+                        if ((start >= item.start && start < item.end) || 
+                            (end > item.start && end <= item.end) ||
+                            (start <= item.start && end >= item.end)) {
+                            conflict = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (conflict) {
+                    showToast('❌ Это время уже занято! Выберите другое.', true);
+                    return;
+                }
+                
+                // Сохраняем бронирование
+                const newBooking = {
+                    user: user,
+                    start: start,
+                    end: end,
+                    isUrgent: false,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP
+                };
+                
+                await db.ref('schedule/' + date).push(newBooking);
+                
+                closeBookingModal();
+                showToast(`✅ ${user}, вы записаны на ${start} — ${end}!`);
+            } catch (error) {
+                console.error('Ошибка бронирования:', error);
+                showToast('❌ Ошибка бронирования', true);
+            }
+        }
+
+        async function cancelBooking(id) {
+            if (!confirm('Отменить запись?')) return;
+            
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                await db.ref('schedule/' + today + '/' + id).remove();
+                showToast('🗑 Запись отменена');
+            } catch (error) {
+                console.error('Ошибка отмены:', error);
+                showToast('❌ Ошибка отмены', true);
+            }
+        }
+
+        // ===== СРОЧНО =====
+        async function useUrgent() {
+            if (!currentUser) return;
+            
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                
+                // Проверяем лимит
+                const urgentSnap = await db.ref('urgent/' + today).once('value');
+                const urgentData = urgentSnap.val();
+                const used = urgentData ? Object.keys(urgentData).length : 0;
+                
+                if (used >= 5) {
+                    showToast('❌ Лимит срочных вызовов исчерпан на сегодня! (5/5)', true);
+                    return;
+                }
+                
+                // Находим свободное время
+                const scheduleSnap = await db.ref('schedule/' + today).once('value');
+                const scheduleData = scheduleSnap.val();
+                
+                const now = new Date();
+                let startHour = now.getHours();
+                let startMinute = Math.ceil(now.getMinutes() / 15) * 15;
+                
+                let found = false;
+                let startTime, endTime;
+                let attempts = 0;
+                
+                while (attempts < 100 && !found) {
+                    let endMinute2 = startMinute + 30;
+                    let endHour2 = startHour;
+                    if (endMinute2 >= 60) {
+                        endMinute2 -= 60;
+                        endHour2 += 1;
+                    }
+                    
+                    const startStr = `${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}`;
+                    const endStr = `${String(endHour2).padStart(2, '0')}:${String(endMinute2).padStart(2, '0')}`;
+                    
+                    let conflict = false;
+                    if (scheduleData) {
+                        for (let key in scheduleData) {
+                            const item = scheduleData[key];
+                            if ((startStr >= item.start && startStr < item.end) || 
+                                (endStr > item.start && endStr <= item.end) ||
+                                (startStr <= item.start && endStr >= item.end)) {
+                                conflict = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (!conflict) {
+                        startTime = startStr;
+                        endTime = endStr;
+                        found = true;
+                        break;
+                    }
+                    
+                    startMinute += 15;
+                    if (startMinute >= 60) {
+                        startMinute -= 60;
+                        startHour += 1;
+                    }
+                    attempts++;
+                }
+                
+                if (!found) {
+                    showToast('❌ Не найдено свободного времени. Попробуйте позже.', true);
+                    return;
+                }
+                
+                // Создаем срочную запись
+                const urgentBooking = {
+                    user: currentUser,
+                    start: startTime,
+                    end: endTime,
+                    isUrgent: true,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP
+                };
+                
+                // Сохраняем в расписание
+                await db.ref('schedule/' + today).push(urgentBooking);
+                
+                // Сохраняем в срочные вызовы
+                await db.ref('urgent/' + today).push({
+                    user: currentUser,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+                
+                showToast(`⚡ СРОЧНО! Вы записаны на ${startTime} — ${endTime}`);
+            } catch (error) {
+                console.error('Ошибка срочного вызова:', error);
+                showToast('❌ Ошибка', true);
+            }
+        }
+
+        // ===== TOAST =====
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = isError ? 'error-toast success-toast' : 'success-toast';
+            toast.style.display = 'block';
+            clearTimeout(toast._timer);
+            toast._timer = setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+
+        // ===== ЗАКРЫТИЕ МОДАЛКИ =====
+        document.getElementById('bookingModal').addEventListener('click', function(e) {
+            if (e.target === this) closeBookingModal();
+        });
+
+        // ===== ЗАПУСК =====
+        const savedUser = localStorage.getItem('toilet_user');
+        if (savedUser) {
+            currentUser = savedUser;
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('mainSection').style.display = 'block';
+            updateUI();
+            listenToSchedule();
+            listenToUrgent();
+        }
+    </script>
 </body>
 </html>
