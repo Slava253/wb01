@@ -168,6 +168,26 @@
             cursor: not-allowed;
         }
 
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #dae2ec;
+            color: #1a1a2e;
+        }
+
+        .btn-outline:hover {
+            background: #eef2f8;
+            transform: scale(0.98);
+        }
+
+        .btn-return {
+            background: #2c6b6b;
+            color: white;
+        }
+
+        .btn-return:hover {
+            background: #1d4f4f;
+        }
+
         .success-toast {
             position: fixed;
             bottom: 20px;
@@ -339,17 +359,81 @@
         .urgent-badge {
             background: #f5576c;
             color: white;
-            padding: 2px 8px;
+            padding: 2px 10px;
             border-radius: 12px;
             font-size: 0.6rem;
             font-weight: 600;
+            display: inline-block;
         }
 
-        .status-bar {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-wrap: wrap;
+        /* СТАТУС ТУАЛЕТА */
+        .toilet-status {
+            background: #f8faff;
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            border: 2px solid #eef2f8;
+            margin-bottom: 16px;
+        }
+
+        .toilet-status .status-icon {
+            font-size: 3rem;
+            margin-bottom: 8px;
+        }
+
+        .toilet-status .status-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .toilet-status .status-sub {
+            font-size: 0.8rem;
+            color: #7a8a9e;
+        }
+
+        .status-free .status-text {
+            color: #1d6f2c;
+        }
+
+        .status-free .status-icon {
+            color: #1d6f2c;
+        }
+
+        .status-busy .status-text {
+            color: #b33a34;
+        }
+
+        .status-busy .status-icon {
+            color: #b33a34;
+        }
+
+        .status-urgent .status-text {
+            color: #f5576c;
+        }
+
+        .status-urgent .status-icon {
+            color: #f5576c;
+        }
+
+        /* Приветствие */
+        .welcome-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .welcome-section h2 {
+            font-size: 1.3rem;
+            margin-bottom: 8px;
+        }
+
+        .welcome-section p {
+            font-size: 0.9rem;
+            opacity: 0.9;
         }
 
         @media (max-width: 480px) {
@@ -359,6 +443,8 @@
             .card { padding: 16px; }
             .time-inputs { flex-direction: column; }
             .time-inputs span { display: none; }
+            .toilet-status .status-text { font-size: 1.2rem; }
+            .toilet-status .status-icon { font-size: 2.5rem; }
         }
     </style>
 </head>
@@ -371,17 +457,36 @@
 
         <div class="main-content">
             <!-- Вход -->
-            <div id="loginSection" class="card">
-                <div class="card-title">👤 Вход</div>
-                <div class="form-group">
-                    <label>Введите ваше имя</label>
-                    <input type="text" id="userNameInput" placeholder="Например: Иван" maxlength="30">
+            <div id="loginSection">
+                <div class="welcome-section">
+                    <h2>👋 Добро пожаловать!</h2>
+                    <p>Введите ваше имя, чтобы посмотреть статус туалета и занять очередь</p>
                 </div>
-                <button onclick="login()" class="btn btn-primary">🚪 Войти</button>
+
+                <div class="toilet-status" id="toiletStatus">
+                    <div class="status-icon" id="statusIcon">🚽</div>
+                    <div class="status-text" id="statusText">Загрузка...</div>
+                    <div class="status-sub" id="statusSub">Проверка статуса...</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">👤 Вход</div>
+                    <div class="form-group">
+                        <label>Введите ваше имя</label>
+                        <input type="text" id="userNameInput" placeholder="Например: Иван" maxlength="30">
+                    </div>
+                    <button onclick="login()" class="btn btn-primary">🚪 Войти</button>
+                </div>
             </div>
 
             <!-- Основной интерфейс -->
             <div id="mainSection" style="display:none;">
+                <div class="toilet-status" id="toiletStatusMain">
+                    <div class="status-icon" id="statusIconMain">🚽</div>
+                    <div class="status-text" id="statusTextMain">Загрузка...</div>
+                    <div class="status-sub" id="statusSubMain">Проверка статуса...</div>
+                </div>
+
                 <div class="user-info">
                     <div>
                         <div class="user-name" id="displayName">👤 Имя</div>
@@ -451,7 +556,67 @@
         let currentUser = null;
         let scheduleRef = null;
         let urgentRef = null;
-        const URGENT_LIMIT = 10; // Лимит срочных вызовов в день
+        const URGENT_LIMIT = 10;
+        let urgentUsed = 0;
+        let urgentEntries = {};
+
+        // ===== СТАТУС ТУАЛЕТА =====
+        function updateToiletStatus(data) {
+            const now = new Date();
+            const currentTime = now.getHours() * 60 + now.getMinutes();
+            
+            let isBusy = false;
+            let isUrgent = false;
+            let busyUntil = '';
+            let busyUser = '';
+            
+            if (data) {
+                for (let key in data) {
+                    const item = data[key];
+                    const startParts = item.start.split(':');
+                    const endParts = item.end.split(':');
+                    const startMinutes = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
+                    const endMinutes = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
+                    
+                    if (currentTime >= startMinutes && currentTime < endMinutes) {
+                        isBusy = true;
+                        busyUntil = item.end;
+                        busyUser = item.user;
+                        if (item.isUrgent) isUrgent = true;
+                        break;
+                    }
+                }
+            }
+            
+            // Обновляем статус на странице входа
+            const statusDiv = document.getElementById('toiletStatus');
+            const statusIcon = document.getElementById('statusIcon');
+            const statusText = document.getElementById('statusText');
+            const statusSub = document.getElementById('statusSub');
+            
+            // Обновляем статус на главной
+            const statusDivMain = document.getElementById('toiletStatusMain');
+            const statusIconMain = document.getElementById('statusIconMain');
+            const statusTextMain = document.getElementById('statusTextMain');
+            const statusSubMain = document.getElementById('statusSubMain');
+            
+            const updateStatus = (div, icon, text, sub) => {
+                if (isBusy) {
+                    div.className = isUrgent ? 'toilet-status status-urgent' : 'toilet-status status-busy';
+                    icon.textContent = isUrgent ? '🚨' : '🚽';
+                    text.textContent = isUrgent ? '🔴 СРОЧНО ЗАНЯТ!' : '🔴 ЗАНЯТ';
+                    sub.textContent = `До ${busyUntil} • ${busyUser}`;
+                } else {
+                    div.className = 'toilet-status status-free';
+                    icon.textContent = '🟢';
+                    text.textContent = 'СВОБОДЕН';
+                    sub.textContent = 'Можно занять очередь';
+                }
+            };
+            
+            if (statusDiv) updateStatus(statusDiv, statusIcon, statusText, statusSub);
+            if (statusDivMain) updateStatus(statusDivMain, statusIconMain, statusTextMain, statusSubMain);
+        }
 
         // ===== ВХОД/ВЫХОД =====
         function login() {
@@ -469,7 +634,6 @@
             updateUI();
             showToast(`👋 Добро пожаловать, ${name}!`);
             
-            // Подписываемся на обновления
             listenToSchedule();
             listenToUrgent();
         }
@@ -492,6 +656,7 @@
             scheduleRef.on('value', snap => {
                 const data = snap.val();
                 renderSchedule(data);
+                updateToiletStatus(data);
             });
         }
 
@@ -500,7 +665,9 @@
             urgentRef = db.ref('urgent/' + today);
             urgentRef.on('value', snap => {
                 const data = snap.val();
-                updateUrgentCount(data);
+                urgentEntries = data || {};
+                urgentUsed = Object.keys(urgentEntries).length;
+                updateUrgentCount();
             });
         }
 
@@ -510,9 +677,8 @@
             document.getElementById('displayName').textContent = `👤 ${currentUser}`;
         }
 
-        function updateUrgentCount(data) {
-            const used = data ? Object.keys(data).length : 0;
-            const remaining = Math.max(0, URGENT_LIMIT - used);
+        function updateUrgentCount() {
+            const remaining = Math.max(0, URGENT_LIMIT - urgentUsed);
             document.getElementById('urgentCount').textContent = `⚡ Срочно: ${remaining}/${URGENT_LIMIT} раз сегодня`;
             document.getElementById('urgentBtn').disabled = remaining <= 0;
             document.getElementById('urgentBtn').textContent = remaining > 0 ? 
@@ -543,13 +709,13 @@
             let html = '';
             items.forEach(item => {
                 const isCurrentUser = item.user === currentUser;
+                const isUrgent = item.isUrgent || false;
                 html += `
-                    <div class="schedule-item" style="border-left-color: ${isCurrentUser ? '#1d6f2c' : '#667eea'};">
+                    <div class="schedule-item" style="border-left-color: ${isCurrentUser ? '#1d6f2c' : (isUrgent ? '#f5576c' : '#667eea')};">
                         <div>
                             <div class="time">${item.start} — ${item.end}</div>
                             <div class="name">${item.user} ${isCurrentUser ? '👈' : ''}</div>
-                            ${item.isUrgent ? '<span class="urgent-badge">⚡ СРОЧНО</span>' : ''}
-                            ${item.isUrgent ? '<span style="font-size:0.6rem; color:#f5576c; margin-left:4px;">(экстренный)</span>' : ''}
+                            ${isUrgent ? '<span class="urgent-badge">⚡ СРОЧНО</span>' : ''}
                         </div>
                         ${isCurrentUser ? `<button class="delete-btn" onclick="cancelBooking('${item.id}')">✕</button>` : ''}
                     </div>
@@ -651,8 +817,33 @@
             
             try {
                 const today = new Date().toISOString().split('T')[0];
+                
+                // Получаем информацию о записи перед удалением
+                const snap = await db.ref('schedule/' + today + '/' + id).once('value');
+                const booking = snap.val();
+                
+                // Удаляем запись
                 await db.ref('schedule/' + today + '/' + id).remove();
-                showToast('🗑 Запись отменена');
+                
+                // Если это была срочная запись, возвращаем срочный вызов
+                if (booking && booking.isUrgent) {
+                    // Находим и удаляем соответствующую запись в urgent
+                    const urgentSnap = await db.ref('urgent/' + today).once('value');
+                    const urgentData = urgentSnap.val();
+                    
+                    if (urgentData) {
+                        for (let key in urgentData) {
+                            const entry = urgentData[key];
+                            if (entry.user === booking.user) {
+                                await db.ref('urgent/' + today + '/' + key).remove();
+                                break;
+                            }
+                        }
+                    }
+                    showToast('🔄 Срочный вызов возвращён!');
+                } else {
+                    showToast('🗑 Запись отменена');
+                }
             } catch (error) {
                 console.error('Ошибка отмены:', error);
                 showToast('❌ Ошибка отмены', true);
@@ -666,11 +857,7 @@
             try {
                 const today = new Date().toISOString().split('T')[0];
                 
-                const urgentSnap = await db.ref('urgent/' + today).once('value');
-                const urgentData = urgentSnap.val();
-                const used = urgentData ? Object.keys(urgentData).length : 0;
-                
-                if (used >= URGENT_LIMIT) {
+                if (urgentUsed >= URGENT_LIMIT) {
                     showToast(`❌ Лимит срочных вызовов исчерпан на сегодня! (${URGENT_LIMIT}/${URGENT_LIMIT})`, true);
                     return;
                 }
@@ -745,7 +932,7 @@
                     timestamp: firebase.database.ServerValue.TIMESTAMP
                 });
                 
-                const remaining = URGENT_LIMIT - used - 1;
+                const remaining = URGENT_LIMIT - urgentUsed - 1;
                 showToast(`⚡ СРОЧНО! Вы записаны на ${startTime} — ${endTime}. Осталось ${remaining} экстренных вызовов`);
             } catch (error) {
                 console.error('Ошибка срочного вызова:', error);
@@ -779,6 +966,12 @@
             updateUI();
             listenToSchedule();
             listenToUrgent();
+        } else {
+            // Показываем статус на странице входа
+            const today = new Date().toISOString().split('T')[0];
+            db.ref('schedule/' + today).once('value', snap => {
+                updateToiletStatus(snap.val());
+            });
         }
     </script>
 </body>
