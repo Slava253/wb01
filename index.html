@@ -168,23 +168,30 @@
             cursor: not-allowed;
         }
 
-        .btn-outline {
-            background: transparent;
-            border: 2px solid #dae2ec;
-            color: #1a1a2e;
-        }
-
-        .btn-outline:hover {
-            background: #eef2f8;
-            transform: scale(0.98);
-        }
-
-        .btn-return {
+        .btn-edit {
             background: #2c6b6b;
             color: white;
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            width: auto;
         }
 
-        .btn-return:hover {
+        .btn-edit:hover {
+            background: #1d4f4f;
+        }
+
+        .btn-edit-small {
+            background: #2c6b6b;
+            color: white;
+            padding: 4px 10px;
+            font-size: 0.7rem;
+            width: auto;
+            border-radius: 30px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-edit-small:hover {
             background: #1d4f4f;
         }
 
@@ -248,6 +255,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
         .schedule-item .time {
@@ -259,12 +268,19 @@
             color: #3e5f7e;
         }
 
+        .schedule-item .actions {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
         .schedule-item .delete-btn {
             background: none;
             border: none;
             color: #b33a34;
             cursor: pointer;
             font-size: 1.2rem;
+            padding: 4px 8px;
         }
 
         .empty-state {
@@ -366,7 +382,6 @@
             display: inline-block;
         }
 
-        /* СТАТУС ТУАЛЕТА */
         .toilet-status {
             background: #f8faff;
             border-radius: 20px;
@@ -416,7 +431,6 @@
             color: #f5576c;
         }
 
-        /* Приветствие */
         .welcome-section {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -436,6 +450,12 @@
             opacity: 0.9;
         }
 
+        .edit-hint {
+            font-size: 0.7rem;
+            color: #7a8a9e;
+            margin-top: 4px;
+        }
+
         @media (max-width: 480px) {
             .app-container { border-radius: 24px; }
             .header h1 { font-size: 1.4rem; }
@@ -445,6 +465,8 @@
             .time-inputs span { display: none; }
             .toilet-status .status-text { font-size: 1.2rem; }
             .toilet-status .status-icon { font-size: 2.5rem; }
+            .schedule-item { flex-direction: column; align-items: stretch; }
+            .schedule-item .actions { justify-content: flex-end; }
         }
     </style>
 </head>
@@ -533,6 +555,27 @@
         </div>
     </div>
 
+    <!-- Модальное окно редактирования времени -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">✏️ Изменить время</div>
+            <p style="color:#7a8a9e; text-align:center; margin-bottom:16px; font-size:0.9rem;">Вы можете только сократить время записи</p>
+            <div class="form-group">
+                <label>⏰ Время окончания</label>
+                <input type="time" id="editEndTime" step="600">
+                <div class="edit-hint">Выберите новое время окончания (раньше текущего)</div>
+            </div>
+            <div class="form-group">
+                <label>Текущее время</label>
+                <input type="text" id="editCurrentTime" readonly style="background:#f0f4f9;">
+            </div>
+            <div class="modal-buttons">
+                <button onclick="confirmEdit()" class="btn-success" style="flex:2;">✅ Сохранить</button>
+                <button onclick="closeEditModal()" class="btn-cancel" style="flex:1;">Отмена</button>
+            </div>
+        </div>
+    </div>
+
     <div id="toast" class="success-toast" style="display:none;"></div>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -558,7 +601,7 @@
         let urgentRef = null;
         const URGENT_LIMIT = 10;
         let urgentUsed = 0;
-        let urgentEntries = {};
+        let editingBookingId = null;
 
         // ===== СТАТУС ТУАЛЕТА =====
         function updateToiletStatus(data) {
@@ -588,18 +631,6 @@
                 }
             }
             
-            // Обновляем статус на странице входа
-            const statusDiv = document.getElementById('toiletStatus');
-            const statusIcon = document.getElementById('statusIcon');
-            const statusText = document.getElementById('statusText');
-            const statusSub = document.getElementById('statusSub');
-            
-            // Обновляем статус на главной
-            const statusDivMain = document.getElementById('toiletStatusMain');
-            const statusIconMain = document.getElementById('statusIconMain');
-            const statusTextMain = document.getElementById('statusTextMain');
-            const statusSubMain = document.getElementById('statusSubMain');
-            
             const updateStatus = (div, icon, text, sub) => {
                 if (isBusy) {
                     div.className = isUrgent ? 'toilet-status status-urgent' : 'toilet-status status-busy';
@@ -613,6 +644,16 @@
                     sub.textContent = 'Можно занять очередь';
                 }
             };
+            
+            const statusDiv = document.getElementById('toiletStatus');
+            const statusIcon = document.getElementById('statusIcon');
+            const statusText = document.getElementById('statusText');
+            const statusSub = document.getElementById('statusSub');
+            
+            const statusDivMain = document.getElementById('toiletStatusMain');
+            const statusIconMain = document.getElementById('statusIconMain');
+            const statusTextMain = document.getElementById('statusTextMain');
+            const statusSubMain = document.getElementById('statusSubMain');
             
             if (statusDiv) updateStatus(statusDiv, statusIcon, statusText, statusSub);
             if (statusDivMain) updateStatus(statusDivMain, statusIconMain, statusTextMain, statusSubMain);
@@ -665,8 +706,7 @@
             urgentRef = db.ref('urgent/' + today);
             urgentRef.on('value', snap => {
                 const data = snap.val();
-                urgentEntries = data || {};
-                urgentUsed = Object.keys(urgentEntries).length;
+                urgentUsed = data ? Object.keys(data).length : 0;
                 updateUrgentCount();
             });
         }
@@ -710,18 +750,97 @@
             items.forEach(item => {
                 const isCurrentUser = item.user === currentUser;
                 const isUrgent = item.isUrgent || false;
+                const canEdit = isCurrentUser && !isUrgent;
                 html += `
                     <div class="schedule-item" style="border-left-color: ${isCurrentUser ? '#1d6f2c' : (isUrgent ? '#f5576c' : '#667eea')};">
                         <div>
                             <div class="time">${item.start} — ${item.end}</div>
                             <div class="name">${item.user} ${isCurrentUser ? '👈' : ''}</div>
                             ${isUrgent ? '<span class="urgent-badge">⚡ СРОЧНО</span>' : ''}
+                            ${isUrgent ? '<span style="font-size:0.6rem; color:#f5576c; margin-left:4px;">(до 30 мин)</span>' : ''}
                         </div>
-                        ${isCurrentUser ? `<button class="delete-btn" onclick="cancelBooking('${item.id}')">✕</button>` : ''}
+                        <div class="actions">
+                            ${canEdit ? `<button class="btn-edit-small" onclick="openEditModal('${item.id}', '${item.start}', '${item.end}')">✏️</button>` : ''}
+                            ${isCurrentUser ? `<button class="delete-btn" onclick="cancelBooking('${item.id}')">✕</button>` : ''}
+                        </div>
                     </div>
                 `;
             });
             container.innerHTML = html;
+        }
+
+        // ===== РЕДАКТИРОВАНИЕ ВРЕМЕНИ =====
+        function openEditModal(id, start, end) {
+            editingBookingId = id;
+            document.getElementById('editCurrentTime').value = `${start} — ${end}`;
+            document.getElementById('editEndTime').value = end;
+            document.getElementById('editEndTime').min = start;
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('active');
+            editingBookingId = null;
+        }
+
+        async function confirmEdit() {
+            const newEnd = document.getElementById('editEndTime').value;
+            const currentEnd = document.getElementById('editCurrentTime').value.split(' — ')[1];
+            
+            if (!newEnd) {
+                showToast('❌ Выберите время окончания', true);
+                return;
+            }
+            
+            if (newEnd >= currentEnd) {
+                showToast('❌ Новое время должно быть раньше текущего!', true);
+                return;
+            }
+            
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const bookingRef = db.ref('schedule/' + today + '/' + editingBookingId);
+                const snap = await bookingRef.once('value');
+                const booking = snap.val();
+                
+                if (!booking) {
+                    showToast('❌ Запись не найдена', true);
+                    return;
+                }
+                
+                // Проверяем, что новое время не пересекается с другими записями
+                const scheduleSnap = await db.ref('schedule/' + today).once('value');
+                const scheduleData = scheduleSnap.val();
+                
+                let conflict = false;
+                if (scheduleData) {
+                    for (let key in scheduleData) {
+                        if (key === editingBookingId) continue;
+                        const item = scheduleData[key];
+                        if ((booking.start >= item.start && booking.start < item.end) || 
+                            (newEnd > item.start && newEnd <= item.end) ||
+                            (booking.start <= item.start && newEnd >= item.end)) {
+                            conflict = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (conflict) {
+                    showToast('❌ Это время уже занято! Выберите другое.', true);
+                    return;
+                }
+                
+                await bookingRef.update({
+                    end: newEnd
+                });
+                
+                closeEditModal();
+                showToast(`✅ Время изменено! Новое окончание: ${newEnd}`);
+            } catch (error) {
+                console.error('Ошибка редактирования:', error);
+                showToast('❌ Ошибка редактирования', true);
+            }
         }
 
         // ===== БРОНИРОВАНИЕ =====
@@ -818,16 +937,12 @@
             try {
                 const today = new Date().toISOString().split('T')[0];
                 
-                // Получаем информацию о записи перед удалением
                 const snap = await db.ref('schedule/' + today + '/' + id).once('value');
                 const booking = snap.val();
                 
-                // Удаляем запись
                 await db.ref('schedule/' + today + '/' + id).remove();
                 
-                // Если это была срочная запись, возвращаем срочный вызов
                 if (booking && booking.isUrgent) {
-                    // Находим и удаляем соответствующую запись в urgent
                     const urgentSnap = await db.ref('urgent/' + today).once('value');
                     const urgentData = urgentSnap.val();
                     
@@ -952,9 +1067,13 @@
             }, 3000);
         }
 
-        // ===== ЗАКРЫТИЕ МОДАЛКИ =====
+        // ===== ЗАКРЫТИЕ МОДАЛОК =====
         document.getElementById('bookingModal').addEventListener('click', function(e) {
             if (e.target === this) closeBookingModal();
+        });
+
+        document.getElementById('editModal').addEventListener('click', function(e) {
+            if (e.target === this) closeEditModal();
         });
 
         // ===== ЗАПУСК =====
@@ -967,7 +1086,6 @@
             listenToSchedule();
             listenToUrgent();
         } else {
-            // Показываем статус на странице входа
             const today = new Date().toISOString().split('T')[0];
             db.ref('schedule/' + today).once('value', snap => {
                 updateToiletStatus(snap.val());
