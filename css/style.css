@@ -1,232 +1,833 @@
-* { margin:0; padding:0; box-sizing:border-box; }
+/* ============================================================
+   ПВЗ — Система пунктов выдачи
+   Полный style.css
+   ============================================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: #f5f5f7;
   color: #1a1a1a;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.screen { display:none; min-height:100vh; }
-.screen.active { display:block; }
+/* ============================================================
+   ЭКРАНЫ
+   ============================================================ */
+.screen {
+  display: none;
+  min-height: 100vh;
+}
+.screen.active {
+  display: block;
+}
 
-/* ==== ВХОД ==== */
+/* ============================================================
+   ЭКРАН ВХОДА
+   ============================================================ */
 #screen-login {
-  display:none; align-items:center; justify-content:center;
+  display: none;
+  align-items: center;
+  justify-content: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 20px;
 }
-#screen-login.active { display:flex; }
+#screen-login.active {
+  display: flex;
+}
 
 .login-container {
-  background:#fff; border-radius:20px; padding:40px;
-  width:100%; max-width:420px;
-  box-shadow:0 20px 60px rgba(0,0,0,0.3);
+  background: #fff;
+  border-radius: 20px;
+  padding: 40px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
-.logo { text-align:center; margin-bottom:30px; }
+.logo {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
 .logo-icon {
-  display:inline-block;
+  display: inline-block;
   background: linear-gradient(135deg, #667eea, #764ba2);
-  color:#fff; font-weight:700; font-size:24px;
-  padding:12px 20px; border-radius:12px; margin-bottom:12px;
-  letter-spacing:1px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 24px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  letter-spacing: 1px;
 }
-.logo h1 { font-size:16px; font-weight:400; color:#666; }
 
+.logo h1 {
+  font-size: 16px;
+  font-weight: 400;
+  color: #666;
+}
+
+/* Табы ролей */
 .role-tabs {
-  display:flex; background:#f0f0f5; border-radius:12px;
-  padding:4px; margin-bottom:24px;
+  display: flex;
+  background: #f0f0f5;
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 24px;
 }
-.role-tab {
-  flex:1; padding:10px; border:none; background:transparent;
-  border-radius:8px; cursor:pointer; font-size:14px;
-  font-weight:500; color:#666; transition:all .2s;
-}
-.role-tab.active { background:#fff; color:#1a1a1a; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
 
-.login-form { display:none; }
-.login-form.active { display:block; }
-.login-form h2 { font-size:20px; margin-bottom:8px; }
-.hint { font-size:13px; color:#888; margin-bottom:20px; }
+.role-tab {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.role-tab.active {
+  background: #fff;
+  color: #1a1a1a;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.role-tab:hover:not(.active) {
+  color: #333;
+}
+
+/* Формы входа */
+.login-form {
+  display: none;
+}
+.login-form.active {
+  display: block;
+  animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.login-form h2 {
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+.hint {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
 
 .login-form input,
 .login-form select {
-  width:100%; padding:14px 16px;
-  border:2px solid #e5e5ea; border-radius:12px;
-  font-size:15px; margin-bottom:12px;
-  transition:border .2s; background:#fff;
-  font-family:inherit;
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid #e5e5ea;
+  border-radius: 12px;
+  font-size: 15px;
+  margin-bottom: 12px;
+  transition: border 0.2s;
+  background: #fff;
+  font-family: inherit;
+  color: #1a1a1a;
 }
-.login-form input:focus,
-.login-form select:focus { outline:none; border-color:#667eea; }
 
-.btn-primary {
-  width:100%; padding:14px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color:#fff; border:none; border-radius:12px;
-  font-size:15px; font-weight:600; cursor:pointer;
-  transition: transform .15s, box-shadow .15s;
+.login-form input:focus,
+.login-form select:focus {
+  outline: none;
+  border-color: #667eea;
 }
-.btn-primary:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(102,126,234,0.4); }
-.btn-primary:active { transform:translateY(0); }
+
+/* ============================================================
+   КНОПКИ
+   ============================================================ */
+.btn-primary {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  font-family: inherit;
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
 
 .btn-secondary {
-  width:100%; padding:12px;
-  background:#f0f0f5; color:#444;
-  border:none; border-radius:12px;
-  font-size:14px; font-weight:500; cursor:pointer;
-  transition: background .2s;
+  width: 100%;
+  padding: 12px;
+  background: #f0f0f5;
+  color: #444;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-family: inherit;
 }
-.btn-secondary:hover { background:#e5e5ea; }
-
-.error { color:#e74c3c; font-size:13px; text-align:center; margin-top:12px; min-height:18px; }
-
-/* ==== ТОПБАР ==== */
-.topbar {
-  background:#fff; padding:16px 24px;
-  display:flex; align-items:center; justify-content:space-between;
-  box-shadow:0 1px 3px rgba(0,0,0,0.06);
-  position:sticky; top:0; z-index:10;
+.btn-secondary:hover {
+  background: #e5e5ea;
 }
-.brand { font-weight:700; font-size:16px; color:#333; }
-.user-info { display:flex; align-items:center; gap:16px; font-size:14px; color:#666; }
+
+.btn-danger {
+  padding: 6px 12px;
+  background: #fee;
+  color: #c0392b;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.btn-danger:hover {
+  background: #fdd;
+  color: #a93226;
+}
+.btn-danger:active {
+  transform: scale(0.97);
+}
 
 .btn-logout {
-  padding:8px 16px; background:#f0f0f5; border:none;
-  border-radius:8px; cursor:pointer; font-size:13px; color:#555;
-  transition:background .2s;
+  padding: 8px 16px;
+  background: #f0f0f5;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #555;
+  transition: background 0.2s;
+  font-family: inherit;
 }
-.btn-logout:hover { background:#e5e5ea; }
+.btn-logout:hover {
+  background: #e5e5ea;
+}
 
-/* ==== КОНТЕНТ ==== */
-.content { max-width:900px; margin:0 auto; padding:32px 20px; }
-.content h2 { font-size:22px; margin-bottom:20px; }
-.content h3 { font-size:17px; margin:28px 0 14px; }
-
-/* ==== ПЕРЕКЛЮЧАТЕЛЬ РЕЖИМА ПВЗ ==== */
-.mode-switch {
-  display:grid; grid-template-columns:1fr 1fr;
-  gap:12px; margin-bottom:24px;
-}
-.mode-btn {
-  padding:18px; border:2px solid #e5e5ea; background:#fff;
-  border-radius:14px; cursor:pointer;
-  font-size:16px; font-weight:600; color:#555;
-  transition: all .2s;
-}
-.mode-btn.active {
-  border-color:#667eea; color:#667eea;
-  background:#f0f2ff;
-  box-shadow:0 4px 14px rgba(102,126,234,0.15);
-}
-.mode-btn:hover { border-color:#667eea; }
-
-.mode-panel { display:none; }
-.mode-panel.active { display:block; }
-
-/* ==== СКАНИРОВАНИЕ ==== */
-.scan-card {
-  background:#fff; border-radius:16px; padding:24px;
-  box-shadow:0 1px 3px rgba(0,0,0,0.06);
-  margin-bottom:20px;
-}
-.scan-card label {
-  display:block; font-size:14px; color:#666;
-  margin-bottom:10px; font-weight:500;
-}
-.scan-input {
-  width:100%; padding:20px;
-  border:3px solid #e5e5ea; border-radius:14px;
-  font-size:32px; font-weight:700;
-  text-align:center; letter-spacing:8px;
-  font-family:'Courier New', monospace;
-  margin-bottom:14px;
-  transition: border .2s, box-shadow .2s;
-  background:#fafafa;
-}
-.scan-input:focus {
-  outline:none; border-color:#667eea;
-  box-shadow:0 0 0 4px rgba(102,126,234,0.15);
-  background:#fff;
-}
-.scan-actions {
-  display:grid; grid-template-columns:2fr 1fr; gap:10px;
+/* ============================================================
+   СООБЩЕНИЯ
+   ============================================================ */
+.error {
+  color: #e74c3c;
+  font-size: 13px;
+  text-align: center;
+  margin-top: 12px;
+  min-height: 18px;
+  line-height: 1.4;
 }
 
 .result {
-  margin-bottom:16px;
-  font-size:15px; font-weight:600;
-  min-height:24px;
+  margin-bottom: 16px;
+  font-size: 15px;
+  font-weight: 600;
+  min-height: 24px;
+  line-height: 1.4;
+  transition: color 0.2s;
 }
-.result.ok { color:#27ae60; }
-.result.err { color:#e74c3c; }
+.result.ok  { color: #27ae60; }
+.result.err { color: #e74c3c; }
 
-/* ==== ЗАКАЗЫ ==== */
-.orders { display:grid; gap:14px; }
+/* ============================================================
+   ТОПБАР
+   ============================================================ */
+.topbar {
+  background: #fff;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.brand {
+  font-weight: 700;
+  font-size: 16px;
+  color: #333;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 14px;
+  color: #666;
+}
+
+/* ============================================================
+   КОНТЕНТ
+   ============================================================ */
+.content {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+
+.content h2 {
+  font-size: 22px;
+  margin-bottom: 20px;
+  color: #1a1a1a;
+}
+
+.content h3 {
+  font-size: 17px;
+  margin: 28px 0 14px;
+  color: #1a1a1a;
+}
+
+/* ============================================================
+   КАРТОЧКА (универсальная форма)
+   ============================================================ */
+.card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.card label {
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+  margin-bottom: -4px;
+}
+
+.card input,
+.card select {
+  padding: 12px 14px;
+  border: 2px solid #e5e5ea;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #fff;
+  color: #1a1a1a;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+.card input:focus,
+.card select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+}
+
+.card .btn-primary {
+  margin-top: 6px;
+}
+
+/* ============================================================
+   КЛИЕНТ: СЕТКА
+   ============================================================ */
+.client-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 24px;
+  align-items: start;
+}
+
+/* ============================================================
+   АДМИН: СЕТКА
+   ============================================================ */
+.admin-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 20px;
+}
+
+/* ============================================================
+   ЗАКАЗЫ
+   ============================================================ */
+.orders {
+  display: grid;
+  gap: 14px;
+}
 
 .order-card {
-  background:#fff; border-radius:14px;
-  padding:18px 20px;
-  box-shadow:0 1px 3px rgba(0,0,0,0.06);
-  display:flex; justify-content:space-between;
-  align-items:center; gap:16px; flex-wrap:wrap;
-  animation: slideIn .25s ease;
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  animation: slideIn 0.25s ease;
 }
+
 @keyframes slideIn {
-  from { opacity:0; transform:translateY(8px); }
-  to   { opacity:1; transform:translateY(0); }
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-.order-info h4 { font-size:15px; margin-bottom:4px; }
-.order-info p  { font-size:13px; color:#888; }
+.order-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.order-info h4 {
+  font-size: 15px;
+  margin-bottom: 4px;
+  color: #1a1a1a;
+  word-break: break-word;
+}
+
+.order-info p {
+  font-size: 13px;
+  color: #888;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
 .order-info .cell {
-  display:inline-block; background:#eef2ff; color:#4c51bf;
-  font-weight:700; padding:2px 10px; border-radius:6px;
-  font-size:13px; margin-top:6px;
+  display: inline-block;
+  background: #eef2ff;
+  color: #4c51bf;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-top: 6px;
 }
 
+/* Статусы */
 .order-status {
-  display:inline-block; padding:4px 10px;
-  border-radius:6px; font-size:12px;
-  font-weight:600; white-space:nowrap;
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
 }
-.status-waiting { background:#fff4e5; color:#e67e22; }
-.status-ready   { background:#e8f5e9; color:#27ae60; }
-.status-issued  { background:#e3f2fd; color:#2980b9; }
-.status-storage { background:#ede9fe; color:#7c3aed; }
 
-/* ==== СТАТИСТИКА ==== */
+.status-waiting { background: #fff4e5; color: #e67e22; }
+.status-storage { background: #ede9fe; color: #7c3aed; }
+.status-ready   { background: #e8f5e9; color: #27ae60; }
+.status-issued  { background: #e3f2fd; color: #2980b9; }
+
+/* ============================================================
+   QR-БЛОК В КАРТОЧКЕ ЗАКАЗА
+   ============================================================ */
+.qr-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.qr-wrap {
+  background: #fff;
+  border-radius: 8px;
+  padding: 4px;
+  line-height: 0;
+  border: 1px solid #eee;
+}
+
+.qr-wrap svg {
+  display: block;
+  max-width: 120px;
+  width: 120px;
+  height: auto;
+}
+
+.qr-code-num {
+  font-size: 12px;
+  color: #666;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 1px;
+}
+.qr-code-num b {
+  color: #1a1a1a;
+  font-size: 13px;
+}
+
+/* ============================================================
+   ПЕРЕКЛЮЧАТЕЛЬ РЕЖИМА ПВЗ
+   ============================================================ */
+.mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.mode-btn {
+  padding: 18px;
+  border: 2px solid #e5e5ea;
+  background: #fff;
+  border-radius: 14px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  color: #555;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.mode-btn.active {
+  border-color: #667eea;
+  color: #667eea;
+  background: #f0f2ff;
+  box-shadow: 0 4px 14px rgba(102, 126, 234, 0.15);
+}
+
+.mode-btn:hover:not(.active) {
+  border-color: #667eea;
+}
+
+/* Панели режимов */
+.mode-panel {
+  display: none;
+}
+.mode-panel.active {
+  display: block;
+  animation: fadeIn 0.3s;
+}
+
+/* ============================================================
+   СКАНИРОВАНИЕ
+   ============================================================ */
+.scan-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  margin-bottom: 20px;
+}
+
+.scan-card label {
+  display: block;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.scan-input {
+  width: 100%;
+  padding: 20px;
+  border: 3px solid #e5e5ea;
+  border-radius: 14px;
+  font-size: 32px;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 8px;
+  font-family: 'Courier New', monospace;
+  margin-bottom: 14px;
+  transition: border 0.2s, box-shadow 0.2s, background 0.2s;
+  background: #fafafa;
+  color: #1a1a1a;
+}
+
+.scan-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+  background: #fff;
+}
+
+.scan-input::placeholder {
+  color: #ccc;
+  letter-spacing: 8px;
+}
+
+.scan-actions {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 10px;
+}
+
+/* ============================================================
+   СТАТИСТИКА (админ)
+   ============================================================ */
 .stats {
-  display:grid;
-  grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));
-  gap:14px; margin-bottom:8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+  margin-bottom: 8px;
 }
+
 .stat-card {
-  background:#fff; border-radius:14px; padding:20px;
-  box-shadow:0 1px 3px rgba(0,0,0,0.06);
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
-.stat-card .num { font-size:28px; font-weight:700; color:#667eea; }
-.stat-card .label { font-size:13px; color:#888; margin-top:4px; }
 
-/* ==== СПИСОК ПВЗ ==== */
-.pvz-list { display:grid; gap:12px; }
+.stat-card .num {
+  font-size: 28px;
+  font-weight: 700;
+  color: #667eea;
+  line-height: 1.1;
+}
+
+.stat-card .label {
+  font-size: 13px;
+  color: #888;
+  margin-top: 4px;
+}
+
+/* ============================================================
+   СПИСКИ ПВЗ И СОТРУДНИКОВ
+   ============================================================ */
+.pvz-list {
+  display: grid;
+  gap: 12px;
+}
+
 .pvz-item {
-  background:#fff; border-radius:12px; padding:16px 20px;
-  display:flex; justify-content:space-between; align-items:center;
-  box-shadow:0 1px 3px rgba(0,0,0,0.06);
-}
-.pvz-item .name { font-weight:600; font-size:15px; }
-.pvz-item .addr { font-size:13px; color:#888; margin-top:2px; }
-.badge {
-  background:#e8f5e9; color:#27ae60;
-  padding:4px 10px; border-radius:6px;
-  font-size:12px; font-weight:600;
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  flex-wrap: wrap;
 }
 
-@media (max-width:520px) {
-  .login-container { padding:28px 20px; }
-  .topbar { padding:12px 16px; }
-  .content { padding:20px 14px; }
-  .scan-input { font-size:26px; letter-spacing:5px; }
+.pvz-item > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.pvz-item .name {
+  font-weight: 600;
+  font-size: 15px;
+  color: #1a1a1a;
+  word-break: break-word;
+}
+
+.pvz-item .addr {
+  font-size: 13px;
+  color: #888;
+  margin-top: 2px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.badge {
+  background: #e8f5e9;
+  color: #27ae60;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   АДАПТИВНОСТЬ
+   ============================================================ */
+
+/* Планшеты */
+@media (max-width: 900px) {
+  .client-grid,
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Телефоны */
+@media (max-width: 520px) {
+  .login-container {
+    padding: 28px 20px;
+    border-radius: 16px;
+  }
+
+  .logo-icon {
+    font-size: 20px;
+    padding: 10px 16px;
+  }
+
+  .logo h1 {
+    font-size: 14px;
+  }
+
+  .topbar {
+    padding: 12px 16px;
+  }
+
+  .brand {
+    font-size: 14px;
+  }
+
+  .user-info {
+    gap: 10px;
+    font-size: 12px;
+  }
+
+  .btn-logout {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .content {
+    padding: 20px 14px;
+  }
+
+  .content h2 {
+    font-size: 19px;
+  }
+
+  .content h3 {
+    font-size: 15px;
+  }
+
+  .scan-input {
+    font-size: 26px;
+    letter-spacing: 5px;
+    padding: 16px;
+  }
+
+  .scan-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .mode-btn {
+    padding: 14px;
+    font-size: 14px;
+  }
+
+  .order-card {
+    padding: 14px 16px;
+  }
+
+  .qr-wrap svg {
+    max-width: 100px;
+    width: 100px;
+  }
+
+  .stat-card .num {
+    font-size: 24px;
+  }
+
+  .pvz-item {
+    padding: 14px 16px;
+  }
+}
+
+/* Очень узкие экраны */
+@media (max-width: 360px) {
+  .login-container {
+    padding: 24px 16px;
+  }
+
+  .role-tab {
+    font-size: 12px;
+    padding: 8px 4px;
+  }
+
+  .scan-input {
+    font-size: 22px;
+    letter-spacing: 3px;
+  }
+}
+
+/* ============================================================
+   СКРОЛЛБАР
+   ============================================================ */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #f0f0f5;
+}
+::-webkit-scrollbar-thumb {
+  background: #c9c9d3;
+  border-radius: 5px;
+  border: 2px solid #f0f0f5;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a9a9b5;
+}
+
+/* ============================================================
+   ВЫДЕЛЕНИЕ ТЕКСТА
+   ============================================================ */
+::selection {
+  background: rgba(102, 126, 234, 0.25);
+  color: #1a1a1a;
+}
+
+/* ============================================================
+   ФОКУС ДЛЯ ДОСТУПНОСТИ
+   ============================================================ */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   ПЕЧАТЬ QR (если клиент захочет распечатать заказ)
+   ============================================================ */
+@media print {
+  body {
+    background: #fff;
+  }
+
+  .topbar,
+  .mode-switch,
+  .scan-card,
+  .card,
+  .btn-primary,
+  .btn-secondary,
+  .btn-logout,
+  .btn-danger,
+  .role-tabs,
+  .login-container {
+    display: none !important;
+  }
+
+  .order-card {
+    box-shadow: none;
+    border: 1px solid #ddd;
+    page-break-inside: avoid;
+    margin-bottom: 12px;
+  }
+
+  .qr-wrap svg {
+    width: 180px;
+    max-width: 180px;
+  }
 }
