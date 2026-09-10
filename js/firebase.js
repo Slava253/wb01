@@ -1,46 +1,42 @@
-import { initializeApp } from
-"https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import {
+    initializeApp
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 
 import {
     getAuth
-} from
-"https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 
 import {
     getFirestore
-} from
-"https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
 
 const firebaseConfig = {
 
-    apiKey: "ВСТАВЬ_СВОЙ_API_KEY",
+    apiKey: "AIzaSyBYFjKU5odBSUHLhieXdc0dr06EhLM_3r0",
 
-    authDomain:
-        "marketpoint-9be60.firebaseapp.com",
+    authDomain: "marketpoint-9be60.firebaseapp.com",
 
-    projectId:
-        "marketpoint-9be60",
+    projectId: "marketpoint-9be60",
 
-    storageBucket:
-        "ВСТАВЬ_СВОЁ_STORAGE_BUCKET",
+    storageBucket: "marketpoint-9be60.firebasestorage.app",
 
-    messagingSenderId:
-        "ВСТАВЬ_SENDER_ID",
+    messagingSenderId: "159645831524",
 
-    appId:
-        "ВСТАВЬ_APP_ID"
+    appId: "1:159645831524:web:252097b1aa1f3495836a71",
+
+    measurementId: "G-14LM5KL3J0"
 
 };
 
 
-const app =
-    initializeApp(firebaseConfig);
+// Запускаем Firebase
+const app = initializeApp(firebaseConfig);
 
 
-export const auth =
-    getAuth(app);
+// Firebase Authentication
+export const auth = getAuth(app);
 
 
-export const db =
-    getFirestore(app);
+// Firestore Database
+export const db = getFirestore(app);
