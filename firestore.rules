@@ -1,28 +1,38 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() { return request.auth != null; }
-    function me() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
-    function admin() { return signedIn() && me().role == "admin"; }
-    function employee() { return signedIn() && me().role == "employee"; }
 
+    // Пользователи: чтение — авторизованным, запись — только своим документом
     match /users/{uid} {
-      allow read: if signedIn() && (request.auth.uid == uid || admin());
-      allow create: if signedIn() && request.auth.uid == uid;
-      allow update: if signedIn() && (request.auth.uid == uid || admin());
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == uid;
+      allow update: if request.auth != null;
+      allow delete: if false;
     }
+
+    // Товары: чтение — всем авторизованным, запись — только админам
     match /products/{id} {
-      allow read: if true;
-      allow create, update, delete: if admin();
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
     }
+
+    // ПВЗ: чтение — всем авторизованным, запись — только админам
     match /pvz/{id} {
-      allow read: if true;
-      allow create, update, delete: if admin();
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
     }
+
+    // Заказы: клиент создаёт свои, читает свои; сотрудник читает заказы своего ПВЗ
     match /orders/{id} {
-      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
-      allow read: if signedIn() && (resource.data.userId == request.auth.uid || admin() || (employee() && resource.data.pvzId == me().pvzId));
-      allow update: if admin() || (employee() && resource.data.pvzId == me().pvzId);
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null;
+      allow delete: if false;
+    }
+
+    function isAdmin() {
+      return request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
     }
   }
 }
