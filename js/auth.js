@@ -1,6 +1,7 @@
 import {
-    createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
+    signInWithPhoneNumber,
+    RecaptchaVerifier,
     onAuthStateChanged
 }
 from
@@ -8,7 +9,9 @@ from
 
 import {
     doc,
-    setDoc
+    getDoc,
+    setDoc,
+    serverTimestamp
 }
 from
 "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
@@ -20,21 +23,24 @@ import {
 from "./firebase.js";
 
 
-const email =
-    document.getElementById("email");
+let confirmationResult = null;
 
-const password =
-    document.getElementById("password");
+let recaptchaVerifier = null;
 
-const loginButton =
-    document.getElementById("loginButton");
 
-const registerButton =
-    document.getElementById("registerButton");
+/* ================================================= */
+/* ЭЛЕМЕНТЫ */
+/* ================================================= */
 
 const message =
-    document.getElementById("authMessage");
+    document.getElementById(
+        "authMessage"
+    );
 
+
+/* ================================================= */
+/* СООБЩЕНИЕ */
+/* ================================================= */
 
 function showMessage(text) {
 
@@ -43,103 +49,759 @@ function showMessage(text) {
 }
 
 
-loginButton.onclick =
-    async function () {
+/* ================================================= */
+/* ПЕРЕКЛЮЧЕНИЕ КЛИЕНТ / АДМИН / ПВЗ */
+/* ================================================= */
 
-        try {
-
-            showMessage("Выполняется вход...");
-
-            await signInWithEmailAndPassword(
-                auth,
-                email.value.trim(),
-                password.value
-            );
-
-            location.href =
-                "client.html";
-
-        }
-
-        catch (error) {
-
-            showMessage(
-                "Ошибка входа: "
-                + error.message
-            );
-
-        }
-
-    };
+const tabs =
+    document.querySelectorAll(
+        ".login-tab"
+    );
 
 
-registerButton.onclick =
-    async function () {
+tabs.forEach(
+    function(tab) {
 
-        try {
+        tab.addEventListener(
+            "click",
+            function() {
 
-            showMessage(
-                "Создание аккаунта..."
-            );
+                const selected =
+                    tab.dataset.tab;
 
-            const result =
-                await createUserWithEmailAndPassword(
-                    auth,
-                    email.value.trim(),
-                    password.value
+
+                tabs.forEach(
+                    function(item) {
+
+                        item.classList.remove(
+                            "active"
+                        );
+
+                    }
                 );
 
 
-            await setDoc(
-                doc(
-                    db,
-                    "users",
-                    result.user.uid
-                ),
-                {
+                tab.classList.add(
+                    "active"
+                );
 
-                    email:
-                        result.user.email,
 
-                    role:
-                        "client",
+                document
+                    .querySelectorAll(
+                        ".login-section"
+                    )
+                    .forEach(
+                        function(section) {
 
-                    createdAt:
-                        new Date().toISOString()
+                            section.classList.remove(
+                                "active"
+                            );
+
+                        }
+                    );
+
+
+                document
+                    .getElementById(
+                        selected + "Section"
+                    )
+                    .classList.add(
+                        "active"
+                    );
+
+
+                showMessage("");
+
+            }
+        );
+
+    }
+);
+
+
+/* ================================================= */
+/* RECAPTCHA */
+/* ================================================= */
+
+function createRecaptcha() {
+
+    if (recaptchaVerifier) {
+
+        return recaptchaVerifier;
+
+    }
+
+
+    recaptchaVerifier =
+        new RecaptchaVerifier(
+            auth,
+            "recaptcha-container",
+            {
+
+                size: "normal",
+
+                callback:
+                    function() {
+
+                        showMessage(
+                            "Проверка пройдена."
+                        );
+
+                    },
+
+                "expired-callback":
+                    function() {
+
+                        showMessage(
+                            "Проверка истекла. Пройдите её снова."
+                        );
+
+                    }
+
+            }
+        );
+
+
+    return recaptchaVerifier;
+
+}
+
+
+/* ================================================= */
+/* ОТПРАВКА SMS */
+/* ================================================= */
+
+document
+    .getElementById(
+        "sendCodeButton"
+    )
+    .addEventListener(
+        "click",
+        async function() {
+
+            const phone =
+                document
+                    .getElementById(
+                        "phoneNumber"
+                    )
+                    .value
+                    .trim();
+
+
+            if (!phone) {
+
+                showMessage(
+                    "Введите номер телефона."
+                );
+
+                return;
+
+            }
+
+
+            /*
+             * Firebase ожидает номер
+             * в международном формате.
+             *
+             * Например:
+             * +491234567890
+             */
+
+            if (!phone.startsWith("+")) {
+
+                showMessage(
+                    "Введите номер в международном формате, например +491234567890."
+                );
+
+                return;
+
+            }
+
+
+            try {
+
+                showMessage(
+                    "Подготавливаем отправку SMS..."
+                );
+
+
+                const verifier =
+                    createRecaptcha();
+
+
+                confirmationResult =
+                    await signInWithPhoneNumber(
+                        auth,
+                        phone,
+                        verifier
+                    );
+
+
+                document
+                    .getElementById(
+                        "codeSection"
+                    )
+                    .classList.remove(
+                        "hidden"
+                    );
+
+
+                showMessage(
+                    "SMS-код отправлен на ваш телефон."
+                );
+
+            }
+
+            catch (error) {
+
+                console.error(error);
+
+
+                showMessage(
+                    getFirebaseError(
+                        error
+                    )
+                );
+
+
+                resetRecaptcha();
+
+            }
+
+        }
+    );
+
+
+/* ================================================= */
+/* ПРОВЕРКА SMS-КОДА */
+/* ================================================= */
+
+document
+    .getElementById(
+        "verifyCodeButton"
+    )
+    .addEventListener(
+        "click",
+        async function() {
+
+            const code =
+                document
+                    .getElementById(
+                        "phoneCode"
+                    )
+                    .value
+                    .trim();
+
+
+            if (!confirmationResult) {
+
+                showMessage(
+                    "Сначала запросите SMS-код."
+                );
+
+                return;
+
+            }
+
+
+            if (
+                code.length !== 6
+            ) {
+
+                showMessage(
+                    "Введите 6-значный код из SMS."
+                );
+
+                return;
+
+            }
+
+
+            try {
+
+                showMessage(
+                    "Проверяем код..."
+                );
+
+
+                const result =
+                    await confirmationResult.confirm(
+                        code
+                    );
+
+
+                const user =
+                    result.user;
+
+
+                /*
+                 * Создаём профиль клиента,
+                 * если его ещё нет.
+                 */
+
+                const userReference =
+                    doc(
+                        db,
+                        "users",
+                        user.uid
+                    );
+
+
+                const userSnapshot =
+                    await getDoc(
+                        userReference
+                    );
+
+
+                if (
+                    !userSnapshot.exists()
+                ) {
+
+                    await setDoc(
+                        userReference,
+                        {
+
+                            phone:
+                                user.phoneNumber,
+
+                            role:
+                                "client",
+
+                            createdAt:
+                                serverTimestamp()
+
+                        }
+                    );
 
                 }
+
+
+                showMessage(
+                    "Вход выполнен."
+                );
+
+
+                setTimeout(
+                    function() {
+
+                        location.href =
+                            "client.html";
+
+                    },
+                    500
+                );
+
+            }
+
+            catch (error) {
+
+                console.error(error);
+
+
+                showMessage(
+                    getFirebaseError(
+                        error
+                    )
+                );
+
+            }
+
+        }
+    );
+
+
+/* ================================================= */
+/* АДМИН */
+/* ================================================= */
+
+document
+    .getElementById(
+        "adminLoginButton"
+    )
+    .addEventListener(
+        "click",
+        async function() {
+
+            const login =
+                document
+                    .getElementById(
+                        "adminLogin"
+                    )
+                    .value
+                    .trim();
+
+
+            const password =
+                document
+                    .getElementById(
+                        "adminPassword"
+                    )
+                    .value;
+
+
+            if (!login || !password) {
+
+                showMessage(
+                    "Введите логин и пароль."
+                );
+
+                return;
+
+            }
+
+
+            await loginByPassword(
+                login,
+                password,
+                "admin"
+            );
+
+        }
+    );
+
+
+/* ================================================= */
+/* ПВЗ */
+/* ================================================= */
+
+document
+    .getElementById(
+        "pvzLoginButton"
+    )
+    .addEventListener(
+        "click",
+        async function() {
+
+            const login =
+                document
+                    .getElementById(
+                        "pvzLogin"
+                    )
+                    .value
+                    .trim();
+
+
+            const password =
+                document
+                    .getElementById(
+                        "pvzPassword"
+                    )
+                    .value;
+
+
+            if (!login || !password) {
+
+                showMessage(
+                    "Введите логин и пароль."
+                );
+
+                return;
+
+            }
+
+
+            await loginByPassword(
+                login,
+                password,
+                "pvz"
+            );
+
+        }
+    );
+
+
+/* ================================================= */
+/* ВХОД ПО ЛОГИНУ / ПАРОЛЮ */
+/* ================================================= */
+
+async function loginByPassword(
+    login,
+    password,
+    expectedRole
+) {
+
+    try {
+
+        showMessage(
+            "Выполняется вход..."
+        );
+
+
+        const result =
+            await signInWithEmailAndPassword(
+                auth,
+                login,
+                password
             );
 
 
+        const user =
+            result.user;
+
+
+        const userReference =
+            doc(
+                db,
+                "users",
+                user.uid
+            );
+
+
+        const userSnapshot =
+            await getDoc(
+                userReference
+            );
+
+
+        if (
+            !userSnapshot.exists()
+        ) {
+
+            showMessage(
+                "Для этого аккаунта не настроена роль."
+            );
+
+            return;
+
+        }
+
+
+        const profile =
+            userSnapshot.data();
+
+
+        if (
+            profile.role !== expectedRole
+        ) {
+
+            showMessage(
+                "У этого аккаунта другая роль."
+            );
+
+            return;
+
+        }
+
+
+        if (
+            profile.role === "admin"
+        ) {
+
             location.href =
-                "client.html";
+                "admin.html";
+
+            return;
+
+        }
+
+
+        if (
+            profile.role === "pvz"
+        ) {
+
+            location.href =
+                "admin.html";
+
+            return;
+
+        }
+
+
+        showMessage(
+            "Неизвестная роль."
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+
+        showMessage(
+            getFirebaseError(
+                error
+            )
+        );
+
+    }
+
+}
+
+
+/* ================================================= */
+/* АВТОМАТИЧЕСКАЯ ПРОВЕРКА УЖЕ ВОШЕДШЕГО */
+/* ================================================= */
+
+onAuthStateChanged(
+    auth,
+    async function(user) {
+
+        if (!user) {
+
+            return;
+
+        }
+
+
+        /*
+         * Если пользователь уже вошёл,
+         * определяем его роль.
+         */
+
+        try {
+
+            const reference =
+                doc(
+                    db,
+                    "users",
+                    user.uid
+                );
+
+
+            const snapshot =
+                await getDoc(
+                    reference
+                );
+
+
+            if (!snapshot.exists()) {
+
+                return;
+
+            }
+
+
+            const profile =
+                snapshot.data();
+
+
+            if (
+                profile.role ===
+                "client"
+            ) {
+
+                /*
+                 * Мы не перенаправляем
+                 * автоматически, если человек
+                 * ещё находится на странице входа.
+                 */
+
+                return;
+
+            }
+
+
+            if (
+                profile.role ===
+                "admin"
+                ||
+                profile.role ===
+                "pvz"
+            ) {
+
+                return;
+
+            }
 
         }
 
         catch (error) {
 
-            showMessage(
-                "Ошибка регистрации: "
-                + error.message
-            );
-
-        }
-
-    };
-
-
-onAuthStateChanged(
-    auth,
-    function (user) {
-
-        if (user) {
-
-            console.log(
-                "Пользователь:",
-                user.email
-            );
+            console.error(error);
 
         }
 
     }
 );
+
+
+/* ================================================= */
+/* RECAPTCHA RESET */
+/* ================================================= */
+
+function resetRecaptcha() {
+
+    if (!recaptchaVerifier) {
+
+        return;
+
+    }
+
+
+    try {
+
+        recaptchaVerifier.clear();
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+    }
+
+
+    recaptchaVerifier = null;
+
+}
+
+
+/* ================================================= */
+/* ОШИБКИ FIREBASE */
+/* ================================================= */
+
+function getFirebaseError(error) {
+
+    switch (error.code) {
+
+        case "auth/invalid-phone-number":
+
+            return "Неверный номер телефона.";
+
+        case "auth/too-many-requests":
+
+            return "Слишком много попыток. Попробуйте позже.";
+
+        case "auth/invalid-verification-code":
+
+            return "Неверный SMS-код.";
+
+        case "auth/code-expired":
+
+            return "Срок действия SMS-кода истёк.";
+
+        case "auth/invalid-credential":
+
+            return "Неверный логин или пароль.";
+
+        case "auth/user-not-found":
+
+            return "Пользователь не найден.";
+
+        case "auth/wrong-password":
+
+            return "Неверный пароль.";
+
+        case "auth/operation-not-allowed":
+
+            return "Этот способ входа не включён в Firebase.";
+
+        case "auth/quota-exceeded":
+
+            return "Превышен лимит SMS.";
+
+        case "auth/captcha-check-failed":
+
+            return "Не пройдена проверка reCAPTCHA.";
+
+        default:
+
+            return (
+                "Ошибка Firebase: "
+                + error.message
+            );
+
+    }
+
+}
