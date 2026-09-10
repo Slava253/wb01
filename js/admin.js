@@ -1,4 +1,4 @@
-import { db, collection, getDocs, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp, money, esc } from "./firebase.js";
+import { db, collection, getDocs, doc, addDoc, updateDoc, query, where, orderBy, limit, serverTimestamp, money, esc } from "./firebase.js";
 import { guard, logout } from "./auth.js";
 
 let user, profile, pvzs = [], employees = [], products = [], orders = [];
@@ -20,17 +20,19 @@ async function load() {
 async function loadPvz() {
   pvzs = (await getDocs(collection(db, "pvz"))).docs.map(d => ({ id: d.id, ...d.data() }));
 }
+
 async function loadEmployees() {
   employees = (await getDocs(query(collection(db, "users"), where("role", "==", "employee")))).docs.map(d => ({ id: d.id, ...d.data() }));
 }
+
 async function loadProducts() {
   products = (await getDocs(collection(db, "products"))).docs.map(d => ({ id: d.id, ...d.data() }));
 }
+
 async function loadOrders() {
   try {
     orders = (await getDocs(query(collection(db, "orders"), orderBy("createdAt", "desc"), limit(200)))).docs.map(d => ({ id: d.id, ...d.data() }));
   } catch (e) {
-    // Если нет индекса по createdAt — читаем без сортировки
     orders = (await getDocs(query(collection(db, "orders"), limit(200)))).docs.map(d => ({ id: d.id, ...d.data() }));
   }
 }
@@ -139,8 +141,6 @@ async function employeeForm() {
       if (!login || !pass || !name) throw new Error("Заполните все поля");
       if (pass.length < 6) throw new Error("Пароль минимум 6 символов");
 
-      // ВНИМАНИЕ: Firebase клиентский SDK не может создавать других пользователей,
-      // не выходя из аккаунта админа. Поэтому здесь мы показываем инструкцию.
       err.innerHTML = `Создайте пользователя в Firebase Console вручную:<br>
         1. Authentication → Users → Add user<br>
         2. Email: <b>${login}@marketpoint.local</b><br>
