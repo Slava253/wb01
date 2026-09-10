@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Вход — MarketPoint</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="center-page">
+    <section class="auth-card">
+      <div class="brand">Market<span>Point</span></div>
+      <h1>Вход</h1>
+      <p class="muted">Клиент входит по номеру телефона. Сотрудник и администратор — по логину и паролю.</p>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="phone">Клиент</button>
+        <button class="tab" data-tab="staff">Сотрудник</button>
+      </div>
+
+      <div id="phoneTab">
+        <label>Номер телефона</label>
+        <input id="phone" type="tel" placeholder="+7 900 123-45-67">
+        <div id="recaptcha-container"></div>
+        <button id="sendCode" class="btn primary full">Получить код</button>
+        <div id="codeBox" class="hidden">
+          <label>Код из SMS</label>
+          <input id="smsCode" inputmode="numeric" maxlength="6" placeholder="123456">
+          <button id="verifyCode" class="btn primary full">Войти</button>
+        </div>
+      </div>
+
+      <div id="staffTab" class="hidden">
+        <label>Логин</label>
+        <input id="staffLogin" type="text" placeholder="admin или логин сотрудника">
+        <label>Пароль</label>
+        <input id="staffPassword" type="password" placeholder="Пароль">
+        <button id="staffSignIn" class="btn primary full">Войти</button>
+      </div>
+
+      <p id="authError" class="error"></p>
+      <p class="small muted">Для администратора первая учётная запись создаётся через Firebase Console. Инструкция — в README.</p>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MarketPoint — администратор</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="admin.html">Market<span>Point</span></a>
+  <nav>
+    <button class="navbtn" data-admin-view="dashboard">Обзор</button>
+    <button class="navbtn" data-admin-view="pvz">ПВЗ</button>
+    <button class="navbtn" data-admin-view="employees">Сотрудники</button>
+    <button class="navbtn" data-admin-view="products">Товары</button>
+    <button class="navbtn" data-admin-view="orders">Заказы</button>
+    <button id="logout" class="navbtn danger-text">Выйти</button>
+  </nav>
+</header>
+<main class="container"><div id="adminView"></div></main>
+
+<div id="adminModal" class="modal hidden"><div class="modal-card"><button class="close" id="closeAdminModal">×</button><div id="adminModalContent"></div></div></div>
+<script type="module" src="js/admin.js"></script>
+</body>
+</html>

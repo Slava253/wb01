@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>MarketPoint — клиент</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="client.html">Market<span>Point</span></a>
+  <nav>
+    <button class="navbtn" data-view="catalog">Каталог</button>
+    <button class="navbtn" data-view="cart">Корзина <b id="cartCount">0</b></button>
+    <button class="navbtn" data-view="orders">Мои заказы</button>
+    <button id="logout" class="navbtn danger-text">Выйти</button>
+  </nav>
+</header>
+<main class="container">
+  <div id="clientView"></div>
+</main>
+
+<div id="productModal" class="modal hidden">
+  <div class="modal-card">
+    <button class="close" id="closeModal">×</button>
+    <div id="productDetails"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+<script type="module" src="js/client.js"></script>
+</body>
+</html>
