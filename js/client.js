@@ -1,237 +1,328 @@
 import {
-    onAuthStateChanged,
-    signOut
-}
-from
-"https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-
-import {
-    doc,
-    getDoc,
     collection,
     addDoc,
     query,
     where,
-    onSnapshot,
+    getDocs,
+    orderBy,
     serverTimestamp
 }
-from
-"https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
 import {
-    auth,
     db
 }
 from "./firebase.js";
 
 
-let currentUser = null;
+/* ==========================================
+   ПОЛЬЗОВАТЕЛЬ
+========================================== */
+
+const currentUser =
+    JSON.parse(
+        localStorage.getItem("pvzUser")
+    );
 
 
-/* ================================================= */
-/* АВТОРИЗАЦИЯ */
-/* ================================================= */
+if (!currentUser) {
 
-onAuthStateChanged(
-    auth,
-    async function(user) {
+    location.href = "index.html";
 
-        if (!user) {
+    throw new Error(
+        "Пользователь не авторизован."
+    );
 
-            location.href =
-                "index.html";
-
-            return;
-
-        }
+}
 
 
-        currentUser = user;
+if (currentUser.role !== "client") {
+
+    location.href = "index.html";
+
+    throw new Error(
+        "Доступ разрешён только клиенту."
+    );
+
+}
 
 
-        try {
+/* ==========================================
+   ЭЛЕМЕНТЫ СТРАНИЦЫ
+========================================== */
 
-            const reference =
-                doc(
-                    db,
-                    "users",
-                    user.uid
+const userPhoneElement =
+    document.getElementById(
+        "userEmail"
+    );
+
+
+const ordersList =
+    document.getElementById(
+        "ordersList"
+    );
+
+
+const createOrderForm =
+    document.getElementById(
+        "createOrderForm"
+    );
+
+
+const productNameInput =
+    document.getElementById(
+        "productName"
+    );
+
+
+const productDescriptionInput =
+    document.getElementById(
+        "productDescription"
+    );
+
+
+/* ==========================================
+   ПОКАЗЫВАЕМ ТЕЛЕФОН
+========================================== */
+
+if (userPhoneElement) {
+
+    userPhoneElement.textContent =
+        currentUser.phone || "";
+
+}
+
+
+/* ==========================================
+   СТАТУСЫ
+========================================== */
+
+const statusNames = {
+
+    created:
+        "Заказ создан",
+
+    waiting:
+        "Ожидает отправки",
+
+    arrived:
+        "Прибыл в ПВЗ",
+
+    ready:
+        "Готов к выдаче",
+
+    issued:
+        "Выдан"
+
+};
+
+
+/* ==========================================
+   ЭКРАНИРОВАНИЕ HTML
+========================================== */
+
+function escapeHtml(value) {
+
+    if (value === null ||
+        value === undefined) {
+
+        return "";
+
+    }
+
+
+    return String(value)
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
+}
+
+
+/* ==========================================
+   СООБЩЕНИЯ
+========================================== */
+
+function showMessage(
+    text,
+    type = ""
+) {
+
+    let element =
+        document.getElementById(
+            "clientMessage"
+        );
+
+
+    if (!element) {
+
+        element =
+            document.createElement(
+                "div"
+            );
+
+        element.id =
+            "clientMessage";
+
+        element.className =
+            "message";
+
+
+        if (createOrderForm) {
+
+            createOrderForm
+                .parentNode
+                .insertBefore(
+                    element,
+                    createOrderForm
                 );
-
-
-            const snapshot =
-                await getDoc(
-                    reference
-                );
-
-
-            if (!snapshot.exists()) {
-
-                await signOut(auth);
-
-                location.href =
-                    "index.html";
-
-                return;
-
-            }
-
-
-            const profile =
-                snapshot.data();
-
-
-            if (
-                profile.role !==
-                "client"
-            ) {
-
-                /*
-                 * Админ или ПВЗ
-                 * не должны находиться
-                 * в кабинете клиента.
-                 */
-
-                if (
-                    profile.role ===
-                    "admin"
-                    ||
-                    profile.role ===
-                    "pvz"
-                ) {
-
-                    location.href =
-                        "admin.html";
-
-                    return;
-
-                }
-
-
-                await signOut(auth);
-
-                location.href =
-                    "index.html";
-
-                return;
-
-            }
-
-
-            document
-                .getElementById(
-                    "userEmail"
-                )
-                .textContent =
-                user.phoneNumber ||
-                "Клиент";
-
-
-            loadOrders();
-
-        }
-
-        catch (error) {
-
-            console.error(error);
 
         }
 
     }
-);
 
 
-/* ================================================= */
-/* ВЫХОД */
-/* ================================================= */
-
-document
-    .getElementById(
-        "logoutButton"
-    )
-    .onclick =
-    async function() {
-
-        await signOut(auth);
-
-        location.href =
-            "index.html";
-
-    };
+    element.textContent =
+        text;
 
 
-/* ================================================= */
-/* СОЗДАНИЕ ЗАКАЗА */
-/* ================================================= */
+    element.className =
+        "message " + type;
 
-document
-    .getElementById(
-        "createOrderForm"
-    )
-    .onsubmit =
-    async function(event) {
-
-        event.preventDefault();
+}
 
 
-        const name =
-            document
-                .getElementById(
-                    "productName"
-                )
-                .value
-                .trim();
+/* ==========================================
+   СОЗДАНИЕ НОМЕРА ЗАКАЗА
+========================================== */
+
+function generateOrderNumber() {
+
+    const now =
+        new Date();
 
 
-        const description =
-            document
-                .getElementById(
-                    "productDescription"
-                )
-                .value
-                .trim();
+    const year =
+        now.getFullYear();
 
 
-        if (!name) {
-
-            alert(
-                "Введите название товара."
-            );
-
-            return;
-
-        }
+    const month =
+        String(
+            now.getMonth() + 1
+        ).padStart(
+            2,
+            "0"
+        );
 
 
-        const orderNumber =
-            "PVZ-"
-            +
-            Date.now()
-                .toString()
-                .slice(-8);
+    const day =
+        String(
+            now.getDate()
+        ).padStart(
+            2,
+            "0"
+        );
 
 
-        try {
+    const random =
+        Math.floor(
+            100000 +
+            Math.random() * 900000
+        );
 
-            await addDoc(
-                collection(
-                    db,
-                    "orders"
-                ),
-                {
 
-                    orderNumber,
+    return (
+        "PVZ-" +
+        year +
+        month +
+        day +
+        "-" +
+        random
+    );
+
+}
+
+
+/* ==========================================
+   СОЗДАНИЕ ЗАКАЗА
+========================================== */
+
+if (createOrderForm) {
+
+    createOrderForm.addEventListener(
+        "submit",
+        async function(event) {
+
+            event.preventDefault();
+
+
+            const productName =
+                productNameInput
+                    ? productNameInput.value.trim()
+                    : "";
+
+
+            const description =
+                productDescriptionInput
+                    ? productDescriptionInput.value.trim()
+                    : "";
+
+
+            if (!productName) {
+
+                showMessage(
+                    "Введите название товара."
+                );
+
+                return;
+
+            }
+
+
+            try {
+
+                showMessage(
+                    "Создаём заказ..."
+                );
+
+
+                const orderNumber =
+                    generateOrderNumber();
+
+
+                const orderData = {
+
+                    orderNumber:
+                        orderNumber,
 
                     userId:
-                        currentUser.uid,
+                        currentUser.id,
 
                     customerPhone:
-                        currentUser.phoneNumber,
+                        currentUser.phone,
 
                     productName:
-                        name,
+                        productName,
 
-                    description,
+                    description:
+                        description,
 
                     status:
                         "created",
@@ -242,104 +333,73 @@ document
                     updatedAt:
                         serverTimestamp()
 
-                }
-            );
+                };
 
 
-            document
-                .getElementById(
-                    "createOrderForm"
-                )
-                .reset();
+                const orderReference =
+                    await addDoc(
+                        collection(
+                            db,
+                            "orders"
+                        ),
+                        orderData
+                    );
 
 
-            alert(
-                "Заказ создан: "
-                + orderNumber
-            );
-
-        }
-
-        catch (error) {
-
-            alert(
-                "Ошибка создания заказа: "
-                + error.message
-            );
-
-        }
-
-    };
-
-
-/* ================================================= */
-/* ЗАГРУЗКА ЗАКАЗОВ */
-/* ================================================= */
-
-function loadOrders() {
-
-    const q =
-        query(
-
-            collection(
-                db,
-                "orders"
-            ),
-
-            where(
-                "userId",
-                "==",
-                currentUser.uid
-            )
-
-        );
-
-
-    onSnapshot(
-        q,
-        function(snapshot) {
-
-            const orders = [];
-
-
-            snapshot.forEach(
-                function(orderDoc) {
-
-                    orders.push({
-
-                        id:
-                            orderDoc.id,
-
-                        ...orderDoc.data()
-
-                    });
-
-                }
-            );
-
-
-            const container =
-                document.getElementById(
-                    "ordersList"
+                showMessage(
+                    "Заказ успешно создан."
                 );
 
 
-            if (!orders.length) {
+                if (productNameInput) {
 
-                container.innerHTML =
-                    "<p>Заказов пока нет.</p>";
+                    productNameInput.value =
+                        "";
 
-                return;
+                }
+
+
+                if (productDescriptionInput) {
+
+                    productDescriptionInput.value =
+                        "";
+
+                }
+
+
+                await loadOrders();
+
+
+                /*
+                 * Переходим на страницу
+                 * созданного заказа
+                 */
+
+                setTimeout(
+                    function() {
+
+                        location.href =
+                            "order.html?id=" +
+                            encodeURIComponent(
+                                orderReference.id
+                            );
+
+                    },
+                    500
+                );
+
+
+            } catch (error) {
+
+                console.error(error);
+
+
+                showMessage(
+                    "Не удалось создать заказ: " +
+                    error.message
+                );
 
             }
-
-
-            container.innerHTML =
-                orders
-                    .map(
-                        orderCard
-                    )
-                    .join("");
 
         }
     );
@@ -347,46 +407,189 @@ function loadOrders() {
 }
 
 
-/* ================================================= */
-/* КАРТОЧКА ЗАКАЗА */
-/* ================================================= */
+/* ==========================================
+   ЗАГРУЗКА ЗАКАЗОВ КЛИЕНТА
+========================================== */
 
-function orderCard(order) {
+async function loadOrders() {
+
+    if (!ordersList) {
+        return;
+    }
+
+
+    ordersList.innerHTML =
+        "<p>Загрузка заказов...</p>";
+
+
+    try {
+
+        /*
+         * Получаем заказы только
+         * текущего клиента.
+         */
+
+        const ordersQuery =
+            query(
+                collection(
+                    db,
+                    "orders"
+                ),
+                where(
+                    "userId",
+                    "==",
+                    currentUser.id
+                )
+            );
+
+
+        const snapshot =
+            await getDocs(
+                ordersQuery
+            );
+
+
+        const orders =
+            snapshot.docs.map(
+                function(document) {
+
+                    return {
+
+                        id:
+                            document.id,
+
+                        ...document.data()
+
+                    };
+
+                }
+            );
+
+
+        /*
+         * Сортировка на стороне сайта.
+         * Так не требуется индекс Firestore.
+         */
+
+        orders.sort(
+            function(a, b) {
+
+                const aTime =
+                    a.createdAt &&
+                    a.createdAt.toMillis
+                        ? a.createdAt.toMillis()
+                        : 0;
+
+
+                const bTime =
+                    b.createdAt &&
+                    b.createdAt.toMillis
+                        ? b.createdAt.toMillis()
+                        : 0;
+
+
+                return bTime - aTime;
+
+            }
+        );
+
+
+        if (orders.length === 0) {
+
+            ordersList.innerHTML =
+                "<p class='muted'>" +
+                "У вас пока нет заказов." +
+                "</p>";
+
+            return;
+
+        }
+
+
+        ordersList.innerHTML =
+            orders
+                .map(
+                    createOrderCard
+                )
+                .join("");
+
+
+    } catch (error) {
+
+        console.error(error);
+
+
+        ordersList.innerHTML =
+            "<p>" +
+            "Ошибка загрузки заказов: " +
+            escapeHtml(
+                error.message
+            ) +
+            "</p>";
+
+    }
+
+}
+
+
+/* ==========================================
+   КАРТОЧКА ЗАКАЗА
+========================================== */
+
+function createOrderCard(order) {
+
+    const status =
+        statusNames[
+            order.status
+        ] ||
+        order.status ||
+        "Неизвестно";
+
 
     return `
 
         <div class="order-card">
 
-            <div>
+            <h3>
+                ${escapeHtml(
+                    order.orderNumber
+                )}
+            </h3>
 
-                <strong>
-                    ${order.orderNumber}
-                </strong>
+            <p>
+                <strong>Товар:</strong>
+                ${escapeHtml(
+                    order.productName
+                )}
+            </p>
 
-                <div>
-                    ${escapeHtml(
-                        order.productName
-                    )}
-                </div>
+            <p>
+                <strong>Статус:</strong>
+                ${escapeHtml(
+                    status
+                )}
+            </p>
 
-                <span class="status-badge">
+            ${
+                order.description
+                    ? `
+                    <p>
+                        <strong>Описание:</strong>
+                        ${escapeHtml(
+                            order.description
+                        )}
+                    </p>
+                    `
+                    : ""
+            }
 
-                    ${getStatus(
-                        order.status
-                    )}
+            <button
+                class="button"
+                onclick="openOrder('${order.id}')">
 
-                </span>
+                Открыть заказ
 
-            </div>
-
-
-            <a
-                class="button secondary"
-                href="order.html?id=${order.id}">
-
-                Открыть
-
-            </a>
+            </button>
 
         </div>
 
@@ -395,52 +598,54 @@ function orderCard(order) {
 }
 
 
-/* ================================================= */
-/* СТАТУС */
-/* ================================================= */
+/* ==========================================
+   ОТКРЫТИЕ ЗАКАЗА
+========================================== */
 
-function getStatus(status) {
+window.openOrder =
+    function(orderId) {
 
-    const statuses = {
-
-        created:
-            "Создан",
-
-        waiting:
-            "Ожидает поступления",
-
-        arrived:
-            "Прибыл в ПВЗ",
-
-        ready:
-            "Готов к выдаче",
-
-        issued:
-            "Выдан"
+        location.href =
+            "order.html?id=" +
+            encodeURIComponent(
+                orderId
+            );
 
     };
 
 
-    return (
-        statuses[status]
-        ||
-        status
+/* ==========================================
+   ВЫХОД
+========================================== */
+
+const logoutButton =
+    document.getElementById(
+        "logoutButton"
+    );
+
+
+if (logoutButton) {
+
+    logoutButton.addEventListener(
+        "click",
+        function() {
+
+            localStorage.removeItem(
+                "pvzUser"
+            );
+
+
+            location.href =
+                "index.html";
+
+        }
     );
 
 }
 
 
-/* ================================================= */
-/* БЕЗОПАСНЫЙ ТЕКСТ */
-/* ================================================= */
+/* ==========================================
+   ЗАПУСК
+========================================== */
 
-function escapeHtml(value) {
-
-    return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-
-}
+loadOrders();
