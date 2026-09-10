@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>PVZ — Клиент</title>
+
+    <link rel="stylesheet"
+          href="css/main.css">
+
+    <link rel="stylesheet"
+          href="css/client.css">
+
+    <script
+        type="module"
+        src="js/client.js">
+    </script>
+
+</head>
+
+<body>
+
+<header>
+
+    <div class="logo">
+        PVZ
+    </div>
+
+    <nav>
+
+        <a class="active"
+           href="client.html">
+            Мои заказы
+        </a>
+
+        <a href="scanner.html">
+            QR
+        </a>
+
+        <button id="logoutButton">
+            Выйти
+        </button>
+
+    </nav>
+
+</header>
+
+
+<main class="container">
+
+    <section class="welcome">
+
+        <div>
+
+            <div class="eyebrow">
+                ЛИЧНЫЙ КАБИНЕТ
+            </div>
+
+            <h1>
+                Мои заказы
+            </h1>
+
+            <p id="userEmail"
+               class="muted">
+                Загрузка...
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <section class="panel">
+
+        <div class="section-header">
+
+            <h2>
+                Создать заказ
+            </h2>
+
+        </div>
+
+
+        <form id="createOrderForm">
+
+            <input
+                id="productName"
+                required
+                placeholder="Название товара">
+
+
+            <input
+                id="productDescription"
+                placeholder="Описание">
+
+
+            <button
+                class="button primary"
+                type="submit">
+
+                Создать заказ
+
+            </button>
+
+        </form>
+
+    </section>
+
+
+    <section class="panel">
+
+        <h2>
+            Мои заказы
+        </h2>
+
+        <div id="ordersList">
+            Загрузка...
+        </div>
+
+    </section>
+
+</main>
+
+
+<footer>
+    PVZ
+</footer>
+
+</body>
+</html>
