@@ -18,68 +18,41 @@
     <style>
 
         .login-tabs {
-
             display: grid;
-
-            grid-template-columns:
-                repeat(3, 1fr);
-
+            grid-template-columns: repeat(3, 1fr);
             gap: 6px;
-
             background: #eef1f5;
-
             padding: 5px;
-
             border-radius: 10px;
-
             margin-bottom: 20px;
         }
 
-
         .login-tab {
-
             border: 0;
-
             background: transparent;
-
             padding: 11px 5px;
-
             border-radius: 7px;
-
             cursor: pointer;
-
             font-weight: 700;
         }
 
-
         .login-tab.active {
-
             background: white;
-
-            box-shadow:
-                0 2px 8px rgba(0,0,0,.08);
+            box-shadow: 0 2px 8px rgba(0,0,0,.08);
         }
 
-
         .login-section {
-
             display: none;
         }
 
-
         .login-section.active {
-
             display: block;
         }
 
-
         .message {
-
             margin-top: 15px;
-
             text-align: center;
-
-            min-height: 20px;
+            min-height: 22px;
         }
 
     </style>
@@ -158,8 +131,7 @@
             <p class="muted">
 
                 Введите номер телефона.
-
-                SMS-код не требуется.
+                Код подтверждения не нужен.
 
             </p>
 
@@ -183,7 +155,7 @@
         </div>
 
 
-        <!-- АДМИН -->
+        <!-- АДМИНИСТРАТОР -->
 
         <div
             id="adminSection"
