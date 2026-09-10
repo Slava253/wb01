@@ -1,92 +1,62 @@
+import {
+    doc,
+    getDocs,
+    collection,
+    query,
+    where,
+    updateDoc,
+    serverTimestamp
+}
+from
+"https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+import {
+    db
+}
+from "./firebase.js";
+
+
 let scanner = null;
 
-let cameraRunning = false;
-
-let lastCode = "";
+let running = false;
 
 
-function $(id) {
-
-    return document.getElementById(id);
-
-}
-
-
-/* ПОКАЗАТЬ РЕЗУЛЬТАТ */
-
-function showResult(code, automatic) {
-
-    const clean =
-        String(code).trim();
-
-    if (!clean) {
-        return;
-    }
-
-    lastCode = clean;
+const message =
+    document.getElementById(
+        "scannerMessage"
+    );
 
 
-    $("result").className =
-        "result-value";
-
-    $("result").textContent =
-        clean;
-
-
-    $("copyButton").disabled =
-        false;
-
-    $("saveButton").disabled =
-        false;
+const result =
+    document.getElementById(
+        "scanResult"
+    );
 
 
-    $("scanMessage").textContent =
-        "Код успешно распознан.";
-
-
-    $("cameraState").textContent =
-        "Код найден";
-
-
-    PVZ.beep();
-
-
-    if (
-        automatic &&
-        PVZ.getSettings().autosave
-    ) {
-
-        PVZ.add(clean);
-
-    }
-
-}
-
-
-/* ЗАПУСК КАМЕРЫ */
-
-async function startCamera() {
+async function startScanner() {
 
     if (
         typeof Html5Qrcode ===
         "undefined"
     ) {
 
-        $("scanMessage").textContent =
-            "Сканер ещё загружается. Проверьте интернет и обновите страницу.";
+        message.textContent =
+            "Библиотека сканера ещё загружается.";
 
         return;
 
     }
 
 
-    if (cameraRunning) {
+    if (running) {
         return;
     }
 
 
     scanner =
-        new Html5Qrcode("reader");
+        new Html5Qrcode(
+            "reader"
+        );
 
 
     try {
@@ -98,25 +68,18 @@ async function startCamera() {
         if (!cameras.length) {
 
             throw new Error(
-                "Камера не найдена"
+                "Камера не найдена."
             );
 
         }
 
 
-        /*
-         * Берём первую доступную камеру.
-         */
-
-        const cameraId =
-            cameras[0].id;
-
-
         await scanner.start(
 
-            cameraId,
+            cameras[0].id,
 
             {
+
                 fps: 10,
 
                 qrbox: {
@@ -126,72 +89,49 @@ async function startCamera() {
 
             },
 
-            function (decodedText) {
+            handleCode,
 
-                showResult(
-                    decodedText,
-                    true
-                );
-
-            },
-
-            function () {
-
-                // Ничего не делаем,
-                // когда код не найден.
-
-            }
+            function () {}
 
         );
 
 
-        cameraRunning = true;
+        running = true;
 
 
-        $("startButton").disabled =
+        document
+            .getElementById(
+                "startScanner"
+            )
+            .disabled =
             true;
 
-        $("stopButton").disabled =
+
+        document
+            .getElementById(
+                "stopScanner"
+            )
+            .disabled =
             false;
 
 
-        $("cameraState").textContent =
-            "Камера включена";
-
-
-        $("scanMessage").textContent =
+        message.textContent =
             "Наведите камеру на QR-код.";
 
     }
 
     catch (error) {
 
-        $("cameraState").textContent =
-            "Ошибка";
-
-
-        $("scanMessage").textContent =
-            "Не удалось запустить камеру: "
+        message.textContent =
+            "Ошибка камеры: "
             + error.message;
-
-
-        try {
-
-            await scanner.clear();
-
-        } catch (_) {}
-
-
-        scanner = null;
 
     }
 
 }
 
 
-/* ОСТАНОВКА */
-
-async function stopCamera() {
+async function stopScanner() {
 
     if (!scanner) {
         return;
@@ -204,7 +144,9 @@ async function stopCamera() {
 
         await scanner.clear();
 
-    } catch (error) {
+    }
+
+    catch (error) {
 
         console.log(error);
 
@@ -213,120 +155,192 @@ async function stopCamera() {
 
     scanner = null;
 
-    cameraRunning = false;
+    running = false;
 
 
-    $("startButton").disabled =
+    document
+        .getElementById(
+            "startScanner"
+        )
+        .disabled =
         false;
 
-    $("stopButton").disabled =
+
+    document
+        .getElementById(
+            "stopScanner"
+        )
+        .disabled =
         true;
-
-
-    $("cameraState").textContent =
-        "Остановлена";
-
-
-    $("scanMessage").textContent =
-        "Камера остановлена.";
 
 }
 
 
-/* ПРИ ЗАГРУЗКЕ */
+async function handleCode(code) {
 
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
-
-
-        $("startButton").onclick =
-            startCamera;
+    result.textContent =
+        code;
 
 
-        $("stopButton").onclick =
-            stopCamera;
+    message.textContent =
+        "Ищем заказ...";
 
 
-        /*
-         * РУЧНОЙ ВВОД
-         */
+    try {
 
-        $("manualForm").onsubmit =
-            function (event) {
+        const q =
+            query(
 
-                event.preventDefault();
+                collection(
+                    db,
+                    "orders"
+                ),
 
+                where(
+                    "orderNumber",
+                    "==",
+                    code
+                )
 
-                const value =
-                    $("manualInput").value;
-
-
-                if (value.trim()) {
-
-                    showResult(
-                        value,
-                        false
-                    );
-
-                }
-
-            };
+            );
 
 
-        /*
-         * КОПИРОВАНИЕ
-         */
-
-        $("copyButton").onclick =
-            async function () {
-
-                if (!lastCode) {
-                    return;
-                }
+        const snapshot =
+            await getDocs(q);
 
 
-                try {
+        if (snapshot.empty) {
 
-                    await navigator
-                        .clipboard
-                        .writeText(lastCode);
+            message.textContent =
+                "Заказ с таким номером не найден.";
+
+            return;
+
+        }
 
 
-                    $("scanMessage").textContent =
-                        "Код скопирован.";
+        const order =
+            snapshot.docs[0];
 
-                }
 
-                catch (error) {
-
-                    $("scanMessage").textContent =
-                        "Не удалось скопировать код.";
-
-                }
-
-            };
+        const orderData =
+            order.data();
 
 
         /*
-         * СОХРАНЕНИЕ
+         * Если заказ прибыл,
+         * переводим его в готовый.
          */
 
-        $("saveButton").onclick =
+        if (
+            orderData.status ===
+            "arrived"
+        ) {
+
+            await updateDoc(
+
+                doc(
+                    db,
+                    "orders",
+                    order.id
+                ),
+
+                {
+
+                    status:
+                        "ready",
+
+                    updatedAt:
+                        serverTimestamp()
+
+                }
+
+            );
+
+
+            message.textContent =
+                "Заказ найден. Статус: «Готов к выдаче».";
+
+        }
+
+        else {
+
+            message.textContent =
+                "Заказ найден. Статус: "
+                + getStatus(
+                    orderData.status
+                );
+
+        }
+
+
+        /*
+         * Переходим к заказу администратора.
+         */
+
+        setTimeout(
             function () {
 
-                if (!lastCode) {
-                    return;
-                }
+                location.href =
+                    "admin-order.html?id="
+                    + order.id;
 
-
-                PVZ.add(lastCode);
-
-
-                $("scanMessage").textContent =
-                    "Код сохранён в историю.";
-
-            };
+            },
+            1000
+        );
 
     }
-);
+
+    catch (error) {
+
+        message.textContent =
+            "Ошибка: "
+            + error.message;
+
+    }
+
+}
+
+
+function getStatus(status) {
+
+    const statuses = {
+
+        created:
+            "Создан",
+
+        waiting:
+            "Ожидает поступления",
+
+        arrived:
+            "Прибыл в ПВЗ",
+
+        ready:
+            "Готов к выдаче",
+
+        issued:
+            "Выдан"
+
+    };
+
+
+    return statuses[status] ||
+        status;
+
+}
+
+
+document
+    .getElementById(
+        "startScanner"
+    )
+    .onclick =
+    startScanner;
+
+
+document
+    .getElementById(
+        "stopScanner"
+    )
+    .onclick =
+    stopScanner;
