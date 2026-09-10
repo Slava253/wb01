@@ -9,8 +9,16 @@
 <body>
 <div class="app">
 
+  <!-- ===== ЗАГРУЗКА ===== -->
+  <div class="screen active" id="screen-loading">
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <p>Загрузка...</p>
+    </div>
+  </div>
+
   <!-- ===== ВХОД ===== -->
-  <div class="screen active" id="screen-login">
+  <div class="screen" id="screen-login">
     <div class="login-container">
       <div class="logo">
         <div class="logo-icon">ПВЗ</div>
@@ -32,8 +40,8 @@
 
       <form class="login-form" id="form-admin" data-role="admin">
         <h2>Вход администратора</h2>
-        <p class="hint">Демо: логин <b>admin</b>, пароль <b>admin</b>.</p>
-        <input type="text" id="admin-login" placeholder="Логин" autocomplete="username">
+        <p class="hint">Email и пароль из Firebase Authentication.</p>
+        <input type="email" id="admin-email" placeholder="admin@pvz.local" autocomplete="username">
         <input type="password" id="admin-pass" placeholder="Пароль" autocomplete="current-password">
         <button type="submit" class="btn-primary">Войти</button>
       </form>
@@ -92,7 +100,6 @@
       <div class="stats" id="admin-stats"></div>
 
       <div class="admin-grid">
-        <!-- ПВЗ -->
         <section>
           <h3>Пункты выдачи</h3>
           <div class="card">
@@ -104,7 +111,6 @@
           <div class="pvz-list" id="admin-pvz-list"></div>
         </section>
 
-        <!-- Сотрудники -->
         <section>
           <h3>Сотрудники</h3>
           <div class="card">
@@ -124,7 +130,10 @@
   <div class="screen" id="screen-pvz">
     <header class="topbar">
       <div class="brand">ПВЗ · <span id="pvz-name"></span></div>
-      <button class="btn-logout" onclick="logout()">Выйти</button>
+      <div class="user-info">
+        <span id="pvz-emp-display"></span>
+        <button class="btn-logout" onclick="logout()">Выйти</button>
+      </div>
     </header>
 
     <main class="content">
@@ -145,6 +154,8 @@
           </div>
         </div>
         <div class="result" id="receive-result"></div>
+        <h3>Ожидают приёмки</h3>
+        <div class="orders" id="receive-waiting"></div>
         <h3>Принятые на пункте</h3>
         <div class="orders" id="receive-log"></div>
       </section>
@@ -169,7 +180,7 @@
 
 </div>
 
-<script src="js/qrcode.min.js"></script>
-<script src="js/app.js"></script>
+<!-- Firebase SDK (модульный) -->
+<script type="module" src="js/app.js"></script>
 </body>
 </html>
