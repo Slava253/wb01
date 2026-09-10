@@ -18,67 +18,77 @@
     <style>
 
         .login-tabs {
+
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
             gap: 6px;
+
             background: #eef1f5;
+
             padding: 5px;
+
             border-radius: 10px;
+
             margin-bottom: 20px;
         }
 
+
         .login-tab {
+
             border: 0;
+
             background: transparent;
+
             padding: 11px 5px;
+
             border-radius: 7px;
+
             cursor: pointer;
+
             font-weight: 700;
         }
 
+
         .login-tab.active {
+
             background: white;
-            box-shadow: 0 2px 8px rgba(0,0,0,.08);
+
+            box-shadow:
+                0 2px 8px rgba(0,0,0,.08);
         }
 
+
         .login-section {
+
             display: none;
         }
 
+
         .login-section.active {
+
             display: block;
         }
 
-        .phone-row {
-            display: flex;
-            gap: 8px;
-        }
 
-        .phone-row input {
-            margin-bottom: 0;
-        }
+        .message {
 
-        #phoneCode {
-            letter-spacing: 5px;
+            margin-top: 15px;
+
             text-align: center;
-            font-size: 20px;
-        }
 
-        #recaptcha-container {
-            margin: 15px 0;
-            display: flex;
-            justify-content: center;
-        }
-
-        .hidden {
-            display: none !important;
+            min-height: 20px;
         }
 
     </style>
 
 </head>
 
+
 <body>
+
 
 <div class="auth-page">
 
@@ -88,16 +98,20 @@
             PVZ
         </div>
 
+
         <h1>
             Вход
         </h1>
 
-        <p class="muted" style="text-align:center;">
+
+        <p
+            class="muted"
+            style="text-align:center;">
+
             Система пунктов выдачи
+
         </p>
 
-
-        <!-- ВКЛАДКИ -->
 
         <div class="login-tabs">
 
@@ -109,6 +123,7 @@
 
             </button>
 
+
             <button
                 class="login-tab"
                 data-tab="admin">
@@ -116,6 +131,7 @@
                 Админ
 
             </button>
+
 
             <button
                 class="login-tab"
@@ -128,9 +144,7 @@
         </div>
 
 
-        <!-- ====================== -->
         <!-- КЛИЕНТ -->
-        <!-- ====================== -->
 
         <div
             id="clientSection"
@@ -140,62 +154,36 @@
                 Вход клиента
             </h2>
 
+
             <p class="muted">
+
                 Введите номер телефона.
-                Мы отправим SMS-код.
+
+                SMS-код не требуется.
+
             </p>
 
 
             <input
                 id="phoneNumber"
                 type="tel"
-                placeholder="+49 1234567890"
+                placeholder="+491234567890"
                 autocomplete="tel">
 
 
-            <div id="recaptcha-container"></div>
-
-
             <button
-                id="sendCodeButton"
+                id="clientLoginButton"
                 class="button primary"
                 style="width:100%;">
 
-                Получить SMS-код
+                Войти
 
             </button>
-
-
-            <div
-                id="codeSection"
-                class="hidden"
-                style="margin-top:15px;">
-
-                <input
-                    id="phoneCode"
-                    type="text"
-                    inputmode="numeric"
-                    maxlength="6"
-                    placeholder="123456">
-
-
-                <button
-                    id="verifyCodeButton"
-                    class="button primary"
-                    style="width:100%;">
-
-                    Войти
-
-                </button>
-
-            </div>
 
         </div>
 
 
-        <!-- ====================== -->
-        <!-- АДМИНИСТРАТОР -->
-        <!-- ====================== -->
+        <!-- АДМИН -->
 
         <div
             id="adminSection"
@@ -208,7 +196,7 @@
 
             <input
                 id="adminLogin"
-                type="email"
+                type="text"
                 placeholder="Логин">
 
 
@@ -230,9 +218,7 @@
         </div>
 
 
-        <!-- ====================== -->
         <!-- ПВЗ -->
-        <!-- ====================== -->
 
         <div
             id="pvzSection"
@@ -245,7 +231,7 @@
 
             <input
                 id="pvzLogin"
-                type="email"
+                type="text"
                 placeholder="Логин">
 
 
@@ -278,7 +264,12 @@
 </div>
 
 
-<script type="module" src="js/auth.js"></script>
+<script
+    type="module"
+    src="js/auth.js">
+</script>
+
 
 </body>
+
 </html>
