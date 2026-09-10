@@ -5,155 +5,30 @@ service cloud.firestore {
     match /databases/{database}/documents {
 
 
-        /*
-         * ==============================
-         * ПОЛЬЗОВАТЕЛИ
-         * ==============================
-         */
-
         match /users/{userId} {
 
-            /*
-             * Пользователь может видеть
-             * только свой профиль.
-             */
-
-            allow read:
-                if request.auth != null
-                &&
-                request.auth.uid == userId;
-
-
-            /*
-             * Клиент создаёт собственный
-             * профиль после входа по телефону.
-             */
-
-            allow create:
-                if request.auth != null
-                &&
-                request.auth.uid == userId
-                &&
-                request.resource.data.role == "client";
-
-
-            /*
-             * Самостоятельно менять роль
-             * пользователю запрещено.
-             */
-
-            allow update:
-                if request.auth != null
-                &&
-                request.auth.uid == userId
-                &&
-                request.resource.data.role
-                ==
-                resource.data.role;
-
-
-            /*
-             * Администратор может читать
-             * профили пользователей.
-             */
-
-            allow read:
-                if request.auth != null
-                &&
-                get(
-                    /databases/$(database)/documents/users/$(request.auth.uid)
-                ).data.role == "admin";
+            allow read, write: if true;
 
         }
 
 
-        /*
-         * ==============================
-         * ЗАКАЗЫ
-         * ==============================
-         */
-
         match /orders/{orderId} {
 
+            allow read, write: if true;
 
-            /*
-             * Клиент создаёт заказ
-             * только от своего UID.
-             */
-
-            allow create:
-                if request.auth != null
-                &&
-                request.resource.data.userId
-                ==
-                request.auth.uid;
+        }
 
 
-            /*
-             * Клиент читает только
-             * свои заказы.
-             *
-             * Админ и ПВЗ читают заказы.
-             */
+        match /pvz/{pvzId} {
 
-            allow read:
-                if request.auth != null
-                &&
-                (
-                    resource.data.userId
-                    ==
-                    request.auth.uid
+            allow read, write: if true;
 
-                    ||
-
-                    get(
-                        /databases/$(database)/documents/users/$(request.auth.uid)
-                    ).data.role
-                    ==
-                    "admin"
-
-                    ||
-
-                    get(
-                        /databases/$(database)/documents/users/$(request.auth.uid)
-                    ).data.role
-                    ==
-                    "pvz"
-                );
+        }
 
 
-            /*
-             * Изменять статус могут
-             * только админ и ПВЗ.
-             */
+        match /pvzEmployees/{employeeId} {
 
-            allow update:
-                if request.auth != null
-                &&
-                (
-                    get(
-                        /databases/$(database)/documents/users/$(request.auth.uid)
-                    ).data.role
-                    ==
-                    "admin"
-
-                    ||
-
-                    get(
-                        /databases/$(database)/documents/users/$(request.auth.uid)
-                    ).data.role
-                    ==
-                    "pvz"
-                );
-
-
-            /*
-             * Удаление заказов запрещено
-             * через клиентский сайт.
-             */
-
-            allow delete:
-                if false;
+            allow read, write: if true;
 
         }
 
