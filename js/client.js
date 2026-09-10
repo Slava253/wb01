@@ -6,6 +6,8 @@ from
 "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 
 import {
+    doc,
+    getDoc,
     collection,
     addDoc,
     query,
@@ -26,19 +28,129 @@ from "./firebase.js";
 let currentUser = null;
 
 
-const userEmail =
-    document.getElementById("userEmail");
+/* ================================================= */
+/* АВТОРИЗАЦИЯ */
+/* ================================================= */
 
-const ordersList =
-    document.getElementById("ordersList");
+onAuthStateChanged(
+    auth,
+    async function(user) {
+
+        if (!user) {
+
+            location.href =
+                "index.html";
+
+            return;
+
+        }
 
 
+        currentUser = user;
+
+
+        try {
+
+            const reference =
+                doc(
+                    db,
+                    "users",
+                    user.uid
+                );
+
+
+            const snapshot =
+                await getDoc(
+                    reference
+                );
+
+
+            if (!snapshot.exists()) {
+
+                await signOut(auth);
+
+                location.href =
+                    "index.html";
+
+                return;
+
+            }
+
+
+            const profile =
+                snapshot.data();
+
+
+            if (
+                profile.role !==
+                "client"
+            ) {
+
+                /*
+                 * Админ или ПВЗ
+                 * не должны находиться
+                 * в кабинете клиента.
+                 */
+
+                if (
+                    profile.role ===
+                    "admin"
+                    ||
+                    profile.role ===
+                    "pvz"
+                ) {
+
+                    location.href =
+                        "admin.html";
+
+                    return;
+
+                }
+
+
+                await signOut(auth);
+
+                location.href =
+                    "index.html";
+
+                return;
+
+            }
+
+
+            document
+                .getElementById(
+                    "userEmail"
+                )
+                .textContent =
+                user.phoneNumber ||
+                "Клиент";
+
+
+            loadOrders();
+
+        }
+
+        catch (error) {
+
+            console.error(error);
+
+        }
+
+    }
+);
+
+
+/* ================================================= */
 /* ВЫХОД */
+/* ================================================= */
 
 document
-    .getElementById("logoutButton")
+    .getElementById(
+        "logoutButton"
+    )
     .onclick =
-    async function () {
+    async function() {
 
         await signOut(auth);
 
@@ -48,37 +160,52 @@ document
     };
 
 
+/* ================================================= */
 /* СОЗДАНИЕ ЗАКАЗА */
+/* ================================================= */
 
 document
-    .getElementById("createOrderForm")
+    .getElementById(
+        "createOrderForm"
+    )
     .onsubmit =
-    async function (event) {
+    async function(event) {
 
         event.preventDefault();
 
 
         const name =
             document
-                .getElementById("productName")
+                .getElementById(
+                    "productName"
+                )
                 .value
                 .trim();
 
 
         const description =
             document
-                .getElementById("productDescription")
+                .getElementById(
+                    "productDescription"
+                )
                 .value
                 .trim();
 
 
         if (!name) {
+
+            alert(
+                "Введите название товара."
+            );
+
             return;
+
         }
 
 
         const orderNumber =
-            "PVZ-" +
+            "PVZ-"
+            +
             Date.now()
                 .toString()
                 .slice(-8);
@@ -87,7 +214,10 @@ document
         try {
 
             await addDoc(
-                collection(db, "orders"),
+                collection(
+                    db,
+                    "orders"
+                ),
                 {
 
                     orderNumber,
@@ -95,8 +225,8 @@ document
                     userId:
                         currentUser.uid,
 
-                    customerEmail:
-                        currentUser.email,
+                    customerPhone:
+                        currentUser.phoneNumber,
 
                     productName:
                         name,
@@ -117,7 +247,9 @@ document
 
 
             document
-                .getElementById("createOrderForm")
+                .getElementById(
+                    "createOrderForm"
+                )
                 .reset();
 
 
@@ -131,7 +263,7 @@ document
         catch (error) {
 
             alert(
-                "Ошибка: "
+                "Ошибка создания заказа: "
                 + error.message
             );
 
@@ -140,76 +272,45 @@ document
     };
 
 
-/* АВТОРИЗАЦИЯ */
-
-onAuthStateChanged(
-    auth,
-    function (user) {
-
-        if (!user) {
-
-            location.href =
-                "index.html";
-
-            return;
-
-        }
-
-
-        currentUser = user;
-
-
-        userEmail.textContent =
-            user.email;
-
-
-        loadOrders();
-
-    }
-);
-
-
+/* ================================================= */
 /* ЗАГРУЗКА ЗАКАЗОВ */
+/* ================================================= */
 
 function loadOrders() {
 
     const q =
         query(
-            collection(db, "orders"),
+
+            collection(
+                db,
+                "orders"
+            ),
+
             where(
                 "userId",
                 "==",
                 currentUser.uid
             )
+
         );
 
 
     onSnapshot(
         q,
-        function (snapshot) {
-
-            if (snapshot.empty) {
-
-                ordersList.innerHTML =
-                    "<p>Заказов пока нет.</p>";
-
-                return;
-
-            }
-
+        function(snapshot) {
 
             const orders = [];
 
 
             snapshot.forEach(
-                function (doc) {
+                function(orderDoc) {
 
                     orders.push({
 
                         id:
-                            doc.id,
+                            orderDoc.id,
 
-                        ...doc.data()
+                        ...orderDoc.data()
 
                     });
 
@@ -217,23 +318,27 @@ function loadOrders() {
             );
 
 
-            orders.sort(
-                function (a, b) {
-
-                    return (
-                        String(b.orderNumber)
-                        .localeCompare(
-                            String(a.orderNumber)
-                        )
-                    );
-
-                }
-            );
+            const container =
+                document.getElementById(
+                    "ordersList"
+                );
 
 
-            ordersList.innerHTML =
+            if (!orders.length) {
+
+                container.innerHTML =
+                    "<p>Заказов пока нет.</p>";
+
+                return;
+
+            }
+
+
+            container.innerHTML =
                 orders
-                    .map(orderCard)
+                    .map(
+                        orderCard
+                    )
                     .join("");
 
         }
@@ -241,6 +346,10 @@ function loadOrders() {
 
 }
 
+
+/* ================================================= */
+/* КАРТОЧКА ЗАКАЗА */
+/* ================================================= */
 
 function orderCard(order) {
 
@@ -255,11 +364,17 @@ function orderCard(order) {
                 </strong>
 
                 <div>
-                    ${order.productName}
+                    ${escapeHtml(
+                        order.productName
+                    )}
                 </div>
 
                 <span class="status-badge">
-                    ${getStatus(order.status)}
+
+                    ${getStatus(
+                        order.status
+                    )}
+
                 </span>
 
             </div>
@@ -279,6 +394,10 @@ function orderCard(order) {
 
 }
 
+
+/* ================================================= */
+/* СТАТУС */
+/* ================================================= */
 
 function getStatus(status) {
 
@@ -302,7 +421,26 @@ function getStatus(status) {
     };
 
 
-    return statuses[status] ||
-        status;
+    return (
+        statuses[status]
+        ||
+        status
+    );
+
+}
+
+
+/* ================================================= */
+/* БЕЗОПАСНЫЙ ТЕКСТ */
+/* ================================================= */
+
+function escapeHtml(value) {
+
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
 
 }
