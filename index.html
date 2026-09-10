@@ -1,10 +1,55 @@
-<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ПВЗ v2</title><link rel="stylesheet" href="style.css"></head><body>
-<header><div class="logo">ПВЗ <span>v2</span></div><button id="adminOpen" class="light">Администратор</button></header>
-<main><section class="card"><h1>Сканирование заказа</h1><p class="muted">QR-коды и штрихкоды. USB 2D-сканер работает как клавиатура.</p>
-<div class="scan"><input id="code" autofocus placeholder="Отсканируйте или введите код"><button id="check">Проверить</button></div>
-<div class="buttons"><button id="camera">📷 Сканировать камерой</button><button id="stop" class="light hidden">Остановить камеру</button></div>
-<div id="reader" class="hidden"></div><div id="status" class="status neutral">Готов к сканированию</div></section>
-<section class="card"><h2>История</h2><div id="history"></div><button id="clear" class="danger light">Очистить историю</button></section></main>
-<div id="loginModal" class="modal hidden"><div class="modalbox"><button class="x" id="loginClose">×</button><h2>Вход администратора</h2><input id="login" placeholder="Логин"><input id="pass" type="password" placeholder="Пароль"><button id="loginBtn">Войти</button><p id="loginErr" class="err"></p></div></div>
-<div id="adminModal" class="modal hidden"><div class="modalbox wide"><button class="x" id="adminClose">×</button><h2>Панель администратора</h2><div id="stats"></div><button id="logout" class="danger">Выйти</button></div></div>
-<script src="https://unpkg.com/html5-qrcode" defer></script><script src="app.js" defer></script></body></html>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>PVZ Scanner 2D</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <header>
+        <h1>PVZ Scanner 2D</h1>
+        <p>Сканер кодов пункта выдачи</p>
+    </header>
+
+    <main>
+
+        <section class="scanner">
+            <h2>Сканирование</h2>
+
+            <div id="scanner-box">
+                <div class="scan-line"></div>
+                <span>Область сканирования</span>
+            </div>
+
+            <button id="scanButton">
+                Сканировать
+            </button>
+        </section>
+
+        <section class="result">
+            <h2>Результат</h2>
+
+            <div id="resultBox">
+                Код ещё не отсканирован
+            </div>
+
+            <button id="clearButton">
+                Очистить
+            </button>
+        </section>
+
+    </main>
+
+    <footer>
+        PVZ Scanner 2D
+    </footer>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
