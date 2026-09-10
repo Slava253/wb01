@@ -531,4 +531,211 @@ async function receiveSubmit() {
   const cell = assignCell();
 
   try {
-    await updateDoc(doc
+    await updateDoc(doc(db, 'orders', order.id), {
+      cell,
+      status: 'storage',
+      receivedAt: Date.now()
+    });
+
+    resultBox.className = 'result ok';
+    resultBox.textContent = `✅ ${order.id} принят. Ячейка: ${cell}`;
+    speak(`Заказ принят. Ячейка ${cell.split('-').join(' ')}`);
+
+    input.value = '';
+    input.focus();
+  } catch (err) {
+    console.error(err);
+    resultBox.className = 'result err';
+    resultBox.textContent = '❌ Ошибка: ' + err.message;
+  }
+}
+
+function assignCell() {
+  const used = new Set(
+    DB.orders.filter(o => o.pvz === currentPointId && o.cell).map(o => o.cell)
+  );
+  const zones = ['A','B','C','D'];
+  for (const z of zones) {
+    for (let n = 1; n <= 30; n++) {
+      const cell = z + '-' + String(n).padStart(2,'0');
+      if (!used.has(cell)) return cell;
+    }
+  }
+  return 'A-99';
+}
+
+function simulateReceiveScan() {
+  const candidate = DB.orders.find(o => o.pvz === currentPointId && o.status === 'waiting');
+  if (!candidate) {
+    const rb = $('#receive-result');
+    rb.className = 'result err';
+    rb.textContent = '❌ Нет заказов, ожидающих приёмки';
+    return;
+  }
+  $('#receive-qr').value = candidate.qr;
+  receiveSubmit();
+}
+
+/* ---- ВЫДАЧА ---- */
+function renderIssueList() {
+  const list = DB.orders
+    .filter(o => o.pvz === currentPointId && o.status === 'storage')
+    .sort((a,b) => (a.cell || '').localeCompare(b.cell || ''));
+
+  const box = $('#issue-list');
+  if (!box) return;
+  if (!list.length) {
+    box.innerHTML = '<p style="color:#888">Нет посылок на складе.</p>';
+    return;
+  }
+  box.innerHTML = list.map(o => `
+    <div class="order-card">
+      <div class="order-info">
+        <h4>${escapeHtml(o.title)}</h4>
+        <p>${o.id} · QR: <b>${o.qr}</b></p>
+        <span class="cell">Ячейка ${o.cell || '—'}</span>
+      </div>
+      <span class="order-status status-storage">На складе</span>
+    </div>
+  `).join('');
+}
+
+async function issueSubmit() {
+  const input = $('#issue-qr');
+  const qr = input.value.replace(/\D/g, '').slice(0,5);
+  const resultBox = $('#issue-result');
+
+  if (qr.length !== 5) {
+    resultBox.className = 'result err';
+    resultBox.textContent = '❌ QR должен содержать ровно 5 цифр';
+    return;
+  }
+
+  const order = DB.orders.find(o => o.qr === qr && o.pvz === currentPointId);
+
+  if (!order) {
+    resultBox.className = 'result err';
+    resultBox.textContent = '❌ Заказ с таким QR не найден на этом пункте';
+    return;
+  }
+  if (order.status === 'issued') {
+    resultBox.className = 'result err';
+    resultBox.textContent = '⚠️ Заказ уже выдан';
+    return;
+  }
+  if (order.status !== 'storage') {
+    resultBox.className = 'result err';
+    resultBox.textContent = '⚠️ Заказ ещё не принят на склад';
+    return;
+  }
+
+  const cell = order.cell || '—';
+
+  try {
+    await updateDoc(doc(db, 'orders', order.id), {
+      status: 'issued',
+      issuedAt: Date.now()
+    });
+
+    resultBox.className = 'result ok';
+    resultBox.textContent = `✅ ${order.id} выдан. Ячейка ${cell} (${order.title})`;
+    speak(`Возьмите посылку из ячейки ${cell.split('-').join(' ')}`);
+
+    input.value = '';
+    input.focus();
+  } catch (err) {
+    console.error(err);
+    resultBox.className = 'result err';
+    resultBox.textContent = '❌ Ошибка: ' + err.message;
+  }
+}
+
+function simulateIssueScan() {
+  const candidates = DB.orders.filter(o => o.pvz === currentPointId && o.status === 'storage');
+  if (!candidates.length) {
+    const rb = $('#issue-result');
+    rb.className = 'result err';
+    rb.textContent = '❌ Нет посылок на складе';
+    return;
+  }
+  const pick = candidates[Math.floor(Math.random() * candidates.length)];
+  $('#issue-qr').value = pick.qr;
+  issueSubmit();
+}
+
+/* ================= ВЫХОД ================= */
+async function logout() {
+  try { await signOut(auth); } catch(e) {}
+  sessionStorage.removeItem('pvz_session');
+  session = null;
+  unsubscribeAll();
+  $('#form-client')?.reset();
+  $('#form-admin')?.reset();
+  $('#form-pvz')?.reset();
+  showScreen('screen-login');
+  // Перезапускаем подписки для логина
+  setTimeout(() => { subscribeAll(); }, 100);
+}
+
+/* ================= ИНИЦИАЛИЗАЦИЯ ================= */
+(async function init() {
+  // Ждём загрузки QR-генератора
+  await new Promise(r => setTimeout(r, 300));
+
+  // Подписываемся на все коллекции
+  subscribeAll();
+
+  // Восстановление сессии из sessionStorage
+  const raw = sessionStorage.getItem('pvz_session');
+  if (raw) {
+    try {
+      session = JSON.parse(raw);
+      if (session.role === 'client') {
+        renderClient(session.phone);
+        showScreen('screen-client');
+        return;
+      }
+      if (session.role === 'admin') {
+        // Проверяем что Firebase Auth тоже видит пользователя
+        const user = auth.currentUser;
+        if (user) {
+          renderAdmin();
+          showScreen('screen-admin');
+          return;
+        } else {
+          sessionStorage.removeItem('pvz_session');
+        }
+      }
+      if (session.role === 'pvz') {
+        renderPvz(session.pointId);
+        setPvzMode('receive');
+        showScreen('screen-pvz');
+        return;
+      }
+    } catch(e) { sessionStorage.removeItem('pvz_session'); }
+  }
+
+  // Даём подпискам время загрузить данные, потом показываем экран входа
+  setTimeout(() => showScreen('screen-login'), 500);
+})();
+
+/* ================= ENTER ДЛЯ СКАНЕРА ================= */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    if (e.target.id === 'receive-qr') { e.preventDefault(); receiveSubmit(); }
+    if (e.target.id === 'issue-qr')   { e.preventDefault(); issueSubmit(); }
+  }
+});
+
+/* ================= ЭКСПОРТ В WINDOW (для onclick) ================= */
+window.logout = logout;
+window.setPvzMode = setPvzMode;
+window.createOrder = createOrder;
+window.receiveSubmit = receiveSubmit;
+window.issueSubmit = issueSubmit;
+window.simulateReceiveScan = simulateReceiveScan;
+window.simulateIssueScan = simulateIssueScan;
+window.adminAddPvz = adminAddPvz;
+window.adminDeletePvz = adminDeletePvz;
+window.adminAddEmployee = adminAddEmployee;
+window.adminDeleteEmployee = adminDeleteEmployee;
