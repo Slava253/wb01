@@ -1,103 +1,147 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ПВЗ — Система пунктов выдачи</title>
-    <link rel="stylesheet" href="css/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ПВЗ — Система пунктов выдачи</title>
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div class="app" id="app">
-        <!-- ЭКРАН ВХОДА -->
-        <div class="screen active" id="screen-login">
-            <div class="login-container">
-                <div class="logo">
-                    <div class="logo-icon">ПВЗ</div>
-                    <h1>Система пунктов выдачи</h1>
-                </div>
+<div class="app">
 
-                <div class="role-tabs">
-                    <button class="role-tab active" data-role="client">Клиент</button>
-                    <button class="role-tab" data-role="admin">Админ</button>
-                    <button class="role-tab" data-role="pvz">ПВЗ</button>
-                </div>
+  <!-- ===== ВХОД ===== -->
+  <div class="screen active" id="screen-login">
+    <div class="login-container">
+      <div class="logo">
+        <div class="logo-icon">ПВЗ</div>
+        <h1>Система пунктов выдачи</h1>
+      </div>
 
-                <!-- Форма клиента -->
-                <form class="login-form active" id="form-client" data-role="client">
-                    <h2>Вход клиента</h2>
-                    <p class="hint">Введите номер телефона. Код подтверждения не нужен.</p>
-                    <input type="tel" id="client-phone" placeholder="+7 (___) ___-__-__" required>
-                    <button type="submit" class="btn-primary">Войти</button>
-                </form>
+      <div class="role-tabs">
+        <button class="role-tab active" data-role="client">Клиент</button>
+        <button class="role-tab" data-role="admin">Админ</button>
+        <button class="role-tab" data-role="pvz">ПВЗ</button>
+      </div>
 
-                <!-- Форма админа -->
-                <form class="login-form" id="form-admin" data-role="admin">
-                    <h2>Вход администратора</h2>
-                    <p class="hint">Введите логин и пароль.</p>
-                    <input type="text" id="admin-login" placeholder="Логин" required>
-                    <input type="password" id="admin-pass" placeholder="Пароль" required>
-                    <button type="submit" class="btn-primary">Войти</button>
-                </form>
+      <!-- Клиент -->
+      <form class="login-form active" id="form-client" data-role="client">
+        <h2>Вход клиента</h2>
+        <p class="hint">Введите номер телефона. Код подтверждения не нужен.</p>
+        <input type="tel" id="client-phone" placeholder="+7 (900) 000-00-00" autocomplete="tel">
+        <button type="submit" class="btn-primary">Войти</button>
+      </form>
 
-                <!-- Форма сотрудника ПВЗ -->
-                <form class="login-form" id="form-pvz" data-role="pvz">
-                    <h2>Вход сотрудника ПВЗ</h2>
-                    <p class="hint">Выберите пункт выдачи и введите код.</p>
-                    <select id="pvz-point">
-                        <option value="pvz-001">ПВЗ №001 — ул. Ленина, 10</option>
-                        <option value="pvz-002">ПВЗ №002 — пр. Мира, 25</option>
-                        <option value="pvz-003">ПВЗ №003 — ул. Гагарина, 7</option>
-                    </select>
-                    <input type="text" id="pvz-code" placeholder="Код сотрудника" required>
-                    <button type="submit" class="btn-primary">Войти</button>
-                </form>
+      <!-- Админ -->
+      <form class="login-form" id="form-admin" data-role="admin">
+        <h2>Вход администратора</h2>
+        <p class="hint">Демо: любой логин и пароль.</p>
+        <input type="text" id="admin-login" placeholder="Логин" autocomplete="username">
+        <input type="password" id="admin-pass" placeholder="Пароль" autocomplete="current-password">
+        <button type="submit" class="btn-primary">Войти</button>
+      </form>
 
-                <div class="error" id="error-msg"></div>
-            </div>
-        </div>
+      <!-- ПВЗ -->
+      <form class="login-form" id="form-pvz" data-role="pvz">
+        <h2>Вход сотрудника ПВЗ</h2>
+        <p class="hint">Выберите пункт и введите код (демо: любой).</p>
+        <select id="pvz-point">
+          <option value="pvz-001">ПВЗ №001 — ул. Ленина, 10</option>
+          <option value="pvz-002">ПВЗ №002 — пр. Мира, 25</option>
+          <option value="pvz-003">ПВЗ №003 — ул. Гагарина, 7</option>
+        </select>
+        <input type="text" id="pvz-code" placeholder="Код сотрудника" autocomplete="off">
+        <button type="submit" class="btn-primary">Войти</button>
+      </form>
 
-        <!-- КАБИНЕТ КЛИЕНТА -->
-        <div class="screen" id="screen-client">
-            <header class="topbar">
-                <div class="brand">ПВЗ · Клиент</div>
-                <div class="user-info">
-                    <span id="client-phone-display"></span>
-                    <button class="btn-logout" onclick="logout()">Выйти</button>
-                </div>
-            </header>
-            <main class="content">
-                <h2>Мои заказы</h2>
-                <div class="orders" id="client-orders"></div>
-            </main>
-        </div>
-
-        <!-- КАБИНЕТ АДМИНА -->
-        <div class="screen" id="screen-admin">
-            <header class="topbar">
-                <div class="brand">ПВЗ · Администратор</div>
-                <button class="btn-logout" onclick="logout()">Выйти</button>
-            </header>
-            <main class="content">
-                <h2>Панель управления</h2>
-                <div class="stats" id="admin-stats"></div>
-                <h3>Пункты выдачи</h3>
-                <div class="pvz-list" id="admin-pvz-list"></div>
-            </main>
-        </div>
-
-        <!-- КАБИНЕТ ПВЗ -->
-        <div class="screen" id="screen-pvz">
-            <header class="topbar">
-                <div class="brand">ПВЗ · <span id="pvz-name"></span></div>
-                <button class="btn-logout" onclick="logout()">Выйти</button>
-            </header>
-            <main class="content">
-                <h2>Заказы на пункте</h2>
-                <div class="orders" id="pvz-orders"></div>
-            </main>
-        </div>
+      <div class="error" id="error-msg"></div>
     </div>
+  </div>
 
-    <script src="js/app.js"></script>
+  <!-- ===== КЛИЕНТ ===== -->
+  <div class="screen" id="screen-client">
+    <header class="topbar">
+      <div class="brand">ПВЗ · Клиент</div>
+      <div class="user-info">
+        <span id="client-phone-display"></span>
+        <button class="btn-logout" onclick="logout()">Выйти</button>
+      </div>
+    </header>
+    <main class="content">
+      <h2>Мои заказы</h2>
+      <div class="orders" id="client-orders"></div>
+    </main>
+  </div>
+
+  <!-- ===== АДМИН ===== -->
+  <div class="screen" id="screen-admin">
+    <header class="topbar">
+      <div class="brand">ПВЗ · Администратор</div>
+      <button class="btn-logout" onclick="logout()">Выйти</button>
+    </header>
+    <main class="content">
+      <h2>Панель управления</h2>
+      <div class="stats" id="admin-stats"></div>
+      <h3>Пункты выдачи</h3>
+      <div class="pvz-list" id="admin-pvz-list"></div>
+    </main>
+  </div>
+
+  <!-- ===== ПВЗ ===== -->
+  <div class="screen" id="screen-pvz">
+    <header class="topbar">
+      <div class="brand">ПВЗ · <span id="pvz-name"></span></div>
+      <button class="btn-logout" onclick="logout()">Выйти</button>
+    </header>
+
+    <main class="content">
+      <!-- Кнопки режимов -->
+      <div class="mode-switch">
+        <button class="mode-btn active" id="btn-mode-receive" onclick="setPvzMode('receive')">
+          📦 Приёмка
+        </button>
+        <button class="mode-btn" id="btn-mode-issue" onclick="setPvzMode('issue')">
+          🎁 Выдача
+        </button>
+      </div>
+
+      <!-- Блок ПРИЁМКИ -->
+      <section class="mode-panel active" id="panel-receive">
+        <h2>Приёмка посылок</h2>
+        <div class="scan-card">
+          <label>Отсканируйте QR-код с упаковки (5 цифр)</label>
+          <input type="text" id="receive-qr" class="scan-input"
+                 inputmode="numeric" maxlength="5" placeholder="00000" autocomplete="off">
+          <div class="scan-actions">
+            <button class="btn-primary" onclick="receiveSubmit()">Принять на склад</button>
+            <button class="btn-secondary" onclick="simulateReceiveScan()">📷 Симулировать скан</button>
+          </div>
+        </div>
+        <div class="result" id="receive-result"></div>
+        <h3>Принятые сегодня</h3>
+        <div class="orders" id="receive-log"></div>
+      </section>
+
+      <!-- Блок ВЫДАЧИ -->
+      <section class="mode-panel" id="panel-issue">
+        <h2>Выдача посылок</h2>
+        <div class="scan-card">
+          <label>Отсканируйте QR-код с упаковки (5 цифр)</label>
+          <input type="text" id="issue-qr" class="scan-input"
+                 inputmode="numeric" maxlength="5" placeholder="00000" autocomplete="off">
+          <div class="scan-actions">
+            <button class="btn-primary" onclick="issueSubmit()">Выдать клиенту</button>
+            <button class="btn-secondary" onclick="simulateIssueScan()">📷 Симулировать скан</button>
+          </div>
+        </div>
+        <div class="result" id="issue-result"></div>
+        <h3>Готовы к выдаче на пункте</h3>
+        <div class="orders" id="issue-list"></div>
+      </section>
+    </main>
+  </div>
+
+</div>
+
+<script src="js/app.js"></script>
 </body>
 </html>
