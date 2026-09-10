@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>PVZ ADMIN — Заказ</title>
+
+    <link rel="stylesheet"
+          href="css/main.css">
+
+    <link rel="stylesheet"
+          href="css/admin.css">
+
+    <script
+        type="module"
+        src="js/admin-order.js">
+    </script>
+
+</head>
+
+<body>
+
+<header class="admin-header">
+
+    <div class="logo">
+        PVZ ADMIN
+    </div>
+
+    <nav>
+
+        <a href="admin.html">
+            Заказы
+        </a>
+
+        <a href="scanner.html">
+            Сканер
+        </a>
+
+    </nav>
+
+</header>
+
+
+<main class="container">
+
+    <section class="panel">
+
+        <div class="eyebrow">
+            УПРАВЛЕНИЕ ЗАКАЗОМ
+        </div>
+
+        <h1 id="orderNumber">
+            Загрузка...
+        </h1>
+
+        <hr>
+
+        <p>
+            <b>Товар:</b>
+            <span id="productName">—</span>
+        </p>
+
+        <p>
+            <b>Описание:</b>
+            <span id="description">—</span>
+        </p>
+
+        <p>
+            <b>Клиент:</b>
+            <span id="customer">—</span>
+        </p>
+
+        <p>
+            <b>Текущий статус:</b>
+            <span id="currentStatus">—</span>
+        </p>
+
+
+        <h2>
+            Изменить статус
+        </h2>
+
+
+        <select id="statusSelect">
+
+            <option value="created">
+                Создан
+            </option>
+
+            <option value="waiting">
+                Ожидает поступления
+            </option>
+
+            <option value="arrived">
+                Прибыл в ПВЗ
+            </option>
+
+            <option value="ready">
+                Готов к выдаче
+            </option>
+
+            <option value="issued">
+                Выдан
+            </option>
+
+        </select>
+
+
+        <button
+            id="saveStatus"
+            class="button primary">
+
+            Сохранить статус
+
+        </button>
+
+
+        <div
+            id="message"
+            class="message">
+        </div>
+
+    </section>
+
+</main>
+
+</body>
+</html>
