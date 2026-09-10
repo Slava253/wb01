@@ -2,7 +2,6 @@
 <html lang="ru">
 
 <head>
-
     <meta charset="UTF-8">
 
     <meta
@@ -30,7 +29,7 @@
         .login-tab {
             border: 0;
             background: transparent;
-            padding: 11px 5px;
+            padding: 12px 5px;
             border-radius: 7px;
             cursor: pointer;
             font-weight: 700;
@@ -51,17 +50,15 @@
 
         .message {
             margin-top: 15px;
-            text-align: center;
             min-height: 22px;
+            text-align: center;
         }
 
     </style>
-
 </head>
 
 
 <body>
-
 
 <div class="auth-page">
 
@@ -71,11 +68,9 @@
             PVZ
         </div>
 
-
         <h1>
             Вход
         </h1>
-
 
         <p
             class="muted"
@@ -96,7 +91,6 @@
 
             </button>
 
-
             <button
                 class="login-tab"
                 data-tab="admin">
@@ -104,7 +98,6 @@
                 Админ
 
             </button>
-
 
             <button
                 class="login-tab"
@@ -127,21 +120,15 @@
                 Вход клиента
             </h2>
 
-
             <p class="muted">
-
                 Введите номер телефона.
                 Код подтверждения не нужен.
-
             </p>
-
 
             <input
                 id="phoneNumber"
                 type="tel"
-                placeholder="+491234567890"
-                autocomplete="tel">
-
+                placeholder="+491234567890">
 
             <button
                 id="clientLoginButton"
@@ -155,7 +142,7 @@
         </div>
 
 
-        <!-- АДМИНИСТРАТОР -->
+        <!-- АДМИН -->
 
         <div
             id="adminSection"
@@ -165,18 +152,15 @@
                 Администратор
             </h2>
 
-
             <input
                 id="adminLogin"
                 type="text"
                 placeholder="Логин">
 
-
             <input
                 id="adminPassword"
                 type="password"
                 placeholder="Пароль">
-
 
             <button
                 id="adminLoginButton"
@@ -200,18 +184,15 @@
                 Сотрудник ПВЗ
             </h2>
 
-
             <input
                 id="pvzLogin"
                 type="text"
                 placeholder="Логин">
 
-
             <input
                 id="pvzPassword"
                 type="password"
                 placeholder="Пароль">
-
 
             <button
                 id="pvzLoginButton"
@@ -241,7 +222,5 @@
     src="js/auth.js">
 </script>
 
-
 </body>
-
 </html>
