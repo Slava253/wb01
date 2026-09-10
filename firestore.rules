@@ -6,58 +6,153 @@ service cloud.firestore {
 
 
         /*
+         * ==============================
          * ПОЛЬЗОВАТЕЛИ
+         * ==============================
          */
 
         match /users/{userId} {
 
+            /*
+             * Пользователь может видеть
+             * только свой профиль.
+             */
+
             allow read:
                 if request.auth != null
-                && request.auth.uid == userId;
+                &&
+                request.auth.uid == userId;
+
+
+            /*
+             * Клиент создаёт собственный
+             * профиль после входа по телефону.
+             */
 
             allow create:
                 if request.auth != null
-                && request.auth.uid == userId;
+                &&
+                request.auth.uid == userId
+                &&
+                request.resource.data.role == "client";
+
+
+            /*
+             * Самостоятельно менять роль
+             * пользователю запрещено.
+             */
 
             allow update:
                 if request.auth != null
-                && request.auth.uid == userId;
+                &&
+                request.auth.uid == userId
+                &&
+                request.resource.data.role
+                ==
+                resource.data.role;
+
+
+            /*
+             * Администратор может читать
+             * профили пользователей.
+             */
+
+            allow read:
+                if request.auth != null
+                &&
+                get(
+                    /databases/$(database)/documents/users/$(request.auth.uid)
+                ).data.role == "admin";
 
         }
 
 
         /*
+         * ==============================
          * ЗАКАЗЫ
+         * ==============================
          */
 
         match /orders/{orderId} {
 
+
             /*
-             * Клиент может создать свой заказ.
+             * Клиент создаёт заказ
+             * только от своего UID.
              */
 
             allow create:
                 if request.auth != null
-                && request.resource.data.userId
-                   == request.auth.uid;
+                &&
+                request.resource.data.userId
+                ==
+                request.auth.uid;
 
 
             /*
-             * Клиент может читать только
+             * Клиент читает только
              * свои заказы.
+             *
+             * Админ и ПВЗ читают заказы.
              */
 
             allow read:
                 if request.auth != null
-                && resource.data.userId
-                   == request.auth.uid;
+                &&
+                (
+                    resource.data.userId
+                    ==
+                    request.auth.uid
+
+                    ||
+
+                    get(
+                        /databases/$(database)/documents/users/$(request.auth.uid)
+                    ).data.role
+                    ==
+                    "admin"
+
+                    ||
+
+                    get(
+                        /databases/$(database)/documents/users/$(request.auth.uid)
+                    ).data.role
+                    ==
+                    "pvz"
+                );
 
 
             /*
-             * Обновлять заказ клиенту запрещено.
+             * Изменять статус могут
+             * только админ и ПВЗ.
              */
 
-            allow update, delete:
+            allow update:
+                if request.auth != null
+                &&
+                (
+                    get(
+                        /databases/$(database)/documents/users/$(request.auth.uid)
+                    ).data.role
+                    ==
+                    "admin"
+
+                    ||
+
+                    get(
+                        /databases/$(database)/documents/users/$(request.auth.uid)
+                    ).data.role
+                    ==
+                    "pvz"
+                );
+
+
+            /*
+             * Удаление заказов запрещено
+             * через клиентский сайт.
+             */
+
+            allow delete:
                 if false;
 
         }
