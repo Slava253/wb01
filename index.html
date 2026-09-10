@@ -1,14 +1,81 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
 
     <title>PVZ — Вход</title>
 
-    <link rel="stylesheet" href="css/main.css">
+    <link
+        rel="stylesheet"
+        href="css/main.css">
 
-    <script type="module" src="js/auth.js"></script>
+    <style>
+
+        .login-tabs {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            background: #eef1f5;
+            padding: 5px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .login-tab {
+            border: 0;
+            background: transparent;
+            padding: 11px 5px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .login-tab.active {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,.08);
+        }
+
+        .login-section {
+            display: none;
+        }
+
+        .login-section.active {
+            display: block;
+        }
+
+        .phone-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .phone-row input {
+            margin-bottom: 0;
+        }
+
+        #phoneCode {
+            letter-spacing: 5px;
+            text-align: center;
+            font-size: 20px;
+        }
+
+        #recaptcha-container {
+            margin: 15px 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+    </style>
+
 </head>
 
 <body>
@@ -22,49 +89,196 @@
         </div>
 
         <h1>
-            Пункт выдачи
+            Вход
         </h1>
 
-        <p class="muted">
-            Войдите в систему
+        <p class="muted" style="text-align:center;">
+            Система пунктов выдачи
         </p>
 
-        <input
-            id="email"
-            type="email"
-            placeholder="Email">
 
-        <input
-            id="password"
-            type="password"
-            placeholder="Пароль">
+        <!-- ВКЛАДКИ -->
 
-        <button
-            id="loginButton"
-            class="button primary">
-            Войти
-        </button>
+        <div class="login-tabs">
 
-        <button
-            id="registerButton"
-            class="button secondary">
-            Создать аккаунт
-        </button>
+            <button
+                class="login-tab active"
+                data-tab="client">
 
-        <a
-            href="admin.html"
-            class="admin-link">
-            Вход администратора
-        </a>
+                Клиент
+
+            </button>
+
+            <button
+                class="login-tab"
+                data-tab="admin">
+
+                Админ
+
+            </button>
+
+            <button
+                class="login-tab"
+                data-tab="pvz">
+
+                ПВЗ
+
+            </button>
+
+        </div>
+
+
+        <!-- ====================== -->
+        <!-- КЛИЕНТ -->
+        <!-- ====================== -->
+
+        <div
+            id="clientSection"
+            class="login-section active">
+
+            <h2>
+                Вход клиента
+            </h2>
+
+            <p class="muted">
+                Введите номер телефона.
+                Мы отправим SMS-код.
+            </p>
+
+
+            <input
+                id="phoneNumber"
+                type="tel"
+                placeholder="+49 1234567890"
+                autocomplete="tel">
+
+
+            <div id="recaptcha-container"></div>
+
+
+            <button
+                id="sendCodeButton"
+                class="button primary"
+                style="width:100%;">
+
+                Получить SMS-код
+
+            </button>
+
+
+            <div
+                id="codeSection"
+                class="hidden"
+                style="margin-top:15px;">
+
+                <input
+                    id="phoneCode"
+                    type="text"
+                    inputmode="numeric"
+                    maxlength="6"
+                    placeholder="123456">
+
+
+                <button
+                    id="verifyCodeButton"
+                    class="button primary"
+                    style="width:100%;">
+
+                    Войти
+
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- ====================== -->
+        <!-- АДМИНИСТРАТОР -->
+        <!-- ====================== -->
+
+        <div
+            id="adminSection"
+            class="login-section">
+
+            <h2>
+                Администратор
+            </h2>
+
+
+            <input
+                id="adminLogin"
+                type="email"
+                placeholder="Логин">
+
+
+            <input
+                id="adminPassword"
+                type="password"
+                placeholder="Пароль">
+
+
+            <button
+                id="adminLoginButton"
+                class="button primary"
+                style="width:100%;">
+
+                Войти
+
+            </button>
+
+        </div>
+
+
+        <!-- ====================== -->
+        <!-- ПВЗ -->
+        <!-- ====================== -->
+
+        <div
+            id="pvzSection"
+            class="login-section">
+
+            <h2>
+                Сотрудник ПВЗ
+            </h2>
+
+
+            <input
+                id="pvzLogin"
+                type="email"
+                placeholder="Логин">
+
+
+            <input
+                id="pvzPassword"
+                type="password"
+                placeholder="Пароль">
+
+
+            <button
+                id="pvzLoginButton"
+                class="button primary"
+                style="width:100%;">
+
+                Войти
+
+            </button>
+
+        </div>
+
 
         <div
             id="authMessage"
             class="message">
+
         </div>
 
     </div>
 
 </div>
+
+
+<script type="module" src="js/auth.js"></script>
 
 </body>
 </html>
