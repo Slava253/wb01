@@ -1,21 +1,20 @@
-/* ================= ДАННЫЕ ================= */
-const STORAGE_KEY = 'pvz_db_v2';
-const SESSION_KEY = 'pvz_session_v2';
+/* ================= КОНСТАНТЫ ================= */
+const STORAGE_KEY = 'pvz_db_v3';
+const SESSION_KEY = 'pvz_session_v3';
 
 const DEFAULT_DB = {
+  admin: { login: 'admin', password: 'admin' },
   pvz: [
     { id:'pvz-001', name:'ПВЗ №001', addr:'ул. Ленина, 10', active:true },
-    { id:'pvz-002', name:'ПВЗ №002', addr:'пр. Мира, 25', active:true },
-    { id:'pvz-003', name:'ПВЗ №003', addr:'ул. Гагарина, 7', active:false }
+    { id:'pvz-002', name:'ПВЗ №002', addr:'пр. Мира, 25', active:true }
   ],
-  // Заказы: { id, qr (5 цифр), title, client, pvz, cell, status }
-  // status: 'waiting' | 'storage' | 'ready' | 'issued'
-  orders: [
-    { id:'ORD-1001', qr:'11111', title:'Кроссовки Nike, 42', client:'+7 (900) 111-22-33', pvz:'pvz-001', cell:'A-12', status:'ready' },
-    { id:'ORD-1002', qr:'22222', title:'Футболка белая, L',   client:'+7 (900) 111-22-33', pvz:'pvz-001', cell:null, status:'waiting' },
-    { id:'ORD-1003', qr:'33333', title:'Рюкзак 20л',          client:'+7 (900) 444-55-66', pvz:'pvz-002', cell:'B-04', status:'ready' },
-    { id:'ORD-1004', qr:'44444', title:'Наушники TWS',        client:'+7 (900) 777-88-99', pvz:'pvz-001', cell:'A-03', status:'issued' }
-  ]
+  employees: [
+    { id:'emp-001', name:'Иван Петров', pvz:'pvz-001', code:'1234' },
+    { id:'emp-002', name:'Мария Сидорова', pvz:'pvz-002', code:'5678' }
+  ],
+  // Заказ: { id, qr (5 цифр), title, client, pvz, cell, status, createdAt }
+  // status: 'waiting' (создан клиентом) | 'storage' (принят) | 'issued'
+  orders: []
 };
 
 /* ================= ХРАНИЛИЩЕ ================= */
@@ -38,33 +37,52 @@ function showScreen(id) {
   $$('.screen').forEach(s => s.classList.remove('active'));
   $('#' + id).classList.add('active');
 }
-
 function showError(msg) {
   const el = $('#error-msg');
   el.textContent = msg || '';
   if (msg) setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 3000);
 }
 
-/** Озвучка через Web Speech API */
+/** Озвучка */
 function speak(text) {
   if (!('speechSynthesis' in window)) return;
   try {
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'ru-RU';
-    u.rate = 1;
-    u.pitch = 1;
+    u.lang = 'ru-RU'; u.rate = 1; u.pitch = 1;
     window.speechSynthesis.speak(u);
-  } catch(e) { console.warn('Озвучка недоступна', e); }
+  } catch(e) { console.warn(e); }
 }
 
-/** Генерация следующего ID заказа */
+/** Генерация случайного 5-значного QR (уникального) */
+function generateQR() {
+  const used = new Set(DB.orders.map(o => o.qr));
+  let qr;
+  do {
+    qr = String(Math.floor(10000 + Math.random() * 90000));
+  } while (used.has(qr));
+  return qr;
+}
+
+/** Генерация ID заказа */
 function nextOrderId() {
   const nums = DB.orders
     .map(o => parseInt((o.id.match(/\d+$/) || ['0'])[0], 10))
     .filter(n => !isNaN(n));
   const max = nums.length ? Math.max(...nums) : 1000;
   return 'ORD-' + (max + 1);
+}
+
+/** Отрисовка QR как SVG */
+function renderQR(text) {
+  if (typeof qrcode !== 'function') {
+    console.warn('QR generator не загружен');
+    return '<div style="padding:20px;color:#888">QR недоступен</div>';
+  }
+  const qr = qrcode(0, 'M');
+  qr.addData(text, 'Numeric');
+  qr.make();
+  return qr.createSvgTag(6, 8);
 }
 
 /* ================= ПЕРЕКЛЮЧЕНИЕ РОЛЕЙ ================= */
@@ -78,8 +96,22 @@ $$('.role-tab').forEach(tab => {
   });
 });
 
+/* ================= ЗАПОЛНЕНИЕ SELECT'ОВ ================= */
+function fillPvzSelects() {
+  const active = DB.pvz.filter(p => p.active);
+  const options = active.map(p => `<option value="${p.id}">${p.name} — ${p.addr}</option>`).join('');
+
+  // Вход сотрудника — все ПВЗ (включая закрытые, чтобы можно было зайти)
+  $('#pvz-point').innerHTML = DB.pvz.map(p => `<option value="${p.id}">${p.name} — ${p.addr}</option>`).join('');
+
+  // Клиент — только активные
+  $('#order-pvz').innerHTML = options || '<option value="">— нет активных ПВЗ —</option>';
+
+  // Админ: сотрудники — только активные
+  $('#emp-new-pvz').innerHTML = options || '<option value="">— нет активных ПВЗ —</option>';
+}
+
 /* ================= ВХОД: КЛИЕНТ ================= */
-// Маска телефона — мягкая, не мешает вводу
 const clientPhoneInput = $('#client-phone');
 clientPhoneInput.addEventListener('input', e => {
   const digits = e.target.value.replace(/\D/g, '').slice(0, 11);
@@ -94,14 +126,9 @@ clientPhoneInput.addEventListener('input', e => {
 $('#form-client').addEventListener('submit', e => {
   e.preventDefault();
   const raw = clientPhoneInput.value.replace(/\D/g, '');
-  // ДОСТАТОЧНО 10-11 цифр — не блокируем пользователя
-  if (raw.length < 10) {
-    return showError('Введите номер телефона полностью');
-  }
-  // Нормализуем к виду +7XXXXXXXXXX
+  if (raw.length < 10) return showError('Введите номер телефона полностью');
   const normalized = '+7' + (raw.length === 11 ? raw.slice(1) : raw);
-  const session = { role:'client', phone: normalized };
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ role:'client', phone: normalized }));
   renderClient(normalized);
   showScreen('screen-client');
 });
@@ -111,8 +138,10 @@ $('#form-admin').addEventListener('submit', e => {
   e.preventDefault();
   const login = $('#admin-login').value.trim();
   const pass  = $('#admin-pass').value.trim();
-  if (!login || !pass) return showError('Заполните все поля');
-  localStorage.setItem(SESSION_KEY, JSON.stringify({ role:'admin', login }));
+  if (login !== DB.admin.login || pass !== DB.admin.password) {
+    return showError('Неверный логин или пароль');
+  }
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ role:'admin' }));
   renderAdmin();
   showScreen('screen-admin');
 });
@@ -123,75 +152,212 @@ $('#form-pvz').addEventListener('submit', e => {
   const pointId = $('#pvz-point').value;
   const code    = $('#pvz-code').value.trim();
   if (!code) return showError('Введите код сотрудника');
+
+  const emp = DB.employees.find(x => x.pvz === pointId && x.code === code);
+  if (!emp) return showError('Неверный код для этого пункта');
+
   const point = DB.pvz.find(p => p.id === pointId);
-  const session = { role:'pvz', pointId, pointName: point.name };
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  localStorage.setItem(SESSION_KEY, JSON.stringify({
+    role:'pvz', pointId, pointName: point.name, employeeName: emp.name
+  }));
   renderPvz(pointId);
+  setPvzMode('receive');
   showScreen('screen-pvz');
 });
 
-/* ================= КАБИНЕТ КЛИЕНТА ================= */
+/* ================= КЛИЕНТ: СОЗДАНИЕ ЗАКАЗА ================= */
+function createOrder() {
+  const title = $('#order-title').value.trim();
+  const pvzId = $('#order-pvz').value;
+  const resultBox = $('#order-result');
+
+  if (!title) {
+    resultBox.className = 'result err';
+    resultBox.textContent = '❌ Введите название товара';
+    return;
+  }
+  if (!pvzId) {
+    resultBox.className = 'result err';
+    resultBox.textContent = '❌ Выберите пункт выдачи';
+    return;
+  }
+
+  const session = JSON.parse(localStorage.getItem(SESSION_KEY));
+  const qr = generateQR();
+  const order = {
+    id: nextOrderId(),
+    qr,
+    title,
+    client: session.phone,
+    pvz: pvzId,
+    cell: null,
+    status: 'waiting',
+    createdAt: Date.now()
+  };
+  DB.orders.push(order);
+  saveDB();
+
+  resultBox.className = 'result ok';
+  resultBox.textContent = `✅ Заказ ${order.id} создан! QR: ${qr}`;
+
+  $('#order-title').value = '';
+  renderClient(session.phone);
+}
+
+/* ================= КЛИЕНТ: РЕНДЕР ЗАКАЗОВ ================= */
 function renderClient(phone) {
   $('#client-phone-display').textContent = phone;
-  const orders = DB.orders.filter(o => o.client === phone);
-  const box = $('#client-orders');
+  fillPvzSelects();
 
+  const orders = DB.orders
+    .filter(o => o.client === phone)
+    .sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+  const box = $('#client-orders');
   if (!orders.length) {
     box.innerHTML = '<p style="color:#888">У вас пока нет заказов.</p>';
     return;
   }
 
-  const LABELS = {
-    waiting:'Ожидает поступления',
-    storage:'На складе',
-    ready:'Готов к выдаче',
-    issued:'Выдан'
-  };
-  const CLS = {
-    waiting:'status-waiting',
-    storage:'status-storage',
-    ready:'status-ready',
-    issued:'status-issued'
-  };
+  const LABELS = { waiting:'Ожидает поступления', storage:'На складе', issued:'Выдан' };
+  const CLS    = { waiting:'status-waiting', storage:'status-storage', issued:'status-issued' };
 
   box.innerHTML = orders.map(o => `
     <div class="order-card">
       <div class="order-info">
-        <h4>${o.title}</h4>
-        <p>${o.id} · QR: <b>${o.qr}</b> · ПВЗ: ${DB.pvz.find(p=>p.id===o.pvz)?.name || '—'}</p>
+        <h4>${escapeHtml(o.title)}</h4>
+        <p>${o.id} · ПВЗ: ${escapeHtml(DB.pvz.find(p=>p.id===o.pvz)?.name || '—')}</p>
         ${o.cell ? `<span class="cell">Ячейка ${o.cell}</span>` : ''}
       </div>
-      <span class="order-status ${CLS[o.status]}">${LABELS[o.status]}</span>
+      <div class="qr-block">
+        <div class="qr-wrap">${renderQR(o.qr)}</div>
+        <div class="qr-code-num">QR: <b>${o.qr}</b></div>
+        <span class="order-status ${CLS[o.status]}">${LABELS[o.status]}</span>
+      </div>
     </div>
   `).join('');
 }
 
-/* ================= КАБИНЕТ АДМИНА ================= */
+/* ================= АДМИН: РЕНДЕР ================= */
 function renderAdmin() {
   const total   = DB.orders.length;
-  const ready   = DB.orders.filter(o => o.status === 'ready').length;
   const storage = DB.orders.filter(o => o.status === 'storage').length;
   const issued  = DB.orders.filter(o => o.status === 'issued').length;
+  const waiting = DB.orders.filter(o => o.status === 'waiting').length;
 
   $('#admin-stats').innerHTML = `
     <div class="stat-card"><div class="num">${total}</div><div class="label">Всего заказов</div></div>
-    <div class="stat-card"><div class="num">${ready}</div><div class="label">Готовы к выдаче</div></div>
-    <div class="stat-card"><div class="num">${storage}</div><div class="label">На складе</div></div>
+    <div class="stat-card"><div class="num">${waiting}</div><div class="label">Ожидают приёмки</div></div>
+    <div class="stat-card"><div class="num">${storage}</div><div class="label">На складах</div></div>
     <div class="stat-card"><div class="num">${issued}</div><div class="label">Выдано</div></div>
   `;
 
+  // Список ПВЗ с кнопкой удаления
   $('#admin-pvz-list').innerHTML = DB.pvz.map(p => `
     <div class="pvz-item">
       <div>
-        <div class="name">${p.name}</div>
-        <div class="addr">${p.addr}</div>
+        <div class="name">${escapeHtml(p.name)}</div>
+        <div class="addr">${escapeHtml(p.addr)}</div>
       </div>
-      <span class="badge">${p.active ? 'Активен' : 'Закрыт'}</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="badge">${p.active ? 'Активен' : 'Закрыт'}</span>
+        <button class="btn-danger" onclick="adminDeletePvz('${p.id}')">Удалить</button>
+      </div>
     </div>
-  `).join('');
+  `).join('') || '<p style="color:#888">Нет пунктов.</p>';
+
+  // Список сотрудников с кнопкой удаления
+  $('#admin-employees-list').innerHTML = DB.employees.map(e => {
+    const point = DB.pvz.find(p => p.id === e.pvz);
+    return `
+      <div class="pvz-item">
+        <div>
+          <div class="name">${escapeHtml(e.name)}</div>
+          <div class="addr">${escapeHtml(point?.name || '— удалён —')} · код: <b>${escapeHtml(e.code)}</b></div>
+        </div>
+        <button class="btn-danger" onclick="adminDeleteEmployee('${e.id}')">Удалить</button>
+      </div>
+    `;
+  }).join('') || '<p style="color:#888">Нет сотрудников.</p>';
+
+  fillPvzSelects();
 }
 
-/* ================= КАБИНЕТ ПВЗ ================= */
+/* ================= АДМИН: ДОБАВЛЕНИЕ / УДАЛЕНИЕ ================= */
+function adminAddPvz() {
+  const name = $('#pvz-new-name').value.trim();
+  const addr = $('#pvz-new-addr').value.trim();
+  const rb = $('#pvz-admin-result');
+
+  if (!name || !addr) {
+    rb.className = 'result err'; rb.textContent = '❌ Заполните название и адрес';
+    return;
+  }
+
+  // Генерация ID
+  const nums = DB.pvz.map(p => parseInt((p.id.match(/\d+$/)||['0'])[0],10)).filter(n=>!isNaN(n));
+  const next = (nums.length ? Math.max(...nums) : 0) + 1;
+  const id = 'pvz-' + String(next).padStart(3,'0');
+
+  DB.pvz.push({ id, name, addr, active:true });
+  saveDB();
+
+  rb.className = 'result ok'; rb.textContent = `✅ ПВЗ «${name}» добавлен`;
+  $('#pvz-new-name').value = ''; $('#pvz-new-addr').value = '';
+  renderAdmin();
+}
+
+function adminDeletePvz(id) {
+  const point = DB.pvz.find(p => p.id === id);
+  if (!point) return;
+  if (!confirm(`Удалить «${point.name}»? Все заказы и сотрудники этого ПВЗ тоже будут удалены.`)) return;
+
+  DB.pvz = DB.pvz.filter(p => p.id !== id);
+  DB.employees = DB.employees.filter(e => e.pvz !== id);
+  DB.orders = DB.orders.filter(o => o.pvz !== id);
+  saveDB();
+  renderAdmin();
+}
+
+function adminAddEmployee() {
+  const name = $('#emp-new-name').value.trim();
+  const pvzId = $('#emp-new-pvz').value;
+  const code = $('#emp-new-code').value.trim();
+  const rb = $('#emp-admin-result');
+
+  if (!name || !pvzId || !code) {
+    rb.className = 'result err'; rb.textContent = '❌ Заполните все поля';
+    return;
+  }
+
+  // Проверка уникальности кода в пределах ПВЗ
+  if (DB.employees.some(e => e.pvz === pvzId && e.code === code)) {
+    rb.className = 'result err'; rb.textContent = '❌ Такой код уже используется на этом ПВЗ';
+    return;
+  }
+
+  const nums = DB.employees.map(e => parseInt((e.id.match(/\d+$/)||['0'])[0],10)).filter(n=>!isNaN(n));
+  const next = (nums.length ? Math.max(...nums) : 0) + 1;
+  const id = 'emp-' + String(next).padStart(3,'0');
+
+  DB.employees.push({ id, name, pvz: pvzId, code });
+  saveDB();
+
+  rb.className = 'result ok'; rb.textContent = `✅ Сотрудник «${name}» добавлен`;
+  $('#emp-new-name').value = ''; $('#emp-new-code').value = '';
+  renderAdmin();
+}
+
+function adminDeleteEmployee(id) {
+  const emp = DB.employees.find(e => e.id === id);
+  if (!emp) return;
+  if (!confirm(`Удалить сотрудника «${emp.name}»?`)) return;
+  DB.employees = DB.employees.filter(e => e.id !== id);
+  saveDB();
+  renderAdmin();
+}
+
+/* ================= ПВЗ ================= */
 let currentPointId = null;
 let currentMode = 'receive';
 
@@ -201,10 +367,7 @@ function setPvzMode(mode) {
   $('#btn-mode-issue').classList.toggle('active', mode === 'issue');
   $('#panel-receive').classList.toggle('active', mode === 'receive');
   $('#panel-issue').classList.toggle('active', mode === 'issue');
-
-  // автофокус на нужное поле
-  if (mode === 'receive') $('#receive-qr').focus();
-  else $('#issue-qr').focus();
+  setTimeout(() => (mode === 'receive' ? $('#receive-qr') : $('#issue-qr')).focus(), 50);
 }
 
 function renderPvz(pointId) {
@@ -219,8 +382,8 @@ function renderPvz(pointId) {
 /* ---- ПРИЁМКА ---- */
 function renderReceiveLog() {
   const list = DB.orders
-    .filter(o => o.pvz === currentPointId && (o.status === 'storage' || o.status === 'ready'))
-    .sort((a,b) => b.id.localeCompare(a.id));
+    .filter(o => o.pvz === currentPointId && o.status === 'storage')
+    .sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
 
   const box = $('#receive-log');
   if (!list.length) {
@@ -230,8 +393,8 @@ function renderReceiveLog() {
   box.innerHTML = list.map(o => `
     <div class="order-card">
       <div class="order-info">
-        <h4>${o.title}</h4>
-        <p>${o.id} · QR: <b>${o.qr}</b></p>
+        <h4>${escapeHtml(o.title)}</h4>
+        <p>${o.id} · QR: <b>${o.qr}</b> · ${escapeHtml(o.client)}</p>
         <span class="cell">Ячейка ${o.cell || '—'}</span>
       </div>
       <span class="order-status status-storage">На складе</span>
@@ -250,34 +413,34 @@ function receiveSubmit() {
     return;
   }
 
-  // Ищем заказ по QR
-  let order = DB.orders.find(o => o.qr === qr);
+  // Ищем заказ с таким QR, ожидающий приёмки на этом ПВЗ
+  const order = DB.orders.find(o => o.qr === qr && o.pvz === currentPointId);
 
-  // Если заказа нет — создаём новый (демо-режим)
   if (!order) {
-    order = {
-      id: nextOrderId(),
-      qr,
-      title: 'Новая посылка (QR ' + qr + ')',
-      client: '+7 (900) 000-00-00',
-      pvz: currentPointId,
-      cell: null,
-      status: 'waiting'
-    };
-    DB.orders.push(order);
+    resultBox.className = 'result err';
+    resultBox.textContent = '❌ Заказ с таким QR не найден на этом пункте';
+    return;
+  }
+  if (order.status === 'storage') {
+    resultBox.className = 'result err';
+    resultBox.textContent = '⚠️ Заказ уже принят на склад';
+    return;
+  }
+  if (order.status === 'issued') {
+    resultBox.className = 'result err';
+    resultBox.textContent = '⚠️ Заказ уже выдан';
+    return;
   }
 
-  // Назначаем ячейку автоматически (буква + 2 цифры)
+  // Назначаем ячейку
   const cell = assignCell();
   order.cell = cell;
   order.status = 'storage';
-  order.pvz = currentPointId;
   saveDB();
 
   resultBox.className = 'result ok';
-  resultBox.textContent = `✅ Посылка ${order.id} принята. Ячейка: ${cell}`;
-
-  speak(`Посылка принята. Ячейка ${cell.split('-').join(' ')}`);
+  resultBox.textContent = `✅ ${order.id} принят. Ячейка: ${cell}`;
+  speak(`Заказ принят. Ячейка ${cell.split('-').join(' ')}`);
 
   input.value = '';
   input.focus();
@@ -287,11 +450,8 @@ function receiveSubmit() {
 }
 
 function assignCell() {
-  // Простая схема: буква зависит от сотни номера заказа, номер — по порядку
   const used = new Set(
-    DB.orders
-      .filter(o => o.pvz === currentPointId && o.cell)
-      .map(o => o.cell)
+    DB.orders.filter(o => o.pvz === currentPointId && o.cell).map(o => o.cell)
   );
   const zones = ['A','B','C','D'];
   for (const z of zones) {
@@ -304,9 +464,15 @@ function assignCell() {
 }
 
 function simulateReceiveScan() {
-  // Генерируем случайные 5 цифр — эмулируем сканер
-  const qr = String(Math.floor(10000 + Math.random() * 90000));
-  $('#receive-qr').value = qr;
+  // Берём первый заказ в статусе waiting на этом ПВЗ
+  const candidate = DB.orders.find(o => o.pvz === currentPointId && o.status === 'waiting');
+  if (!candidate) {
+    const rb = $('#receive-result');
+    rb.className = 'result err';
+    rb.textContent = '❌ Нет заказов, ожидающих приёмки';
+    return;
+  }
+  $('#receive-qr').value = candidate.qr;
   receiveSubmit();
 }
 
@@ -318,13 +484,13 @@ function renderIssueList() {
 
   const box = $('#issue-list');
   if (!list.length) {
-    box.innerHTML = '<p style="color:#888">Нет посылок, готовых к выдаче.</p>';
+    box.innerHTML = '<p style="color:#888">Нет посылок на складе.</p>';
     return;
   }
   box.innerHTML = list.map(o => `
     <div class="order-card">
       <div class="order-info">
-        <h4>${o.title}</h4>
+        <h4>${escapeHtml(o.title)}</h4>
         <p>${o.id} · QR: <b>${o.qr}</b></p>
         <span class="cell">Ячейка ${o.cell || '—'}</span>
       </div>
@@ -348,17 +514,17 @@ function issueSubmit() {
 
   if (!order) {
     resultBox.className = 'result err';
-    resultBox.textContent = '❌ Посылка с таким QR не найдена на этом пункте';
+    resultBox.textContent = '❌ Заказ с таким QR не найден на этом пункте';
     return;
   }
   if (order.status === 'issued') {
     resultBox.className = 'result err';
-    resultBox.textContent = '⚠️ Эта посылка уже была выдана';
+    resultBox.textContent = '⚠️ Заказ уже выдан';
     return;
   }
   if (order.status !== 'storage') {
     resultBox.className = 'result err';
-    resultBox.textContent = '⚠️ Посылка ещё не принята на склад';
+    resultBox.textContent = '⚠️ Заказ ещё не принят на склад';
     return;
   }
 
@@ -367,9 +533,7 @@ function issueSubmit() {
 
   const cell = order.cell || '—';
   resultBox.className = 'result ok';
-  resultBox.textContent = `✅ Выдано: ${order.id}. Возьмите из ячейки ${cell}`;
-
-  // Озвучка номера ячейки
+  resultBox.textContent = `✅ ${order.id} выдан. Ячейка ${cell} (${order.title})`;
   speak(`Возьмите посылку из ячейки ${cell.split('-').join(' ')}`);
 
   input.value = '';
@@ -380,17 +544,23 @@ function issueSubmit() {
 }
 
 function simulateIssueScan() {
-  // Берём случайный QR из тех, что на складе
   const candidates = DB.orders.filter(o => o.pvz === currentPointId && o.status === 'storage');
   if (!candidates.length) {
     const rb = $('#issue-result');
     rb.className = 'result err';
-    rb.textContent = '❌ Нет посылок на складе для симуляции';
+    rb.textContent = '❌ Нет посылок на складе';
     return;
   }
   const pick = candidates[Math.floor(Math.random() * candidates.length)];
   $('#issue-qr').value = pick.qr;
   issueSubmit();
+}
+
+/* ================= БЕЗОПАСНОСТЬ ================= */
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
 }
 
 /* ================= ВЫХОД ================= */
@@ -404,6 +574,7 @@ function logout() {
 
 /* ================= ВОССТАНОВЛЕНИЕ СЕССИИ ================= */
 (function init() {
+  fillPvzSelects();
   const raw = localStorage.getItem(SESSION_KEY);
   if (!raw) return;
   try {
@@ -415,3 +586,12 @@ function logout() {
     localStorage.removeItem(SESSION_KEY);
   }
 })();
+
+/* ================= ГЛОБАЛЬНЫЕ ХОТКЕИ ================= */
+document.addEventListener('keydown', e => {
+  // Enter в поле сканирования = отправить
+  if (e.key === 'Enter') {
+    if (e.target.id === 'receive-qr') { e.preventDefault(); receiveSubmit(); }
+    if (e.target.id === 'issue-qr')   { e.preventDefault(); issueSubmit(); }
+  }
+});
