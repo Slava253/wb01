@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>PVZ Scanner 2D — История</title>
+
+    <link rel="stylesheet"
+          href="css/main.css">
+
+    <script
+        src="js/common.js"
+        defer>
+    </script>
+
+    <script
+        src="js/history.js"
+        defer>
+    </script>
+
+</head>
+
+<body>
+
+<header>
+
+    <div class="logo">
+        PVZ <span>Scanner 2D</span>
+    </div>
+
+    <nav>
+
+        <a href="index.html">
+            Главная
+        </a>
+
+        <a href="scanner.html">
+            Сканер
+        </a>
+
+        <a class="active"
+           href="history.html">
+            История
+        </a>
+
+        <a href="settings.html">
+            Настройки
+        </a>
+
+    </nav>
+
+</header>
+
+
+<main class="container">
+
+    <div class="page-title">
+
+        <div>
+
+            <div class="eyebrow">
+                ИСТОРИЯ
+            </div>
+
+            <h1>
+                Отсканированные коды
+            </h1>
+
+        </div>
+
+        <button
+            id="clearHistory"
+            class="button danger">
+
+            Очистить всё
+
+        </button>
+
+    </div>
+
+
+    <section class="panel">
+
+        <div class="history-tools">
+
+            <input
+                id="search"
+                type="search"
+                placeholder="Поиск по коду...">
+
+            <button
+                id="export"
+                class="button secondary">
+
+                Экспорт TXT
+
+            </button>
+
+        </div>
+
+
+        <div id="historyList">
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<footer>
+    PVZ Scanner 2D
+</footer>
+
+</body>
+</html>
