@@ -3,9 +3,7 @@ import {
     addDoc,
     query,
     where,
-    getDocs,
-    orderBy,
-    serverTimestamp
+    getDocs
 }
 from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
@@ -15,19 +13,22 @@ import {
 from "./firebase.js";
 
 
-/* ==========================================
-   ПОЛЬЗОВАТЕЛЬ
-========================================== */
+/* =========================================
+   ПРОВЕРКА КЛИЕНТА
+========================================= */
 
 const currentUser =
     JSON.parse(
-        localStorage.getItem("pvzUser")
+        localStorage.getItem(
+            "pvzUser"
+        )
     );
 
 
 if (!currentUser) {
 
-    location.href = "index.html";
+    location.href =
+        "index.html";
 
     throw new Error(
         "Пользователь не авторизован."
@@ -36,22 +37,26 @@ if (!currentUser) {
 }
 
 
-if (currentUser.role !== "client") {
+if (
+    currentUser.role !==
+    "client"
+) {
 
-    location.href = "index.html";
+    location.href =
+        "index.html";
 
     throw new Error(
-        "Доступ разрешён только клиенту."
+        "Нет доступа."
     );
 
 }
 
 
-/* ==========================================
-   ЭЛЕМЕНТЫ СТРАНИЦЫ
-========================================== */
+/* =========================================
+   ЭЛЕМЕНТЫ
+========================================= */
 
-const userPhoneElement =
+const userPhone =
     document.getElementById(
         "userEmail"
     );
@@ -69,35 +74,41 @@ const createOrderForm =
     );
 
 
-const productNameInput =
+const productName =
     document.getElementById(
         "productName"
     );
 
 
-const productDescriptionInput =
+const productDescription =
     document.getElementById(
         "productDescription"
     );
 
 
-/* ==========================================
-   ПОКАЗЫВАЕМ ТЕЛЕФОН
-========================================== */
+const logoutButton =
+    document.getElementById(
+        "logoutButton"
+    );
 
-if (userPhoneElement) {
 
-    userPhoneElement.textContent =
-        currentUser.phone || "";
+/* =========================================
+   ТЕЛЕФОН
+========================================= */
+
+if (userPhone) {
+
+    userPhone.textContent =
+        currentUser.phone;
 
 }
 
 
-/* ==========================================
+/* =========================================
    СТАТУСЫ
-========================================== */
+========================================= */
 
-const statusNames = {
+const statuses = {
 
     created:
         "Заказ создан",
@@ -117,14 +128,16 @@ const statusNames = {
 };
 
 
-/* ==========================================
-   ЭКРАНИРОВАНИЕ HTML
-========================================== */
+/* =========================================
+   ЭКРАНИРОВАНИЕ
+========================================= */
 
 function escapeHtml(value) {
 
-    if (value === null ||
-        value === undefined) {
+    if (
+        value === null ||
+        value === undefined
+    ) {
 
         return "";
 
@@ -156,90 +169,11 @@ function escapeHtml(value) {
 }
 
 
-/* ==========================================
-   СООБЩЕНИЯ
-========================================== */
-
-function showMessage(
-    text,
-    type = ""
-) {
-
-    let element =
-        document.getElementById(
-            "clientMessage"
-        );
-
-
-    if (!element) {
-
-        element =
-            document.createElement(
-                "div"
-            );
-
-        element.id =
-            "clientMessage";
-
-        element.className =
-            "message";
-
-
-        if (createOrderForm) {
-
-            createOrderForm
-                .parentNode
-                .insertBefore(
-                    element,
-                    createOrderForm
-                );
-
-        }
-
-    }
-
-
-    element.textContent =
-        text;
-
-
-    element.className =
-        "message " + type;
-
-}
-
-
-/* ==========================================
-   СОЗДАНИЕ НОМЕРА ЗАКАЗА
-========================================== */
+/* =========================================
+   НОМЕР ЗАКАЗА
+========================================= */
 
 function generateOrderNumber() {
-
-    const now =
-        new Date();
-
-
-    const year =
-        now.getFullYear();
-
-
-    const month =
-        String(
-            now.getMonth() + 1
-        ).padStart(
-            2,
-            "0"
-        );
-
-
-    const day =
-        String(
-            now.getDate()
-        ).padStart(
-            2,
-            "0"
-        );
-
 
     const random =
         Math.floor(
@@ -250,9 +184,7 @@ function generateOrderNumber() {
 
     return (
         "PVZ-" +
-        year +
-        month +
-        day +
+        Date.now() +
         "-" +
         random
     );
@@ -260,54 +192,46 @@ function generateOrderNumber() {
 }
 
 
-/* ==========================================
+/* =========================================
    СОЗДАНИЕ ЗАКАЗА
-========================================== */
+========================================= */
 
-if (createOrderForm) {
+createOrderForm.addEventListener(
+    "submit",
+    async function(event) {
 
-    createOrderForm.addEventListener(
-        "submit",
-        async function(event) {
-
-            event.preventDefault();
+        event.preventDefault();
 
 
-            const productName =
-                productNameInput
-                    ? productNameInput.value.trim()
-                    : "";
+        const name =
+            productName.value.trim();
 
 
-            const description =
-                productDescriptionInput
-                    ? productDescriptionInput.value.trim()
-                    : "";
+        const description =
+            productDescription
+                .value
+                .trim();
 
 
-            if (!productName) {
+        if (!name) {
 
-                showMessage(
-                    "Введите название товара."
-                );
+            alert(
+                "Введите название товара."
+            );
 
-                return;
+            return;
 
-            }
-
-
-            try {
-
-                showMessage(
-                    "Создаём заказ..."
-                );
+        }
 
 
-                const orderNumber =
-                    generateOrderNumber();
+        try {
+
+            const orderNumber =
+                generateOrderNumber();
 
 
-                const orderData = {
+            const order =
+                {
 
                     orderNumber:
                         orderNumber,
@@ -319,7 +243,7 @@ if (createOrderForm) {
                         currentUser.phone,
 
                     productName:
-                        productName,
+                        name,
 
                     description:
                         description,
@@ -328,106 +252,72 @@ if (createOrderForm) {
                         "created",
 
                     createdAt:
-                        serverTimestamp(),
+                        new Date()
+                        .toISOString(),
 
                     updatedAt:
-                        serverTimestamp()
+                        new Date()
+                        .toISOString()
 
                 };
 
 
-                const orderReference =
-                    await addDoc(
-                        collection(
-                            db,
-                            "orders"
-                        ),
-                        orderData
-                    );
-
-
-                showMessage(
-                    "Заказ успешно создан."
+            const result =
+                await addDoc(
+                    collection(
+                        db,
+                        "orders"
+                    ),
+                    order
                 );
 
 
-                if (productNameInput) {
-
-                    productNameInput.value =
-                        "";
-
-                }
+            productName.value =
+                "";
 
 
-                if (productDescriptionInput) {
-
-                    productDescriptionInput.value =
-                        "";
-
-                }
+            productDescription.value =
+                "";
 
 
-                await loadOrders();
+            alert(
+                "Заказ создан."
+            );
 
 
-                /*
-                 * Переходим на страницу
-                 * созданного заказа
-                 */
-
-                setTimeout(
-                    function() {
-
-                        location.href =
-                            "order.html?id=" +
-                            encodeURIComponent(
-                                orderReference.id
-                            );
-
-                    },
-                    500
+            location.href =
+                "order.html?id=" +
+                encodeURIComponent(
+                    result.id
                 );
 
+        } catch (error) {
 
-            } catch (error) {
-
-                console.error(error);
+            console.error(error);
 
 
-                showMessage(
-                    "Не удалось создать заказ: " +
-                    error.message
-                );
-
-            }
+            alert(
+                "Ошибка создания заказа: " +
+                error.message
+            );
 
         }
-    );
 
-}
+    }
+);
 
 
-/* ==========================================
-   ЗАГРУЗКА ЗАКАЗОВ КЛИЕНТА
-========================================== */
+/* =========================================
+   ЗАГРУЗКА ЗАКАЗОВ
+========================================= */
 
 async function loadOrders() {
-
-    if (!ordersList) {
-        return;
-    }
-
 
     ordersList.innerHTML =
         "<p>Загрузка заказов...</p>";
 
 
     try {
-
-        /*
-         * Получаем заказы только
-         * текущего клиента.
-         */
 
         const ordersQuery =
             query(
@@ -451,14 +341,14 @@ async function loadOrders() {
 
         const orders =
             snapshot.docs.map(
-                function(document) {
+                function(item) {
 
                     return {
 
                         id:
-                            document.id,
+                            item.id,
 
-                        ...document.data()
+                        ...item.data()
 
                     };
 
@@ -466,35 +356,24 @@ async function loadOrders() {
             );
 
 
-        /*
-         * Сортировка на стороне сайта.
-         * Так не требуется индекс Firestore.
-         */
-
         orders.sort(
             function(a, b) {
 
-                const aTime =
-                    a.createdAt &&
-                    a.createdAt.toMillis
-                        ? a.createdAt.toMillis()
-                        : 0;
-
-
-                const bTime =
-                    b.createdAt &&
-                    b.createdAt.toMillis
-                        ? b.createdAt.toMillis()
-                        : 0;
-
-
-                return bTime - aTime;
+                return String(
+                    b.createdAt || ""
+                ).localeCompare(
+                    String(
+                        a.createdAt || ""
+                    )
+                );
 
             }
         );
 
 
-        if (orders.length === 0) {
+        if (
+            orders.length === 0
+        ) {
 
             ordersList.innerHTML =
                 "<p class='muted'>" +
@@ -532,18 +411,17 @@ async function loadOrders() {
 }
 
 
-/* ==========================================
+/* =========================================
    КАРТОЧКА ЗАКАЗА
-========================================== */
+========================================= */
 
 function createOrderCard(order) {
 
     const status =
-        statusNames[
+        statuses[
             order.status
         ] ||
-        order.status ||
-        "Неизвестно";
+        "Неизвестный статус";
 
 
     return `
@@ -556,32 +434,49 @@ function createOrderCard(order) {
                 )}
             </h3>
 
+
             <p>
-                <strong>Товар:</strong>
+
+                <strong>
+                    Товар:
+                </strong>
+
                 ${escapeHtml(
                     order.productName
                 )}
+
             </p>
 
+
             <p>
-                <strong>Статус:</strong>
+
+                <strong>
+                    Статус:
+                </strong>
+
                 ${escapeHtml(
                     status
                 )}
+
             </p>
+
 
             ${
                 order.description
                     ? `
-                    <p>
-                        <strong>Описание:</strong>
-                        ${escapeHtml(
-                            order.description
-                        )}
-                    </p>
+                        <p>
+                            <strong>
+                                Описание:
+                            </strong>
+
+                            ${escapeHtml(
+                                order.description
+                            )}
+                        </p>
                     `
                     : ""
             }
+
 
             <button
                 class="button"
@@ -598,54 +493,44 @@ function createOrderCard(order) {
 }
 
 
-/* ==========================================
+/* =========================================
    ОТКРЫТИЕ ЗАКАЗА
-========================================== */
+========================================= */
 
 window.openOrder =
-    function(orderId) {
+    function(id) {
 
         location.href =
             "order.html?id=" +
             encodeURIComponent(
-                orderId
+                id
             );
 
     };
 
 
-/* ==========================================
+/* =========================================
    ВЫХОД
-========================================== */
+========================================= */
 
-const logoutButton =
-    document.getElementById(
-        "logoutButton"
-    );
+logoutButton.addEventListener(
+    "click",
+    function() {
 
-
-if (logoutButton) {
-
-    logoutButton.addEventListener(
-        "click",
-        function() {
-
-            localStorage.removeItem(
-                "pvzUser"
-            );
+        localStorage.removeItem(
+            "pvzUser"
+        );
 
 
-            location.href =
-                "index.html";
+        location.href =
+            "index.html";
 
-        }
-    );
-
-}
+    }
+);
 
 
-/* ==========================================
+/* =========================================
    ЗАПУСК
-========================================== */
+========================================= */
 
 loadOrders();
