@@ -6,6 +6,8 @@ from
 "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 
 import {
+    doc,
+    getDoc,
     collection,
     query,
     onSnapshot
@@ -22,23 +24,16 @@ from "./firebase.js";
 
 let allOrders = [];
 
+let currentRole = null;
 
-document
-    .getElementById("logoutButton")
-    .onclick =
-    async function () {
 
-        await signOut(auth);
-
-        location.href =
-            "index.html";
-
-    };
-
+/* ================================================= */
+/* ПРОВЕРКА ПОЛЬЗОВАТЕЛЯ */
+/* ================================================= */
 
 onAuthStateChanged(
     auth,
-    function (user) {
+    async function(user) {
 
         if (!user) {
 
@@ -50,11 +45,96 @@ onAuthStateChanged(
         }
 
 
-        loadOrders();
+        try {
+
+            const reference =
+                doc(
+                    db,
+                    "users",
+                    user.uid
+                );
+
+
+            const snapshot =
+                await getDoc(
+                    reference
+                );
+
+
+            if (!snapshot.exists()) {
+
+                await signOut(auth);
+
+                location.href =
+                    "index.html";
+
+                return;
+
+            }
+
+
+            const profile =
+                snapshot.data();
+
+
+            currentRole =
+                profile.role;
+
+
+            if (
+                currentRole !== "admin"
+                &&
+                currentRole !== "pvz"
+            ) {
+
+                location.href =
+                    "client.html";
+
+                return;
+
+            }
+
+
+            loadOrders();
+
+        }
+
+        catch (error) {
+
+            console.error(error);
+
+            alert(
+                "Не удалось проверить роль пользователя."
+            );
+
+        }
 
     }
 );
 
+
+/* ================================================= */
+/* ВЫХОД */
+/* ================================================= */
+
+document
+    .getElementById(
+        "logoutButton"
+    )
+    .onclick =
+    async function() {
+
+        await signOut(auth);
+
+        location.href =
+            "index.html";
+
+    };
+
+
+/* ================================================= */
+/* ЗАКАЗЫ */
+/* ================================================= */
 
 function loadOrders() {
 
@@ -69,20 +149,20 @@ function loadOrders() {
 
     onSnapshot(
         q,
-        function (snapshot) {
+        function(snapshot) {
 
             allOrders = [];
 
 
             snapshot.forEach(
-                function (doc) {
+                function(orderDoc) {
 
                     allOrders.push({
 
                         id:
-                            doc.id,
+                            orderDoc.id,
 
-                        ...doc.data()
+                        ...orderDoc.data()
 
                     });
 
@@ -98,11 +178,17 @@ function loadOrders() {
 }
 
 
+/* ================================================= */
+/* ОТОБРАЖЕНИЕ */
+/* ================================================= */
+
 function render() {
 
     const search =
         document
-            .getElementById("search")
+            .getElementById(
+                "search"
+            )
             .value
             .toLowerCase()
             .trim();
@@ -110,7 +196,7 @@ function render() {
 
     const filtered =
         allOrders.filter(
-            function (order) {
+            function(order) {
 
                 return (
 
@@ -123,7 +209,7 @@ function render() {
                     ||
 
                     String(
-                        order.customerEmail
+                        order.customerPhone
                     )
                     .toLowerCase()
                     .includes(search)
@@ -143,30 +229,38 @@ function render() {
 
 
     document
-        .getElementById("allCount")
+        .getElementById(
+            "allCount"
+        )
         .textContent =
         allOrders.length;
 
 
     document
-        .getElementById("arrivedCount")
+        .getElementById(
+            "arrivedCount"
+        )
         .textContent =
         count("arrived");
 
 
     document
-        .getElementById("readyCount")
+        .getElementById(
+            "readyCount"
+        )
         .textContent =
         count("ready");
 
 
     document
-        .getElementById("issuedCount")
+        .getElementById(
+            "issuedCount"
+        )
         .textContent =
         count("issued");
 
 
-    const list =
+    const container =
         document.getElementById(
             "ordersList"
         );
@@ -174,7 +268,7 @@ function render() {
 
     if (!filtered.length) {
 
-        list.innerHTML =
+        container.innerHTML =
             "<p>Заказы не найдены.</p>";
 
         return;
@@ -182,46 +276,55 @@ function render() {
     }
 
 
-    list.innerHTML =
+    container.innerHTML =
         filtered
             .map(
-                function (order) {
+                function(order) {
 
                     return `
 
-                    <div class="order-card">
-
-                        <div>
-
-                            <strong>
-                                ${order.orderNumber}
-                            </strong>
+                        <div class="order-card">
 
                             <div>
-                                ${order.productName}
+
+                                <strong>
+                                    ${order.orderNumber}
+                                </strong>
+
+                                <div>
+                                    ${escapeHtml(
+                                        order.productName
+                                    )}
+                                </div>
+
+                                <small>
+                                    ${escapeHtml(
+                                        order.customerPhone || ""
+                                    )}
+                                </small>
+
+                                <br>
+
+                                <span class="status-badge">
+
+                                    ${getStatus(
+                                        order.status
+                                    )}
+
+                                </span>
+
                             </div>
 
-                            <small>
-                                ${order.customerEmail}
-                            </small>
 
-                            <br>
+                            <a
+                                class="button secondary"
+                                href="admin-order.html?id=${order.id}">
 
-                            <span class="status-badge">
-                                ${getStatus(order.status)}
-                            </span>
+                                Открыть
+
+                            </a>
 
                         </div>
-
-                        <a
-                            class="button secondary"
-                            href="admin-order.html?id=${order.id}">
-
-                            Открыть
-
-                        </a>
-
-                    </div>
 
                     `;
 
@@ -232,18 +335,42 @@ function render() {
 }
 
 
+/* ================================================= */
+/* ПОИСК */
+/* ================================================= */
+
+document
+    .getElementById(
+        "search"
+    )
+    .addEventListener(
+        "input",
+        render
+    );
+
+
+/* ================================================= */
+/* СТАТИСТИКА */
+/* ================================================= */
+
 function count(status) {
 
     return allOrders.filter(
-        function (order) {
+        function(order) {
 
-            return order.status === status;
+            return (
+                order.status === status
+            );
 
         }
     ).length;
 
 }
 
+
+/* ================================================= */
+/* СТАТУС */
+/* ================================================= */
 
 function getStatus(status) {
 
@@ -267,15 +394,26 @@ function getStatus(status) {
     };
 
 
-    return statuses[status] ||
-        status;
+    return (
+        statuses[status]
+        ||
+        status
+    );
 
 }
 
 
-document
-    .getElementById("search")
-    .addEventListener(
-        "input",
-        render
-    );
+/* ================================================= */
+/* HTML */
+/* ================================================= */
+
+function escapeHtml(value) {
+
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+
+}
