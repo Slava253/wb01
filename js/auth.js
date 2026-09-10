@@ -1,15 +1,9 @@
 import {
     doc,
     getDoc,
-    setDoc,
-    collection,
-    query,
-    where,
-    getDocs,
-    serverTimestamp
+    setDoc
 }
-from
-"https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
 import {
     db
@@ -35,9 +29,9 @@ function showMessage(text) {
 }
 
 
-/* -------------------------------- */
-/* ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК */
-/* -------------------------------- */
+/* =========================================
+   ВКЛАДКИ
+========================================= */
 
 const tabs =
     document.querySelectorAll(
@@ -89,8 +83,7 @@ tabs.forEach(
 
                 document
                     .getElementById(
-                        selected +
-                        "Section"
+                        selected + "Section"
                     )
                     .classList.add(
                         "active"
@@ -106,9 +99,9 @@ tabs.forEach(
 );
 
 
-/* -------------------------------- */
-/* КЛИЕНТ */
-/* -------------------------------- */
+/* =========================================
+   КЛИЕНТ
+========================================= */
 
 document
     .getElementById(
@@ -116,19 +109,20 @@ document
     )
     .addEventListener(
         "click",
-        loginClient
+        clientLogin
     );
 
 
-async function loginClient() {
+async function clientLogin() {
+
+    const input =
+        document.getElementById(
+            "phoneNumber"
+        );
+
 
     const phone =
-        document
-            .getElementById(
-                "phoneNumber"
-            )
-            .value
-            .trim();
+        input.value.trim();
 
 
     if (!phone) {
@@ -142,7 +136,20 @@ async function loginClient() {
     }
 
 
-    if (phone.length < 6) {
+    /*
+     * Оставляем только цифры и +
+     */
+
+    const normalizedPhone =
+        phone.replace(
+            /[^\d+]/g,
+            ""
+        );
+
+
+    if (
+        normalizedPhone.length < 6
+    ) {
 
         showMessage(
             "Введите корректный номер телефона."
@@ -161,73 +168,39 @@ async function loginClient() {
 
 
         /*
-         * Ищем клиента по телефону
+         * Номер телефона используется
+         * как ID клиента.
          */
 
-        const usersQuery =
-            query(
-                collection(
-                    db,
-                    "users"
-                ),
-                where(
-                    "phone",
-                    "==",
-                    phone
-                )
+        const clientId =
+            "phone_" +
+            normalizedPhone
+                .replace(
+                    /\+/g,
+                    ""
+                );
+
+
+        const clientReference =
+            doc(
+                db,
+                "users",
+                clientId
             );
 
 
-        const result =
-            await getDocs(
-                usersQuery
+        const clientSnapshot =
+            await getDoc(
+                clientReference
             );
 
 
-        let userId;
-
-
-        if (result.empty) {
-
-            /*
-             * Новый клиент
-             */
-
-            userId =
-                "client_" +
-                Date.now();
-
-
-            await setDoc(
-                doc(
-                    db,
-                    "users",
-                    userId
-                ),
-                {
-
-                    phone: phone,
-
-                    role: "client",
-
-                    createdAt:
-                        serverTimestamp()
-
-                }
-            );
-
-        } else {
-
-            const user =
-                result.docs[0];
-
-
-            userId =
-                user.id;
-
+        if (
+            clientSnapshot.exists()
+        ) {
 
             const data =
-                user.data();
+                clientSnapshot.data();
 
 
             if (
@@ -236,29 +209,56 @@ async function loginClient() {
             ) {
 
                 showMessage(
-                    "Этот номер используется другим типом аккаунта."
+                    "Этот номер занят другим типом аккаунта."
                 );
 
                 return;
 
             }
 
+        } else {
+
+            /*
+             * Первый вход клиента.
+             */
+
+            await setDoc(
+                clientReference,
+                {
+
+                    phone:
+                        normalizedPhone,
+
+                    role:
+                        "client",
+
+                    createdAt:
+                        new Date()
+                        .toISOString()
+
+                }
+            );
+
         }
 
 
         /*
-         * Сохраняем вход на этом устройстве
+         * Сохраняем текущего клиента
+         * на устройстве.
          */
 
         localStorage.setItem(
             "pvzUser",
             JSON.stringify({
 
-                id: userId,
+                id:
+                    clientId,
 
-                phone: phone,
+                phone:
+                    normalizedPhone,
 
-                role: "client"
+                role:
+                    "client"
 
             })
         );
@@ -279,12 +279,14 @@ async function loginClient() {
             300
         );
 
+
     } catch (error) {
 
         console.error(error);
 
+
         showMessage(
-            "Ошибка базы данных: " +
+            "Ошибка входа: " +
             error.message
         );
 
@@ -293,9 +295,9 @@ async function loginClient() {
 }
 
 
-/* -------------------------------- */
-/* АДМИН */
-/* -------------------------------- */
+/* =========================================
+   АДМИН
+========================================= */
 
 document
     .getElementById(
@@ -303,11 +305,11 @@ document
     )
     .addEventListener(
         "click",
-        loginAdmin
+        adminLogin
     );
 
 
-async function loginAdmin() {
+function adminLogin() {
 
     const login =
         document
@@ -326,66 +328,59 @@ async function loginAdmin() {
             .value;
 
 
-    if (!login || !password) {
-
-        showMessage(
-            "Введите логин и пароль."
-        );
-
-        return;
-
-    }
-
-
     if (
-        login !== ADMIN_LOGIN ||
-        password !== ADMIN_PASSWORD
+        login === ADMIN_LOGIN &&
+        password === ADMIN_PASSWORD
     ) {
 
-        showMessage(
-            "Неверный логин или пароль."
+        localStorage.setItem(
+            "pvzUser",
+            JSON.stringify({
+
+                id:
+                    "admin",
+
+                login:
+                    ADMIN_LOGIN,
+
+                role:
+                    "admin"
+
+            })
         );
+
+
+        showMessage(
+            "Вход выполнен."
+        );
+
+
+        setTimeout(
+            function() {
+
+                location.href =
+                    "admin.html";
+
+            },
+            300
+        );
+
 
         return;
 
     }
-
-
-    localStorage.setItem(
-        "pvzUser",
-        JSON.stringify({
-
-            id: "admin",
-
-            login: ADMIN_LOGIN,
-
-            role: "admin"
-
-        })
-    );
 
 
     showMessage(
-        "Вход выполнен."
-    );
-
-
-    setTimeout(
-        function() {
-
-            location.href =
-                "admin.html";
-
-        },
-        300
+        "Неверный логин или пароль."
     );
 
 }
 
 
-/* -------------------------------- */
-/* ПВЗ */
-/* -------------------------------- */
+/* =========================================
+   ПВЗ
+========================================= */
 
 document
     .getElementById(
@@ -393,11 +388,11 @@ document
     )
     .addEventListener(
         "click",
-        loginPvz
+        pvzLogin
     );
 
 
-async function loginPvz() {
+async function pvzLogin() {
 
     const login =
         document
@@ -434,30 +429,33 @@ async function loginPvz() {
         );
 
 
-        const pvzQuery =
-            query(
-                collection(
-                    db,
-                    "pvz"
-                ),
-                where(
-                    "login",
-                    "==",
-                    login
-                )
+        /*
+         * Сотрудники хранятся
+         * в коллекции pvzEmployees.
+         *
+         * Документ имеет ID = login.
+         */
+
+        const employeeReference =
+            doc(
+                db,
+                "pvzEmployees",
+                login
             );
 
 
-        const result =
-            await getDocs(
-                pvzQuery
+        const employeeSnapshot =
+            await getDoc(
+                employeeReference
             );
 
 
-        if (result.empty) {
+        if (
+            !employeeSnapshot.exists()
+        ) {
 
             showMessage(
-                "ПВЗ с таким логином не найден."
+                "Сотрудник с таким логином не найден."
             );
 
             return;
@@ -465,16 +463,12 @@ async function loginPvz() {
         }
 
 
-        const pvz =
-            result.docs[0];
-
-
-        const data =
-            pvz.data();
+        const employee =
+            employeeSnapshot.data();
 
 
         if (
-            data.password !==
+            employee.password !==
             password
         ) {
 
@@ -487,17 +481,40 @@ async function loginPvz() {
         }
 
 
+        if (
+            employee.active === false
+        ) {
+
+            showMessage(
+                "Этот сотрудник отключён."
+            );
+
+            return;
+
+        }
+
+
         localStorage.setItem(
             "pvzUser",
             JSON.stringify({
 
-                id: pvz.id,
+                id:
+                    employeeSnapshot.id,
 
-                login: data.login,
+                login:
+                    employee.login,
 
-                name: data.name || "ПВЗ",
+                name:
+                    employee.name,
 
-                role: "pvz"
+                pvzId:
+                    employee.pvzId,
+
+                pvzName:
+                    employee.pvzName,
+
+                role:
+                    "pvz"
 
             })
         );
@@ -518,12 +535,14 @@ async function loginPvz() {
             300
         );
 
+
     } catch (error) {
 
         console.error(error);
 
+
         showMessage(
-            "Ошибка базы данных: " +
+            "Ошибка входа: " +
             error.message
         );
 
