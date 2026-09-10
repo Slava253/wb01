@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>PVZ Scanner 2D — Сканер</title>
+
+    <link rel="stylesheet"
+          href="css/main.css">
+
+    <link rel="stylesheet"
+          href="css/scanner.css">
+
+    <!-- Библиотека QR-сканера -->
+    <script
+        src="https://unpkg.com/html5-qrcode"
+        defer>
+    </script>
+
+    <script
+        src="js/common.js"
+        defer>
+    </script>
+
+    <script
+        src="js/scanner.js"
+        defer>
+    </script>
+
+</head>
+
+<body>
+
+<header>
+
+    <div class="logo">
+        PVZ <span>Scanner 2D</span>
+    </div>
+
+    <nav>
+
+        <a href="index.html">
+            Главная
+        </a>
+
+        <a class="active"
+           href="scanner.html">
+            Сканер
+        </a>
+
+        <a href="history.html">
+            История
+        </a>
+
+        <a href="settings.html">
+            Настройки
+        </a>
+
+    </nav>
+
+</header>
+
+
+<main class="container">
+
+    <div class="page-title">
+
+        <div>
+
+            <div class="eyebrow">
+                СКАНЕР
+            </div>
+
+            <h1>
+                Сканирование
+            </h1>
+
+        </div>
+
+        <div id="cameraState"
+             class="status">
+            Ожидание
+        </div>
+
+    </div>
+
+
+    <section class="scanner-grid">
+
+
+        <!-- КАМЕРА -->
+
+        <div class="panel">
+
+            <h2>
+                Камера
+            </h2>
+
+            <div id="reader"></div>
+
+            <div id="scanMessage"
+                 class="message">
+
+                Нажмите
+                «Запустить камеру».
+
+            </div>
+
+
+            <div class="button-row">
+
+                <button
+                    id="startButton"
+                    class="button primary">
+
+                    Запустить камеру
+
+                </button>
+
+
+                <button
+                    id="stopButton"
+                    class="button secondary"
+                    disabled>
+
+                    Остановить
+
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- РЕЗУЛЬТАТ -->
+
+        <div class="panel">
+
+            <h2>
+                Результат
+            </h2>
+
+            <div id="result"
+                 class="result-empty">
+
+                Код ещё не найден
+
+            </div>
+
+
+            <button
+                id="copyButton"
+                class="button secondary full"
+                disabled>
+
+                Копировать
+
+            </button>
+
+
+            <button
+                id="saveButton"
+                class="button primary full"
+                disabled>
+
+                Сохранить
+
+            </button>
+
+
+            <hr>
+
+
+            <h3>
+                Ручной ввод
+            </h3>
+
+            <p class="muted">
+                Если камера недоступна,
+                код можно написать вручную.
+            </p>
+
+
+            <form id="manualForm">
+
+                <input
+                    id="manualInput"
+                    type="text"
+                    placeholder="Например: OFFC1000"
+                    autocomplete="off">
+
+                <button
+                    class="button primary"
+                    type="submit">
+
+                    Проверить код
+
+                </button>
+
+            </form>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<footer>
+    PVZ Scanner 2D
+</footer>
+
+</body>
+</html>
