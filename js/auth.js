@@ -1,7 +1,6 @@
 import {
     doc,
-    getDoc,
-    setDoc
+    getDoc
 }
 from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
@@ -12,7 +11,6 @@ from "./firebase.js";
 
 
 const ADMIN_LOGIN = "2347";
-
 const ADMIN_PASSWORD = "2203";
 
 
@@ -29,36 +27,29 @@ function showMessage(text) {
 }
 
 
-/* =========================================
+/* ===============================
    ВКЛАДКИ
-========================================= */
+=============================== */
 
-const tabs =
-    document.querySelectorAll(
-        ".login-tab"
-    );
-
-
-tabs.forEach(
-    function(tab) {
+document
+    .querySelectorAll(".login-tab")
+    .forEach(function(tab) {
 
         tab.addEventListener(
             "click",
             function() {
 
-                const selected =
-                    tab.dataset.tab;
-
-
-                tabs.forEach(
-                    function(item) {
+                document
+                    .querySelectorAll(
+                        ".login-tab"
+                    )
+                    .forEach(function(item) {
 
                         item.classList.remove(
                             "active"
                         );
 
-                    }
-                );
+                    });
 
 
                 tab.classList.add(
@@ -70,20 +61,19 @@ tabs.forEach(
                     .querySelectorAll(
                         ".login-section"
                     )
-                    .forEach(
-                        function(section) {
+                    .forEach(function(section) {
 
-                            section.classList.remove(
-                                "active"
-                            );
+                        section.classList.remove(
+                            "active"
+                        );
 
-                        }
-                    );
+                    });
 
 
                 document
                     .getElementById(
-                        selected + "Section"
+                        tab.dataset.tab +
+                        "Section"
                     )
                     .classList.add(
                         "active"
@@ -95,13 +85,12 @@ tabs.forEach(
             }
         );
 
-    }
-);
+    });
 
 
-/* =========================================
+/* ===============================
    КЛИЕНТ
-========================================= */
+=============================== */
 
 document
     .getElementById(
@@ -109,195 +98,77 @@ document
     )
     .addEventListener(
         "click",
-        clientLogin
-    );
+        function() {
+
+            const phone =
+                document
+                    .getElementById(
+                        "phoneNumber"
+                    )
+                    .value
+                    .trim();
 
 
-async function clientLogin() {
-
-    const input =
-        document.getElementById(
-            "phoneNumber"
-        );
-
-
-    const phone =
-        input.value.trim();
-
-
-    if (!phone) {
-
-        showMessage(
-            "Введите номер телефона."
-        );
-
-        return;
-
-    }
-
-
-    /*
-     * Оставляем только цифры и +
-     */
-
-    const normalizedPhone =
-        phone.replace(
-            /[^\d+]/g,
-            ""
-        );
-
-
-    if (
-        normalizedPhone.length < 6
-    ) {
-
-        showMessage(
-            "Введите корректный номер телефона."
-        );
-
-        return;
-
-    }
-
-
-    try {
-
-        showMessage(
-            "Выполняется вход..."
-        );
-
-
-        /*
-         * Номер телефона используется
-         * как ID клиента.
-         */
-
-        const clientId =
-            "phone_" +
-            normalizedPhone
-                .replace(
-                    /\+/g,
+            const normalized =
+                phone.replace(
+                    /[^\d+]/g,
                     ""
                 );
 
 
-        const clientReference =
-            doc(
-                db,
-                "users",
-                clientId
-            );
-
-
-        const clientSnapshot =
-            await getDoc(
-                clientReference
-            );
-
-
-        if (
-            clientSnapshot.exists()
-        ) {
-
-            const data =
-                clientSnapshot.data();
-
-
             if (
-                data.role !==
-                "client"
+                normalized.length < 6
             ) {
 
                 showMessage(
-                    "Этот номер занят другим типом аккаунта."
+                    "Введите корректный номер телефона."
                 );
 
                 return;
 
             }
 
-        } else {
 
             /*
-             * Первый вход клиента.
+             * Вход клиента полностью
+             * локальный и мгновенный.
              */
 
-            await setDoc(
-                clientReference,
-                {
+            const userId =
+                "client_" +
+                normalized.replace(
+                    "+",
+                    ""
+                );
+
+
+            localStorage.setItem(
+                "pvzUser",
+                JSON.stringify({
+
+                    id:
+                        userId,
 
                     phone:
-                        normalizedPhone,
+                        normalized,
 
                     role:
-                        "client",
+                        "client"
 
-                    createdAt:
-                        new Date()
-                        .toISOString()
-
-                }
+                })
             );
 
+
+            location.href =
+                "client.html";
+
         }
+    );
 
 
-        /*
-         * Сохраняем текущего клиента
-         * на устройстве.
-         */
-
-        localStorage.setItem(
-            "pvzUser",
-            JSON.stringify({
-
-                id:
-                    clientId,
-
-                phone:
-                    normalizedPhone,
-
-                role:
-                    "client"
-
-            })
-        );
-
-
-        showMessage(
-            "Вход выполнен."
-        );
-
-
-        setTimeout(
-            function() {
-
-                location.href =
-                    "client.html";
-
-            },
-            300
-        );
-
-
-    } catch (error) {
-
-        console.error(error);
-
-
-        showMessage(
-            "Ошибка входа: " +
-            error.message
-        );
-
-    }
-
-}
-
-
-/* =========================================
+/* ===============================
    АДМИН
-========================================= */
+=============================== */
 
 document
     .getElementById(
@@ -305,82 +176,66 @@ document
     )
     .addEventListener(
         "click",
-        adminLogin
+        function() {
+
+            const login =
+                document
+                    .getElementById(
+                        "adminLogin"
+                    )
+                    .value
+                    .trim();
+
+
+            const password =
+                document
+                    .getElementById(
+                        "adminPassword"
+                    )
+                    .value;
+
+
+            if (
+                login !== ADMIN_LOGIN ||
+                password !== ADMIN_PASSWORD
+            ) {
+
+                showMessage(
+                    "Неверный логин или пароль."
+                );
+
+                return;
+
+            }
+
+
+            localStorage.setItem(
+                "pvzUser",
+                JSON.stringify({
+
+                    id:
+                        "admin",
+
+                    role:
+                        "admin",
+
+                    login:
+                        ADMIN_LOGIN
+
+                })
+            );
+
+
+            location.href =
+                "admin.html";
+
+        }
     );
 
 
-function adminLogin() {
-
-    const login =
-        document
-            .getElementById(
-                "adminLogin"
-            )
-            .value
-            .trim();
-
-
-    const password =
-        document
-            .getElementById(
-                "adminPassword"
-            )
-            .value;
-
-
-    if (
-        login === ADMIN_LOGIN &&
-        password === ADMIN_PASSWORD
-    ) {
-
-        localStorage.setItem(
-            "pvzUser",
-            JSON.stringify({
-
-                id:
-                    "admin",
-
-                login:
-                    ADMIN_LOGIN,
-
-                role:
-                    "admin"
-
-            })
-        );
-
-
-        showMessage(
-            "Вход выполнен."
-        );
-
-
-        setTimeout(
-            function() {
-
-                location.href =
-                    "admin.html";
-
-            },
-            300
-        );
-
-
-        return;
-
-    }
-
-
-    showMessage(
-        "Неверный логин или пароль."
-    );
-
-}
-
-
-/* =========================================
+/* ===============================
    ПВЗ
-========================================= */
+=============================== */
 
 document
     .getElementById(
@@ -422,21 +277,19 @@ async function pvzLogin() {
     }
 
 
+    showMessage(
+        "Проверяем..."
+    );
+
+
     try {
 
-        showMessage(
-            "Проверяем данные..."
-        );
-
-
         /*
-         * Сотрудники хранятся
-         * в коллекции pvzEmployees.
-         *
-         * Документ имеет ID = login.
+         * Теперь только один запрос
+         * Firestore.
          */
 
-        const employeeReference =
+        const reference =
             doc(
                 db,
                 "pvzEmployees",
@@ -444,18 +297,16 @@ async function pvzLogin() {
             );
 
 
-        const employeeSnapshot =
+        const snapshot =
             await getDoc(
-                employeeReference
+                reference
             );
 
 
-        if (
-            !employeeSnapshot.exists()
-        ) {
+        if (!snapshot.exists()) {
 
             showMessage(
-                "Сотрудник с таким логином не найден."
+                "Сотрудник не найден."
             );
 
             return;
@@ -464,7 +315,7 @@ async function pvzLogin() {
 
 
         const employee =
-            employeeSnapshot.data();
+            snapshot.data();
 
 
         if (
@@ -486,7 +337,7 @@ async function pvzLogin() {
         ) {
 
             showMessage(
-                "Этот сотрудник отключён."
+                "Сотрудник отключён."
             );
 
             return;
@@ -499,7 +350,10 @@ async function pvzLogin() {
             JSON.stringify({
 
                 id:
-                    employeeSnapshot.id,
+                    snapshot.id,
+
+                role:
+                    "pvz",
 
                 login:
                     employee.login,
@@ -511,39 +365,22 @@ async function pvzLogin() {
                     employee.pvzId,
 
                 pvzName:
-                    employee.pvzName,
-
-                role:
-                    "pvz"
+                    employee.pvzName
 
             })
         );
 
 
-        showMessage(
-            "Вход выполнен."
-        );
-
-
-        setTimeout(
-            function() {
-
-                location.href =
-                    "admin.html";
-
-            },
-            300
-        );
+        location.href =
+            "pvz.html";
 
 
     } catch (error) {
 
         console.error(error);
 
-
         showMessage(
-            "Ошибка входа: " +
-            error.message
+            "Ошибка подключения к базе."
         );
 
     }
