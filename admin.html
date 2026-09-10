@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>PVZ — Администратор</title>
+
+    <link rel="stylesheet"
+          href="css/main.css">
+
+    <link rel="stylesheet"
+          href="css/admin.css">
+
+    <script
+        type="module"
+        src="js/admin.js">
+    </script>
+
+</head>
+
+<body>
+
+<header class="admin-header">
+
+    <div class="logo">
+        PVZ ADMIN
+    </div>
+
+    <nav>
+
+        <a class="active"
+           href="admin.html">
+            Заказы
+        </a>
+
+        <a href="scanner.html">
+            Сканер
+        </a>
+
+        <button id="logoutButton">
+            Выйти
+        </button>
+
+    </nav>
+
+</header>
+
+
+<main class="container">
+
+    <div class="page-title">
+
+        <div>
+
+            <div class="eyebrow">
+                ПАНЕЛЬ ПВЗ
+            </div>
+
+            <h1>
+                Управление заказами
+            </h1>
+
+        </div>
+
+        <a
+            href="scanner.html"
+            class="button primary">
+
+            Сканировать QR
+
+        </a>
+
+    </div>
+
+
+    <section class="stats">
+
+        <div class="stat">
+            <b id="allCount">0</b>
+            <span>Всего</span>
+        </div>
+
+        <div class="stat">
+            <b id="arrivedCount">0</b>
+            <span>Прибыли</span>
+        </div>
+
+        <div class="stat">
+            <b id="readyCount">0</b>
+            <span>Готовы</span>
+        </div>
+
+        <div class="stat">
+            <b id="issuedCount">0</b>
+            <span>Выданы</span>
+        </div>
+
+    </section>
+
+
+    <section class="panel">
+
+        <input
+            id="search"
+            type="search"
+            placeholder="Поиск заказа...">
+
+    </section>
+
+
+    <section class="panel">
+
+        <div id="ordersList">
+            Загрузка...
+        </div>
+
+    </section>
+
+</main>
+
+
+<footer>
+    PVZ ADMIN
+</footer>
+
+</body>
+</html>
