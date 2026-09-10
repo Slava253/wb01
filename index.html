@@ -23,32 +23,25 @@
         <button class="role-tab" data-role="pvz">ПВЗ</button>
       </div>
 
-      <!-- Клиент -->
       <form class="login-form active" id="form-client" data-role="client">
         <h2>Вход клиента</h2>
-        <p class="hint">Введите номер телефона. Код подтверждения не нужен.</p>
+        <p class="hint">Введите номер телефона. Код не нужен.</p>
         <input type="tel" id="client-phone" placeholder="+7 (900) 000-00-00" autocomplete="tel">
         <button type="submit" class="btn-primary">Войти</button>
       </form>
 
-      <!-- Админ -->
       <form class="login-form" id="form-admin" data-role="admin">
         <h2>Вход администратора</h2>
-        <p class="hint">Демо: любой логин и пароль.</p>
+        <p class="hint">Демо: логин <b>admin</b>, пароль <b>admin</b>.</p>
         <input type="text" id="admin-login" placeholder="Логин" autocomplete="username">
         <input type="password" id="admin-pass" placeholder="Пароль" autocomplete="current-password">
         <button type="submit" class="btn-primary">Войти</button>
       </form>
 
-      <!-- ПВЗ -->
       <form class="login-form" id="form-pvz" data-role="pvz">
         <h2>Вход сотрудника ПВЗ</h2>
-        <p class="hint">Выберите пункт и введите код (демо: любой).</p>
-        <select id="pvz-point">
-          <option value="pvz-001">ПВЗ №001 — ул. Ленина, 10</option>
-          <option value="pvz-002">ПВЗ №002 — пр. Мира, 25</option>
-          <option value="pvz-003">ПВЗ №003 — ул. Гагарина, 7</option>
-        </select>
+        <p class="hint">Выберите пункт и введите ваш код.</p>
+        <select id="pvz-point"></select>
         <input type="text" id="pvz-code" placeholder="Код сотрудника" autocomplete="off">
         <button type="submit" class="btn-primary">Войти</button>
       </form>
@@ -67,8 +60,24 @@
       </div>
     </header>
     <main class="content">
-      <h2>Мои заказы</h2>
-      <div class="orders" id="client-orders"></div>
+      <div class="client-grid">
+        <section>
+          <h2>Оформить заказ</h2>
+          <div class="card">
+            <label>Название товара</label>
+            <input type="text" id="order-title" placeholder="Например: Кроссовки Nike, 42" maxlength="80">
+            <label>Пункт выдачи</label>
+            <select id="order-pvz"></select>
+            <button class="btn-primary" onclick="createOrder()">Создать заказ</button>
+            <div class="result" id="order-result"></div>
+          </div>
+        </section>
+
+        <section>
+          <h2>Мои заказы</h2>
+          <div class="orders" id="client-orders"></div>
+        </section>
+      </div>
     </main>
   </div>
 
@@ -81,8 +90,33 @@
     <main class="content">
       <h2>Панель управления</h2>
       <div class="stats" id="admin-stats"></div>
-      <h3>Пункты выдачи</h3>
-      <div class="pvz-list" id="admin-pvz-list"></div>
+
+      <div class="admin-grid">
+        <!-- ПВЗ -->
+        <section>
+          <h3>Пункты выдачи</h3>
+          <div class="card">
+            <input type="text" id="pvz-new-name" placeholder="Название (ПВЗ №004)" maxlength="40">
+            <input type="text" id="pvz-new-addr" placeholder="Адрес" maxlength="80">
+            <button class="btn-primary" onclick="adminAddPvz()">➕ Добавить ПВЗ</button>
+            <div class="result" id="pvz-admin-result"></div>
+          </div>
+          <div class="pvz-list" id="admin-pvz-list"></div>
+        </section>
+
+        <!-- Сотрудники -->
+        <section>
+          <h3>Сотрудники</h3>
+          <div class="card">
+            <input type="text" id="emp-new-name" placeholder="Имя сотрудника" maxlength="40">
+            <select id="emp-new-pvz"></select>
+            <input type="text" id="emp-new-code" placeholder="Код (придумайте)" maxlength="20">
+            <button class="btn-primary" onclick="adminAddEmployee()">➕ Добавить сотрудника</button>
+            <div class="result" id="emp-admin-result"></div>
+          </div>
+          <div class="pvz-list" id="admin-employees-list"></div>
+        </section>
+      </div>
     </main>
   </div>
 
@@ -94,47 +128,40 @@
     </header>
 
     <main class="content">
-      <!-- Кнопки режимов -->
       <div class="mode-switch">
-        <button class="mode-btn active" id="btn-mode-receive" onclick="setPvzMode('receive')">
-          📦 Приёмка
-        </button>
-        <button class="mode-btn" id="btn-mode-issue" onclick="setPvzMode('issue')">
-          🎁 Выдача
-        </button>
+        <button class="mode-btn active" id="btn-mode-receive" onclick="setPvzMode('receive')">📦 Приёмка</button>
+        <button class="mode-btn" id="btn-mode-issue" onclick="setPvzMode('issue')">🎁 Выдача</button>
       </div>
 
-      <!-- Блок ПРИЁМКИ -->
       <section class="mode-panel active" id="panel-receive">
         <h2>Приёмка посылок</h2>
         <div class="scan-card">
-          <label>Отсканируйте QR-код с упаковки (5 цифр)</label>
+          <label>Отсканируйте QR реальным сканером (или введите вручную)</label>
           <input type="text" id="receive-qr" class="scan-input"
                  inputmode="numeric" maxlength="5" placeholder="00000" autocomplete="off">
           <div class="scan-actions">
             <button class="btn-primary" onclick="receiveSubmit()">Принять на склад</button>
-            <button class="btn-secondary" onclick="simulateReceiveScan()">📷 Симулировать скан</button>
+            <button class="btn-secondary" onclick="simulateReceiveScan()">📷 Симулировать</button>
           </div>
         </div>
         <div class="result" id="receive-result"></div>
-        <h3>Принятые сегодня</h3>
+        <h3>Принятые на пункте</h3>
         <div class="orders" id="receive-log"></div>
       </section>
 
-      <!-- Блок ВЫДАЧИ -->
       <section class="mode-panel" id="panel-issue">
         <h2>Выдача посылок</h2>
         <div class="scan-card">
-          <label>Отсканируйте QR-код с упаковки (5 цифр)</label>
+          <label>Отсканируйте QR клиента (или введите вручную)</label>
           <input type="text" id="issue-qr" class="scan-input"
                  inputmode="numeric" maxlength="5" placeholder="00000" autocomplete="off">
           <div class="scan-actions">
             <button class="btn-primary" onclick="issueSubmit()">Выдать клиенту</button>
-            <button class="btn-secondary" onclick="simulateIssueScan()">📷 Симулировать скан</button>
+            <button class="btn-secondary" onclick="simulateIssueScan()">📷 Симулировать</button>
           </div>
         </div>
         <div class="result" id="issue-result"></div>
-        <h3>Готовы к выдаче на пункте</h3>
+        <h3>Готовы к выдаче</h3>
         <div class="orders" id="issue-list"></div>
       </section>
     </main>
@@ -142,6 +169,7 @@
 
 </div>
 
+<script src="js/qrcode.min.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
