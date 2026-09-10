@@ -30,13 +30,8 @@ const firebaseConfig = {
 };
 
 
-// Запускаем Firebase
 const app = initializeApp(firebaseConfig);
 
-
-// Firebase Authentication
 export const auth = getAuth(app);
 
-
-// Firestore Database
 export const db = getFirestore(app);
