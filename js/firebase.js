@@ -6,12 +6,13 @@ import { getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, delet
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-storage.js";
 
 const firebaseConfig = {
-  apiKey: "PASTE_API_KEY",
-  authDomain: "PASTE_PROJECT_ID.firebaseapp.com",
-  projectId: "PASTE_PROJECT_ID",
-  storageBucket: "PASTE_PROJECT_ID.firebasestorage.app",
-  messagingSenderId: "PASTE_SENDER_ID",
-  appId: "PASTE_APP_ID"
+  apiKey: "AIzaSyBYFjKU5odBSUHLhieXdc0dr06EhLM_3r0",
+  authDomain: "marketpoint-9be60.firebaseapp.com",
+  projectId: "marketpoint-9be60",
+  storageBucket: "marketpoint-9be60.firebasestorage.app",
+  messagingSenderId: "159645831524",
+  appId: "1:159645831524:web:252097b1aa1f3495836a71",
+  measurementId: "G-14LM5KL3J0"
 };
 
 const app = initializeApp(firebaseConfig);
